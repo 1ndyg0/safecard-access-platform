@@ -22,7 +22,11 @@ The schema stores invitation state only. Do not add or collect real applicant in
 
 ## Vercel
 
-Import this directory as a Vercel project. The framework is detected as Next.js. Add the three environment variables above to Preview and Production, then deploy.
+The project is connected to the private GitHub repository `1ndyg0/safecard-access-platform` and the Vercel project `safecard-access-platform` in the SC team. Pushes to `main` trigger production deployments automatically.
+
+Production: https://safecard-access-platform.vercel.app
+
+The framework is detected as Next.js. Keep the three environment variables above configured in Preview and Production when adding additional environments.
 
 ## Scope boundary
 
