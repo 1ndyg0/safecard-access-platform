@@ -1,0 +1,9 @@
+[mcp_servers.vercel]
+url = "https://mcp.vercel.com"
+auth = "oauth"
+default_tools_approval_mode = "writes"
+
+[mcp_servers.supabase]
+url = "https://mcp.supabase.com/mcp?project_ref=ajyhlkzbocjeepglkhrl&features=docs%2Cdatabase%2Cdevelopment"
+auth = "oauth"
+default_tools_approval_mode = "writes"
