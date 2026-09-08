@@ -74,7 +74,7 @@ export function LandingExperience() {
           ["Decide", "Magpasya", "Accept, ask a question, or privately decline."],
           ["Apply", "Mag-apply", "Provide approved information only after consent."],
           ["Confirm", "Kumpirmahin", "Track submission, payment review, and PRC confirmation separately."],
-        ].map(([en, fil, detail], index) => <li key={en}><span>{index + 1}</span><h3>{locale === "fil" ? fil : en}</h3><p>{detail}</p></li>)}</ol>
+        ].map(([en, fil, detail], index) => <li key={en}><div className="process-step-heading"><span>{index + 1}</span><h3>{locale === "fil" ? fil : en}</h3></div><p>{detail}</p></li>)}</ol>
       </section>
 
       <footer className="public-footer"><BrandMark /><p>{t.footerNote}</p><a href="tel:143">Emergency: 143</a></footer>
