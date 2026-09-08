@@ -16,15 +16,17 @@ export async function storePaymentProof(input: {
 }) {
   const proof = validatePaymentProof(input.buffer, input.claimedMimeType);
   const evidenceId = uuidv4();
-  const objectPath = buildPaymentProofObjectPath(
-    input.campaignId,
-    input.caseId,
-    input.paymentIntentId,
-    evidenceId,
-    proof.extension,
-  );
   const admin = getSupabaseAdminClient();
   const bucket = process.env.PAYMENT_PROOFS_BUCKET ?? 'payment-proofs';
+  const { data: intent, error: intentError } = await admin
+    .from('payment_intents')
+    .select('case_id,campaign_id,expected_amount,state')
+    .eq('id', input.paymentIntentId)
+    .single();
+  if (intentError || !intent) throw new Error('Payment intent not found');
+  if (intent.case_id !== input.caseId || intent.campaign_id !== input.campaignId) throw new Error('Payment evidence does not match the application case.');
+  if (Number(intent.expected_amount) !== input.amount) throw new Error('Payment evidence amount does not match the payment intent.');
+  const objectPath = buildPaymentProofObjectPath(input.campaignId, input.caseId, input.paymentIntentId, evidenceId, proof.extension);
   const { data: previousVersion } = await admin
     .from('payment_evidence_versions')
     .select('id,version_number,state')
@@ -84,13 +86,6 @@ export async function storePaymentProof(input: {
   if (previousVersion && previousVersion.state !== 'superseded') {
     await admin.from('payment_evidence_versions').update({ state: 'superseded' }).eq('id', previousVersion.id);
   }
-
-  const { data: intent } = await admin
-    .from('payment_intents')
-    .select('case_id, state')
-    .eq('id', input.paymentIntentId)
-    .single();
-  if (!intent) throw new Error('Payment intent not found');
 
   if (intent.state === 'payer_marked_paid') {
     await admin.from('payment_intents').update({ state: 'verification_pending', verification_started_at: new Date().toISOString() }).eq('id', input.paymentIntentId);
