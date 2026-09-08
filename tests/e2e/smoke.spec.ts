@@ -12,12 +12,22 @@ test.describe('SafeCard public smoke and accessibility', () => {
   test('benefit storyboard supports keyboard expansion and closure', async ({ page }) => {
     await page.goto('/benefits');
     const first = page.getByRole('button', { name: /Libreng Ambulansya/i }).first();
+    const panelId = await first.getAttribute('aria-controls');
+    expect(panelId).toBeTruthy();
+    const panel = page.locator(`#${panelId}`);
+    await expect(panel).not.toHaveClass(/open/);
     await first.focus();
     await page.keyboard.press('Enter');
     await expect(first).toHaveAttribute('aria-expanded', 'true');
+    await expect(panel).toHaveClass(/open/);
+    await expect(panel).toHaveCSS('visibility', 'visible');
+    const transitionSeconds = await panel.evaluate((element) => Number.parseFloat(getComputedStyle(element).transitionDuration));
+    expect(transitionSeconds).toBeGreaterThan(0);
     await expect(page.getByText(/Illustrative only|Halimbawa lamang/i).first()).toBeVisible();
     await page.keyboard.press('Space');
     await expect(first).toHaveAttribute('aria-expanded', 'false');
+    await expect(panel).not.toHaveClass(/open/);
+    await expect(panel).toHaveCSS('visibility', 'hidden');
   });
 
   test('admin login is a dedicated email/password surface', async ({ page }) => {

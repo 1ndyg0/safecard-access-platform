@@ -30,17 +30,21 @@ export function BenefitStoryboard({ locale, compact = false }: { locale: Storybo
       const story = benefit.scenario[locale];
       return <article className={`story-card ${isOpen ? "open" : ""}`} key={benefit.id}>
         <button type="button" className="story-header" aria-expanded={isOpen} aria-controls={panelId} onClick={() => toggle(benefit.id)}>
-          <span className="story-number">0{index + 1}</span><span className="story-icon" aria-hidden="true">{benefit.icon}</span><span className="story-title"><strong>{benefit.title[locale]}</strong><small>{benefit.summary[locale]}</small></span><span className="story-indicator" aria-hidden="true">{isOpen ? "−" : "+"}</span>
+          <span className="story-number">0{index + 1}</span><span className="story-icon" aria-hidden="true">{benefit.icon}</span><span className="story-title"><strong>{benefit.title[locale]}</strong><small>{benefit.summary[locale]}</small></span><span className="story-indicator" aria-hidden="true" />
         </button>
-        {isOpen && <div className="story-panel" id={panelId} role="region" aria-labelledby={`${panelId}-heading`}>
-          <h3 id={`${panelId}-heading`}>{story.persona}</h3>
-          <p><strong>{locale === "fil" ? "Sitwasyon" : "Situation"}.</strong> {story.situation}</p>
-          <p><strong>{locale === "fil" ? "Ano ang dapat gawin" : "What to do"}.</strong> {story.action}</p>
-          <p><strong>{locale === "fil" ? "Maaaring gawin ng PRC" : "What PRC may provide"}.</strong> {story.mayProvide}</p>
-          <p><strong>{locale === "fil" ? "Halimbawa ng gastos" : "Cost example"}.</strong> {story.cost}</p>
-          <p className="story-disclaimer">{story.disclaimer}</p>
-          <a className="hotline-action" href="tel:143" onClick={() => track("hotline_action_selected", benefit.id, locale)}>☎ {locale === "fil" ? "Tumawag sa Hotline 143" : "Call Hotline 143"}</a>
-        </div>}
+        <div className={`story-panel-shell ${isOpen ? "open" : ""}`} id={panelId} aria-hidden={!isOpen}>
+          <div className="story-panel" role="region" aria-labelledby={`${panelId}-heading`}>
+            <div className="story-panel-content">
+              <h3 id={`${panelId}-heading`}>{story.persona}</h3>
+              <p><strong>{locale === "fil" ? "Sitwasyon" : "Situation"}.</strong> {story.situation}</p>
+              <p><strong>{locale === "fil" ? "Ano ang dapat gawin" : "What to do"}.</strong> {story.action}</p>
+              <p><strong>{locale === "fil" ? "Maaaring gawin ng PRC" : "What PRC may provide"}.</strong> {story.mayProvide}</p>
+              <p><strong>{locale === "fil" ? "Halimbawa ng gastos" : "Cost example"}.</strong> {story.cost}</p>
+              <p className="story-disclaimer">{story.disclaimer}</p>
+              <a className="hotline-action" href="tel:143" tabIndex={isOpen ? undefined : -1} onClick={() => track("hotline_action_selected", benefit.id, locale)}>☎ {locale === "fil" ? "Tumawag sa Hotline 143" : "Call Hotline 143"}</a>
+            </div>
+          </div>
+        </div>
       </article>;
     })}
     <p className="content-footnote">{locale === "fil" ? "Provisional fallback content. Ang approved PRC content registry ang source of truth bago ang live pilot." : "Provisional fallback content. The approved PRC content registry is the source of truth before the live pilot."}</p>
