@@ -17,6 +17,7 @@ import { z } from 'zod';
 const verifySchema = z.object({
   payment_intent_id: z.string().uuid(),
   verification_source: z.enum(['manual_prc_reconciliation', 'prc_confirmation']),
+  evidence_version_id: z.string().uuid().optional(),
   evidence: z.object({
     official_reference: z.string().min(1).max(100).optional(),
   }).strict().optional(),
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
       auth.userId,
       parsed.verification_source,
       parsed.evidence,
+      parsed.evidence_version_id,
     );
 
     return success({

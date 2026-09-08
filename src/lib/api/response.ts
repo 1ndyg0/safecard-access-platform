@@ -12,6 +12,7 @@ import { AuthError } from '@/lib/auth/session';
 import { InvalidTransitionError } from '@/lib/state-machines';
 import { RateLimitError } from '@/lib/api/rate-limit';
 import { LaunchGateError } from '@/lib/safety/data-mode';
+import { PaymentProofValidationError } from '@/lib/payment/evidence-validation';
 
 export function success<T>(data: T, status = 200) {
   return NextResponse.json(data, { status });
@@ -88,6 +89,10 @@ export function handleApiError(error: unknown, context: string): NextResponse {
 
   if (error instanceof LaunchGateError) {
     return forbidden(error.message);
+  }
+
+  if (error instanceof PaymentProofValidationError) {
+    return validationError(new ZodError([{ code: 'custom', path: ['file'], message: error.message }]));
   }
 
   if (error instanceof Error) {

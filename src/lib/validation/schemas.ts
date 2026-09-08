@@ -188,6 +188,7 @@ export const markPaymentPaidSchema = z.object({
     .string()
     .min(1, 'Payment reference is required')
     .max(100),
+  payer_declaration: z.string().trim().min(10).max(500),
   data_mode: dataModeSchema,
 });
 

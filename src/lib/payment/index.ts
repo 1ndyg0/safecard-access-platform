@@ -193,6 +193,7 @@ export async function createPaymentIntent(
 export async function markPaymentPaid(
   paymentIntentId: string,
   paymentReference: string,
+  payerDeclaration: string,
 ): Promise<void> {
   const admin = getSupabaseAdminClient();
 
@@ -213,6 +214,8 @@ export async function markPaymentPaid(
     .update({
       state: 'payer_marked_paid',
       payment_reference: paymentReference,
+      payer_declaration: payerDeclaration,
+      payer_declared_at: new Date().toISOString(),
       payer_marked_paid_at: new Date().toISOString(),
     })
     .eq('id', paymentIntentId);
@@ -230,7 +233,7 @@ export async function markPaymentPaid(
     case_id: intent.case_id,
     target_type: 'payment_intent',
     target_id: paymentIntentId,
-    details: { payment_reference: paymentReference },
+    details: { payment_reference: paymentReference, payer_declaration_recorded: true },
   });
 }
 
@@ -243,6 +246,7 @@ export async function verifyPayment(
   verifiedBy: string,
   verificationSource: string,
   evidence?: Record<string, unknown>,
+  evidenceVersionId?: string,
 ): Promise<void> {
   const admin = getSupabaseAdminClient();
 
@@ -288,6 +292,16 @@ export async function verifyPayment(
       prc_handoff_state: 'ready_for_export',
     })
     .eq('id', intent.case_id);
+
+  if (evidenceVersionId) {
+    const { error: evidenceError } = await admin
+      .from('payment_evidence_versions')
+      .update({ state: 'verified', reviewed_by: verifiedBy, reviewed_at: new Date().toISOString() })
+      .eq('id', evidenceVersionId)
+      .eq('payment_intent_id', paymentIntentId);
+    if (evidenceError) throw new Error(`Payment evidence could not be verified: ${evidenceError.message}`);
+    await admin.from('payment_evidence').update({ is_verified: true, confirmed_at: new Date().toISOString(), confirmed_by: verifiedBy }).eq('id', evidenceVersionId);
+  }
 
   await writeAuditEvent({
     event_type: 'payment_status_change',

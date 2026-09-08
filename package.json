@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test tests/e2e/smoke.spec.ts",
+    "verify": "npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e:smoke"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -22,6 +26,8 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24.13.3",
     "@types/qrcode": "^1.5.6",

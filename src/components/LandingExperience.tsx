@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
-import { benefits, copy, CURRENT_WORKING_ELIGIBILITY, CURRENT_WORKING_FEE } from "@/lib/public-content";
+import { copy, CURRENT_WORKING_ELIGIBILITY, CURRENT_WORKING_FEE } from "@/lib/public-content";
 import { useLocale } from "@/components/LocaleProvider";
+import { BenefitStoryboard } from "@/components/BenefitStoryboard";
 
 type ReferralState = { valid: boolean; sponsorDisplayName?: string; reason?: string } | null;
 
@@ -63,7 +64,7 @@ export function LandingExperience() {
 
       <section className="benefit-section" id="benefits">
         <div className="section-heading"><p>{t.benefitsEyebrow}</p><h2>{t.benefitsTitle}</h2><span>{locale === "fil" ? "Ang working information ay hindi kapalit ng opisyal na terms." : "Working information never replaces official terms."}</span></div>
-        <div className="benefit-list">{benefits.map((benefit, index) => <article key={benefit.en} className="benefit-row"><span className="benefit-number">0{index + 1}</span><div><h3>{locale === "fil" ? benefit.fil : benefit.en}</h3><p>{locale === "fil" ? benefit.detailFil : benefit.detailEn}</p></div><span className="benefit-limit">{benefit.amount}</span></article>)}</div>
+        <BenefitStoryboard locale={locale} compact />
       </section>
 
       <section className="process-section" id="process">

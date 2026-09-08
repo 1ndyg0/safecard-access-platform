@@ -42,3 +42,10 @@ next-env.d.ts
 
 # local Supabase state
 supabase/.temp/
+
+# Private payment reference assets must never be committed or served as public files.
+private-reference-assets/
+
+# Playwright failure artifacts are local/CI outputs, never source.
+test-results/
+playwright-report/
