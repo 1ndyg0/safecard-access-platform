@@ -128,7 +128,7 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .programme-card > p { position: relative; z-index: 1; margin: 0; color: rgba(255,255,255,.65); font: 500 .85rem/1.3 var(--font-ibm-mono); }
 .card-rule { height: 1px; background: rgba(255,255,255,.13); margin: 36px 0 18px; }
 .programme-card small { display: block; max-width: 330px; color: rgba(255,255,255,.52); line-height: 1.55; }
-.control-card { position: absolute; left: -18px; right: 0; bottom: -18px; display: flex; gap: 18px; padding: 21px 24px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 22px 45px rgba(15,27,45,.13); }
+.control-card { position: absolute; left: -18px; right: 0; bottom: -48px; display: flex; gap: 18px; padding: 21px 24px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 22px 45px rgba(15,27,45,.13); }
 .control-card strong { font: 750 .9rem/1.2 var(--font-jakarta); }
 .control-card p { margin: 5px 0 0; color: var(--text2); font-size: .76rem; }
 
