@@ -134,6 +134,7 @@ export async function createReferralLink(
 
 export interface ValidateSlugResult {
   valid: boolean;
+  referralLinkId?: string;
   campaignId?: string;
   sponsorDisplayName?: string;
   reason?: string;
@@ -174,6 +175,7 @@ export async function validateReferralSlug(slug: string): Promise<ValidateSlugRe
   const sponsorRelation = Array.isArray(data.sponsors) ? data.sponsors[0] : data.sponsors;
   return {
     valid: true,
+    referralLinkId: data.id,
     campaignId: data.campaign_id,
     sponsorDisplayName: sponsorRelation?.display_name,
   };

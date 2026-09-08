@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Detailed end-to-end journey and service blueprint for the Safe Card Access Platform MVP.">
+  <title>Safe Card Access Platform — Detailed User Journey Map</title>
+  <style>
+    :root {
+      --ink: #14283a;
+      --muted: #5f7282;
+      --navy: #0b3153;
+      --blue: #2d6f9f;
+      --red: #c92636;
+      --cream: #f7f4ed;
+      --paper: #ffffff;
+      --line: #d8e1e8;
+      --pale: #eaf2f7;
+      --sponsor: #2f6f9f;
+      --beneficiary: #c92636;
+      --admin: #7b5aa6;
+      --prc: #26735c;
+      --system: #6c7d89;
+      --amber: #a26512;
+      --green-bg: #edf8f3;
+      --red-bg: #fff0f1;
+      --amber-bg: #fff8e8;
+      --shadow: 0 18px 48px rgba(11, 49, 83, .10);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--cream);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.52;
+    }
+    a { color: var(--blue); }
+    a:focus-visible { outline: 3px solid #f0b429; outline-offset: 3px; }
+    h1, h2, h3, h4 { margin-top: 0; line-height: 1.13; letter-spacing: -.02em; }
+    h1 { margin-bottom: 0; font-size: clamp(2.35rem, 6.5vw, 5.5rem); }
+    h2 { margin-bottom: 15px; font-size: clamp(1.7rem, 4vw, 2.55rem); }
+    h3 { margin-bottom: 8px; font-size: 1.25rem; }
+    h4 { margin-bottom: 8px; color: var(--navy); font-size: .9rem; letter-spacing: .04em; text-transform: uppercase; }
+    p { margin: 0 0 13px; }
+    ul, ol { margin: 0; padding-left: 1.15rem; }
+    li + li { margin-top: 6px; }
+    .shell { width: min(1280px, calc(100% - 32px)); margin: 0 auto; }
+    .eyebrow { margin: 0 0 10px; color: var(--red); font-size: .78rem; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
+    .muted { color: var(--muted); }
+
+    header {
+      padding: 28px 0 68px;
+      color: white;
+      background:
+        linear-gradient(90deg, transparent 49.8%, rgba(255,255,255,.05) 50%, transparent 50.2%),
+        radial-gradient(circle at 80% 15%, rgba(255,255,255,.14), transparent 22rem),
+        linear-gradient(140deg, #081f35, var(--navy) 60%, #174e74);
+    }
+    .topline { display: flex; justify-content: space-between; align-items: center; gap: 18px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 850; }
+    .mark { width: 13px; height: 32px; border-radius: 3px; background: var(--red); }
+    .topnav { display: flex; flex-wrap: wrap; gap: 8px; }
+    .topnav a { padding: 7px 11px; color: white; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; text-decoration: none; font-size: .86rem; }
+    .hero { display: grid; grid-template-columns: 1fr 320px; gap: 48px; align-items: end; padding-top: 72px; }
+    .hero .eyebrow { color: #ff929b; }
+    .dek { max-width: 850px; margin-top: 20px; color: #d8e6f0; font-size: 1.12rem; }
+    .meta { padding: 20px; border: 1px solid rgba(255,255,255,.24); border-radius: 18px; background: rgba(255,255,255,.08); }
+    .meta dl { display: grid; grid-template-columns: 1fr auto; gap: 8px 14px; margin: 0; }
+    .meta dt { color: #bdd1df; }
+    .meta dd { margin: 0; font-weight: 800; text-align: right; }
+
+    main { padding: 52px 0 90px; }
+    section + section { margin-top: 58px; }
+    .section-intro { max-width: 860px; color: var(--muted); }
+    .scope-note {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 15px;
+      padding: 20px;
+      border: 1px solid #efcf96;
+      border-left: 6px solid var(--amber);
+      border-radius: 14px;
+      background: var(--amber-bg);
+    }
+    .scope-note strong { display: block; margin-bottom: 4px; }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; background: white; border: 1px solid var(--line); border-radius: 999px; font-size: .82rem; font-weight: 750; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot.sponsor { background: var(--sponsor); }
+    .dot.beneficiary { background: var(--beneficiary); }
+    .dot.admin { background: var(--admin); }
+    .dot.prc { background: var(--prc); }
+    .dot.system { background: var(--system); }
+
+    .journey-strip {
+      display: grid;
+      grid-template-columns: repeat(9, minmax(150px, 1fr));
+      min-width: 1420px;
+      gap: 0;
+      padding: 22px;
+      background: white;
+    }
+    .strip-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+    .stage-node { position: relative; padding: 12px 17px 15px; border-top: 4px solid var(--navy); }
+    .stage-node:not(:last-child)::after { content: "→"; position: absolute; top: 29px; right: -8px; z-index: 2; color: var(--red); font-size: 1.25rem; font-weight: 900; }
+    .stage-node a { color: var(--navy); text-decoration: none; }
+    .stage-number { display: block; color: var(--red); font-size: .72rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .stage-name { display: block; margin: 3px 0 7px; font-size: .98rem; font-weight: 850; }
+    .stage-state { color: var(--muted); font-size: .76rem; }
+    .stage-node.future { opacity: .72; border-top-style: dashed; }
+
+    .status-flow { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 18px; }
+    .status { position: relative; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: white; font-size: .78rem; font-weight: 700; }
+    .status:not(:last-child)::after { content: "›"; margin-left: 10px; color: var(--red); }
+    .status.verified { color: #165946; background: var(--green-bg); border-color: #c9e7da; }
+    .status.problem { color: #73303a; background: var(--red-bg); border-color: #efc3c8; }
+
+    .stage-card {
+      overflow: hidden;
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      break-inside: avoid;
+    }
+    .stage-card + .stage-card { margin-top: 26px; }
+    .stage-head {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 18px;
+      align-items: center;
+      padding: 22px 25px;
+      background: linear-gradient(110deg, var(--pale), white);
+      border-bottom: 1px solid var(--line);
+    }
+    .stage-id { display: grid; place-items: center; width: 54px; height: 54px; color: white; background: var(--navy); border-radius: 14px; font-size: 1.2rem; font-weight: 900; }
+    .stage-head h3 { margin: 0 0 3px; font-size: 1.55rem; }
+    .stage-head p { margin: 0; color: var(--muted); }
+    .scope-tag { padding: 6px 10px; border-radius: 999px; color: #175744; background: var(--green-bg); border: 1px solid #c8e7d9; font-size: .76rem; font-weight: 850; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+    .scope-tag.conditional { color: #71480b; background: var(--amber-bg); border-color: #efd49e; }
+    .scope-tag.future { color: #6d3440; background: var(--red-bg); border-color: #efc6cb; }
+    .stage-content { padding: 24px; }
+    .stage-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .summary-item { padding: 13px 14px; background: #f7fafc; border-radius: 11px; }
+    .summary-item span { display: block; color: var(--muted); font-size: .72rem; font-weight: 850; letter-spacing: .05em; text-transform: uppercase; }
+    .summary-item strong { display: block; margin-top: 3px; font-size: .92rem; }
+    .lanes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .lane { min-height: 180px; padding: 16px; border: 1px solid var(--line); border-top: 5px solid var(--system); border-radius: 13px; }
+    .lane.sponsor { border-top-color: var(--sponsor); }
+    .lane.beneficiary { border-top-color: var(--beneficiary); }
+    .lane.admin { border-top-color: var(--admin); }
+    .lane.prc { border-top-color: var(--prc); }
+    .lane.system { border-top-color: var(--system); }
+    .lane h4 { display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+    .lane ul { font-size: .88rem; }
+    .lane .empty { color: var(--muted); font-style: italic; }
+    .stage-analysis { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 14px; }
+    .analysis-card { padding: 16px; border-radius: 13px; border: 1px solid var(--line); }
+    .analysis-card.pain { background: var(--red-bg); border-color: #efc6cb; }
+    .analysis-card.opportunity { background: var(--green-bg); border-color: #c7e5d7; }
+    .analysis-card.recovery { background: var(--amber-bg); border-color: #efd59f; }
+    .analysis-card ul { font-size: .88rem; }
+    .requirements { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; margin-top: 14px; }
+    .req-card { padding: 16px; background: #f7fafc; border: 1px solid var(--line); border-radius: 13px; }
+    .req-card p, .req-card li { font-size: .89rem; }
+    .metric { color: var(--navy); font-weight: 800; }
+
+    .blueprint-wrap { overflow-x: auto; background: white; border: 1px solid var(--line); border-radius: 17px; box-shadow: var(--shadow); }
+    table { width: 100%; min-width: 1100px; border-collapse: collapse; }
+    th, td { padding: 14px 15px; text-align: left; vertical-align: top; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    th { color: white; background: var(--navy); font-size: .82rem; letter-spacing: .03em; }
+    th:last-child, td:last-child { border-right: 0; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:nth-child(even) { background: #f7fafc; }
+    td:first-child { color: var(--navy); font-weight: 800; }
+
+    .edge-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .edge-card { padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: white; }
+    .edge-card h3 { color: var(--navy); }
+    .edge-card p { color: var(--muted); }
+    .edge-card strong { color: var(--red); }
+
+    .measure-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 13px; }
+    .measure { padding: 18px; background: white; border: 1px solid var(--line); border-radius: 14px; }
+    .measure .value { display: block; color: var(--red); font-size: 1.65rem; font-weight: 900; line-height: 1; }
+    .measure strong { display: block; margin: 8px 0 5px; }
+    .measure p { color: var(--muted); font-size: .85rem; }
+
+    footer { padding: 34px 0 48px; color: #d5e3ed; background: var(--navy); }
+    footer .shell { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+    footer h2 { color: white; font-size: 1.35rem; }
+    footer li, footer p { font-size: .88rem; }
+    footer a { color: #acd5f3; }
+
+    @media (max-width: 1050px) {
+      .lanes { grid-template-columns: repeat(2, 1fr); }
+      .lane.system { grid-column: 1 / -1; }
+      .stage-summary { grid-template-columns: repeat(2, 1fr); }
+      .measure-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 820px) {
+      .hero, footer .shell { grid-template-columns: 1fr; }
+      .hero { padding-top: 52px; }
+      .meta { max-width: 440px; }
+      .stage-analysis, .requirements { grid-template-columns: 1fr; }
+      .stage-head { grid-template-columns: auto 1fr; }
+      .stage-head .scope-tag { grid-column: 1 / -1; justify-self: start; }
+    }
+    @media (max-width: 600px) {
+      .shell { width: min(100% - 22px, 1280px); }
+      .topline { align-items: flex-start; flex-direction: column; }
+      h1 { font-size: 2.65rem; }
+      .lanes, .stage-summary, .edge-grid, .measure-grid { grid-template-columns: 1fr; }
+      .lane.system { grid-column: auto; }
+      .stage-content, .stage-head { padding: 19px; }
+    }
+    @media print {
+      @page { size: A4 landscape; margin: 12mm; }
+      body { background: white; font-size: 8.5pt; }
+      header { padding: 8mm 0 12mm; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .topnav { display: none; }
+      .hero { padding-top: 14mm; grid-template-columns: 1fr 270px; }
+      main { padding: 9mm 0; }
+      section + section { margin-top: 10mm; }
+      .stage-card { box-shadow: none; page-break-before: always; }
+      .stage-head, th, footer { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .lanes { grid-template-columns: repeat(5, 1fr); }
+      .stage-analysis { grid-template-columns: repeat(3, 1fr); }
+      .requirements { grid-template-columns: 1.4fr 1fr; }
+      .journey-strip { min-width: 0; padding: 10px; grid-template-columns: repeat(9, 1fr); }
+      .stage-node { padding: 8px; }
+      .stage-node:not(:last-child)::after { display: none; }
+      footer { page-break-before: always; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell">
+      <div class="topline">
+        <div class="brand"><span class="mark" aria-hidden="true"></span> Safe Card Access Platform</div>
+        <nav class="topnav" aria-label="Document navigation">
+          <a href="#overview">Overview</a>
+          <a href="#detailed-map">Detailed stages</a>
+          <a href="#blueprint">Service blueprint</a>
+          <a href="#edge-cases">Recovery</a>
+          <a href="client-personas.html">← Personas</a>
+        </nav>
+      </div>
+      <div class="hero">
+        <div>
+          <p class="eyebrow">Discovery document · Version 1.0</p>
+          <h1>Detailed User Journey Map</h1>
+          <p class="dek">An end-to-end view of sponsorship, beneficiary decision-making, registration intake, official payment, PRC handoff, confirmation, claims readiness, and renewal.</p>
+        </div>
+        <aside class="meta" aria-label="Document metadata">
+          <dl>
+            <dt>Status</dt><dd>For validation</dd>
+            <dt>Primary journey</dt><dd>Sponsor + beneficiary</dd>
+            <dt>Updated</dt><dd>4 Sep 2026</dd>
+            <dt>MVP boundary</dt><dd>Through confirmation</dd>
+          </dl>
+        </aside>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section aria-labelledby="scope-reconciliation">
+      <div class="scope-note">
+        <div aria-hidden="true">◆</div>
+        <div>
+          <strong id="scope-reconciliation">Scope reconciliation used in this map</strong>
+          The committed sprint backlog includes the landing page, benefit storyboard, referral QR/link, application intake, privacy checkpoint, pilot data store, protected admin access/export, and confirmation/recovery states. Two conflicts are resolved using the latest project decisions: GCash integration is conditional, so the MVP uses an official PRC payment handoff; and PRC must store all registration and payment data, so a proposed pilot store may contain real data only if PRC controls or explicitly approves the architecture and retention. Otherwise it is transient/synthetic-only. Direct PRC API integration, advanced analytics, and loyalty mechanics remain deferred.
+        </div>
+      </div>
+    </section>
+
+    <section id="overview" aria-labelledby="overview-title">
+      <p class="eyebrow">End-to-end view</p>
+      <h2 id="overview-title">One journey, five actors, nine stages</h2>
+      <p class="section-intro">The sponsor initiates and funds; the household helper learns, decides, and owns their information; the platform guides and records; the project admin handles first-line operations; PRC approves, stores official records, confirms membership, and handles official program or claims matters.</p>
+      <div class="legend" aria-label="Actor legend">
+        <span class="legend-item"><span class="dot sponsor"></span>Student sponsor</span>
+        <span class="legend-item"><span class="dot beneficiary"></span>Household-helper beneficiary</span>
+        <span class="legend-item"><span class="dot admin"></span>Project admin</span>
+        <span class="legend-item"><span class="dot prc"></span>Philippine Red Cross</span>
+        <span class="legend-item"><span class="dot system"></span>Platform/system</span>
+      </div>
+      <div class="strip-wrap" tabindex="0" aria-label="Scrollable journey stages">
+        <div class="journey-strip">
+          <div class="stage-node"><a href="#stage-1"><span class="stage-number">Stage 1</span><span class="stage-name">Prepare</span><span class="stage-state">Interested → ready</span></a></div>
+          <div class="stage-node"><a href="#stage-2"><span class="stage-number">Stage 2</span><span class="stage-name">Explain & invite</span><span class="stage-state">Cautious introduction</span></a></div>
+          <div class="stage-node"><a href="#stage-3"><span class="stage-number">Stage 3</span><span class="stage-name">Learn & decide</span><span class="stage-state">Skeptical → informed</span></a></div>
+          <div class="stage-node"><a href="#stage-4"><span class="stage-number">Stage 4</span><span class="stage-name">Agree & apply</span><span class="stage-state">Anxious → confident</span></a></div>
+          <div class="stage-node"><a href="#stage-5"><span class="stage-number">Stage 5</span><span class="stage-name">Pay officially</span><span class="stage-state">Pending → paid</span></a></div>
+          <div class="stage-node"><a href="#stage-6"><span class="stage-number">Stage 6</span><span class="stage-name">Handoff</span><span class="stage-state">Submitted → received</span></a></div>
+          <div class="stage-node"><a href="#stage-7"><span class="stage-number">Stage 7</span><span class="stage-name">Confirm</span><span class="stage-state">Waiting → protected</span></a></div>
+          <div class="stage-node"><a href="#stage-8"><span class="stage-number">Stage 8</span><span class="stage-name">Use & claim</span><span class="stage-state">Prepared in emergency</span></a></div>
+          <div class="stage-node future"><a href="#stage-9"><span class="stage-number">Stage 9</span><span class="stage-name">Renew</span><span class="stage-state">Deferred capability</span></a></div>
+        </div>
+      </div>
+      <div class="status-flow" aria-label="Recommended operational status flow">
+        <span class="status">Invited</span><span class="status">Viewed</span><span class="status">Informed</span><span class="status">Agreed</span><span class="status">Intake started</span><span class="status">Submitted</span><span class="status">Awaiting payment</span><span class="status verified">Paid sponsorship</span><span class="status">Sent to PRC</span><span class="status problem">Needs attention</span><span class="status verified">PRC verified</span><span class="status verified">Completed</span>
+      </div>
+    </section>
+
+    <section id="detailed-map" aria-labelledby="detailed-title">
+      <p class="eyebrow">Journey map</p>
+      <h2 id="detailed-title">Detailed stages</h2>
+      <p class="section-intro">Each stage connects visible actions to backstage ownership, emotional state, failure recovery, product requirements, and measurable evidence.</p>
+
+      <article class="stage-card" id="stage-1">
+        <div class="stage-head"><div class="stage-id">01</div><div><h3>Sponsor preparation</h3><p>Understand the offer and prepare a respectful, fundable sponsorship.</p></div><span class="scope-tag">Committed MVP</span></div>
+        <div class="stage-content">
+          <div class="stage-summary"><div class="summary-item"><span>Primary actor</span><strong>Student sponsor</strong></div><div class="summary-item"><span>Trigger</span><strong>School/PRC-approved campaign</strong></div><div class="summary-item"><span>Emotional state</span><strong>Curious, slightly cautious</strong></div><div class="summary-item"><span>Exit state</span><strong>Ready to invite responsibly</strong></div></div>
+          <div class="lanes">
+            <div class="lane sponsor"><h4><span class="dot sponsor"></span>Sponsor</h4><ul><li>Opens campaign or referral page.</li><li>Reads purpose, price, benefits, and limits.</li><li>Checks whether parent/guardian support is needed.</li><li>Selects a known potential beneficiary.</li></ul></div>
+            <div class="lane beneficiary"><h4><span class="dot beneficiary"></span>Beneficiary</h4><p class="empty">No data or commitment yet. The person should not be pre-enrolled.</p></div>
+            <div class="lane system"><h4><span class="dot system"></span>Platform</h4><ul><li>Shows mobile-first Tagalog/English overview.</li><li>Displays PRC-approved content status and review date.</li><li>Explains sponsorship vs. membership.</li><li>Provides sponsor conduct guidance.</li></ul></div>
+            <div class="lane admin"><h4><span class="dot admin"></span>Project admin</h4><ul><li>Publishes only approved campaign content.</li><li>Provides first-line FAQs.</li><li>Monitors aggregate landing-page use.</li></ul></div>
+            <div class="lane prc"><h4><span class="dot prc"></span>PRC</h4><ul><li>Approves facts, branding, and official routes.</li><li>Provides current program contacts and terms.</li></ul></div>
+          </div>
+          <div class="stage-analysis"><div class="analysis-card pain"><h4>Pain points</h4><ul><li>Student does not want to sound like a salesperson.</li><li>Program may be confused with commercial insurance.</li><li>Minor payment rules are unclear.</li></ul></div><div class="analysis-card opportunity"><h4>Design opportunities</h4><ul><li>Use a 60-second sponsor briefing and comprehension check.</li><li>Provide a respectful invitation script.</li><li>Show “what you can and cannot see.”</li></ul></div><div class="analysis-card recovery"><h4>Recovery</h4><ul><li>If approval or payment rules are unresolved, save a draft—not an invitation.</li><li>Route questions to the named project admin.</li></ul></div></div>
+          <div class="requirements"><div class="req-card"><h4>Requirements and controls</h4><p>Content owner, source, review date, and PRC approval state; no beneficiary personal data; clear voluntary-participation guidance; low-bandwidth page; parent/guardian notice where required.</p></div><div class="req-card"><h4>Success evidence</h4><p class="metric">≥80% sponsor comprehension</p><p>Sponsor can accurately explain purpose, cost, main benefits, limits, and the beneficiary’s right to decline.</p></div></div>
+        </div>
+      </article>
+
+      <article class="stage-card" id="stage-2">
+        <div class="stage-head"><div class="stage-id">02</div><div><h3>Explain and invite</h3><p>Make a personal offer without collecting unnecessary information or applying pressure.</p></div><span class="scope-tag">Committed MVP</span></div>
+        <div class="stage-content">
+          <div class="stage-summary"><div class="summary-item"><span>Primary actors</span><strong>Sponsor + beneficiary</strong></div><div class="summary-item"><span>Touchpoint</span><strong>QR, link, or in-person handoff</strong></div><div class="summary-item"><span>Emotional state</span><strong>Awkward / suspicious</strong></div><div class="summary-item"><span>Exit state</span><strong>Invitation viewed privately</strong></div></div>
+          <div class="lanes">
+            <div class="lane sponsor"><h4><span class="dot sponsor"></span>Sponsor</h4><ul><li>Shares a private QR or link.</li><li>Explains that sponsorship is voluntary.</li><li>Offers assistance without taking over.</li><li>Steps away so the beneficiary can review privately.</li></ul></div>
+            <div class="lane beneficiary"><h4><span class="dot beneficiary"></span>Beneficiary</h4><ul><li>Checks who sent the invitation.</li><li>Asks whether it is really connected to PRC.</li><li>Chooses language and opens the overview.</li><li>May defer or decline without consequence.</li></ul></div>
+            <div class="lane system"><h4><span class="dot system"></span>Platform</h4><ul><li>Validates referral attribution.</li><li>Shows sponsor identity only with permission.</li><li>Separates “learn more” from “agree.”</li><li>Supports invalid-link fallback.</li></ul></div>
+            <div class="lane admin"><h4><span class="dot admin"></span>Project admin</h4><ul><li>Issues and deactivates pilot referral links.</li><li>Investigates broken or misused codes.</li><li>Cannot see beneficiary details at this stage.</li></ul></div>
+            <div class="lane prc"><h4><span class="dot prc"></span>PRC</h4><p class="empty">No operational action unless legitimacy or misuse is escalated.</p></div>
+          </div>
+          <div class="stage-analysis"><div class="analysis-card pain"><h4>Pain points</h4><ul><li>Scam fear and distrust of links.</li><li>Employer-family power imbalance.</li><li>Referral attribution may feel like tracking.</li></ul></div><div class="analysis-card opportunity"><h4>Design opportunities</h4><ul><li>Explain why the referral exists and what it records.</li><li>Use privacy-safe sponsor identification.</li><li>Provide official PRC contact verification.</li></ul></div><div class="analysis-card recovery"><h4>Recovery</h4><ul><li>Invalid link loads the general landing page.</li><li>“Not now” exits without reminders unless requested.</li><li>Report-suspicious-link route goes to admin.</li></ul></div></div>
+          <div class="requirements"><div class="req-card"><h4>Requirements and controls</h4><p>Unique pilot link/QR; nullable referral ID; transparent attribution notice; no public sponsor or beneficiary directory; invitation expiration; report/mute path; no enrollment created from a scan.</p></div><div class="req-card"><h4>Success evidence</h4><p class="metric">Invitation trust + privacy</p><p>Beneficiary can identify the sender and purpose and understands that opening the page creates no obligation.</p></div></div>
+        </div>
+      </article>
+
+      <article class="stage-card" id="stage-3">
+        <div class="stage-head"><div class="stage-id">03</div><div><h3>Learn and decide</h3><p>Turn program terms into plain-language understanding before any data collection.</p></div><span class="scope-tag">Committed MVP</span></div>
+        <div class="stage-content">
+          <div class="stage-summary"><div class="summary-item"><span>Primary actor</span><strong>Beneficiary</strong></div><div class="summary-item"><span>Touchpoints</span><strong>Landing page + storyboard + FAQ</strong></div><div class="summary-item"><span>Emotional state</span><strong>Skeptical → informed</strong></div><div class="summary-item"><span>Exit state</span><strong>Chooses apply, pause, or decline</strong></div></div>
+          <div class="lanes">
+            <div class="lane sponsor"><h4><span class="dot sponsor"></span>Sponsor</h4><ul><li>Answers only what the platform explains.</li><li>Does not promise claims outcomes.</li><li>Allows time for independent decision.</li></ul></div>
+            <div class="lane beneficiary"><h4><span class="dot beneficiary"></span>Beneficiary</h4><ul><li>Reads ₱1,200/year and who will pay.</li><li>Reviews benefit amounts and examples.</li><li>Checks exclusions and claims process.</li><li>Uses preferred language or asks for help.</li><li>Completes comprehension check.</li></ul></div>
+            <div class="lane system"><h4><span class="dot system"></span>Platform</h4><ul><li>Presents benefit cards and a household scenario.</li><li>Keeps exclusions next to relevant benefits.</li><li>Labels provisional or unapproved details.</li><li>Supports save/share/print without exposing data.</li></ul></div>
+            <div class="lane admin"><h4><span class="dot admin"></span>Project admin</h4><ul><li>Answers platform-navigation questions.</li><li>Escalates benefit or eligibility questions.</li><li>Tracks comprehension in aggregate.</li></ul></div>
+            <div class="lane prc"><h4><span class="dot prc"></span>PRC</h4><ul><li>Approves the content version.</li><li>Owns official interpretation of benefits, eligibility, and exclusions.</li></ul></div>
+          </div>
+          <div class="stage-analysis"><div class="analysis-card pain"><h4>Pain points</h4><ul><li>Insurance or claims terminology is intimidating.</li><li>₱100/month phrasing could imply a payment plan that is not approved.</li><li>Mobile data and time are limited.</li></ul></div><div class="analysis-card opportunity"><h4>Design opportunities</h4><ul><li>Grade-6-level Tagalog and short audio option.</li><li>Show annual amount prominently; use monthly equivalent only when approved.</li><li>Scenario → exact benefit → exact limitation.</li></ul></div><div class="analysis-card recovery"><h4>Recovery</h4><ul><li>Save the learning state locally without personal data.</li><li>Offer PRC contact and in-person chapter option.</li><li>Let users return without repeated pressure.</li></ul></div></div>
+          <div class="requirements"><div class="req-card"><h4>Requirements and controls</h4><p>Current fee, ages 3–85, benefit schedule, extended contexts, exclusions, claims deadlines, source/review date, content approval status, Tagalog/English first, accessible typography, optimized assets.</p></div><div class="req-card"><h4>Success evidence</h4><p class="metric">4 of 5 questions correct</p><p>Beneficiary can explain purpose, annual price, main benefits, important limits, and first claims step.</p></div></div>
+        </div>
+      </article>
+
+      <article class="stage-card" id="stage-4">
+        <div class="stage-head"><div class="stage-id">04</div><div><h3>Agreement and application intake</h3><p>Obtain informed agreement, collect only approved fields, and make errors recoverable.</p></div><span class="scope-tag">Committed MVP</span></div>
+        <div class="stage-content">
+          <div class="stage-summary"><div class="summary-item"><span>Primary actor</span><strong>Beneficiary</strong></div><div class="summary-item"><span>Touchpoints</span><strong>Privacy notice + form + review</strong></div><div class="summary-item"><span>Emotional state</span><strong>Anxious → in control</strong></div><div class="summary-item"><span>Exit state</span><strong>Consented submission</strong></div></div>
+          <div class="lanes">
+            <div class="lane sponsor"><h4><span class="dot sponsor"></span>Sponsor</h4><ul><li>May assist only after agreement.</li><li>Does not see identity or sensitive fields.</li><li>Does not check boxes for the beneficiary.</li></ul></div>
+            <div class="lane beneficiary"><h4><span class="dot beneficiary"></span>Beneficiary</h4><ul><li>Reads layered privacy notice.</li><li>Agrees or declines separately from payment.</li><li>Enters approved personal details.</li><li>Reviews and corrects before submission.</li><li>Receives a platform reference number.</li></ul></div>
+            <div class="lane system"><h4><span class="dot system"></span>Platform</h4><ul><li>Validates fields in plain language.</li><li>Captures agreement evidence and notice version for approved transfer to PRC-controlled storage.</li><li>Prevents duplicate retry.</li><li>Preserves unsent progress only under the approved retention design.</li><li>Creates visible success/error states.</li></ul></div>
+            <div class="lane admin"><h4><span class="dot admin"></span>Project admin</h4><ul><li>Views only authorized operational fields.</li><li>Supports technical errors.</li><li>Uses synthetic data if privacy gate is incomplete.</li></ul></div>
+            <div class="lane prc"><h4><span class="dot prc"></span>PRC</h4><ul><li>Approves fields, notice, lawful basis, and data handoff.</li><li>Receives official registration data.</li></ul></div>
+          </div>
+          <div class="stage-analysis"><div class="analysis-card pain"><h4>Pain points</h4><ul><li>Fear of making a permanent mistake.</li><li>Shared phone or nearby sponsor reduces privacy.</li><li>Long address and identity fields are tiring.</li></ul></div><div class="analysis-card opportunity"><h4>Design opportunities</h4><ul><li>Explain why each field is needed.</li><li>Use short steps, review screen, and friendly Filipino errors.</li><li>Provide “continue privately” and save-and-resume.</li></ul></div><div class="analysis-card recovery"><h4>Recovery</h4><ul><li>Network failure keeps form data locally and offers retry.</li><li>Duplicate protection avoids double submission.</li><li>Correction request goes to the approved PRC/admin route.</li></ul></div></div>
+          <div class="requirements"><div class="req-card"><h4>Requirements and controls</h4><p>Explicit agreement when used as lawful basis; notice version and timestamp; PRC-approved fields; no real applicant data before privacy sign-off; encryption; shared-device protection; consent withdrawal/correction route; no data sent to external AI tools.</p></div><div class="req-card"><h4>Success evidence</h4><p class="metric">≤10 min beneficiary journey</p><p>100% of completed intake records contain approved agreement evidence or documented lawful basis; zero unresolved critical privacy defects.</p></div></div>
+        </div>
+      </article>
+
+      <article class="stage-card" id="stage-5">
+        <div class="stage-head"><div class="stage-id">05</div><div><h3>Official sponsorship payment</h3><p>Move money through an official PRC channel and define when a referral becomes a sponsorship.</p></div><span class="scope-tag conditional">MVP handoff · integration conditional</span></div>
+        <div class="stage-content">
+          <div class="stage-summary"><div class="summary-item"><span>Primary actor</span><strong>Sponsor / authorized payer</strong></div><div class="summary-item"><span>Touchpoint</span><strong>Official PRC payment route</strong></div><div class="summary-item"><span>Emotional state</span><strong>Cautious → reassured</strong></div><div class="summary-item"><span>Exit state</span><strong>Payment received/reconcilable</strong></div></div>
+          <div class="lanes">
+            <div class="lane sponsor"><h4><span class="dot sponsor"></span>Sponsor</h4><ul><li>Confirms beneficiary has agreed.</li><li>Uses PRC-approved GCash route or approved alternative.</li><li>Reviews amount and reference.</li><li>Keeps official receipt or proof.</li></ul></div>
+            <div class="lane beneficiary"><h4><span class="dot beneficiary"></span>Beneficiary</h4><ul><li>Sees who is paying and what the payment covers.</li><li>Is not asked to pay unless the arrangement changes.</li><li>Does not lose the right to withdraw merely because payment was attempted.</li></ul></div>
+            <div class="lane system"><h4><span class="dot system"></span>Platform</h4><ul><li>Links to official channel for MVP.</li><li>Preserves reference/referral IDs.</li><li>Shows “payment pending” until verified.</li><li>Does not store card, PIN, or wallet credentials.</li></ul></div>
+            <div class="lane admin"><h4><span class="dot admin"></span>Project admin</h4><ul><li>Reconciles minimum approved payment evidence.</li><li>Handles platform status mismatch.</li><li>Escalates refunds or payment disputes to PRC.</li></ul></div>
+            <div class="lane prc"><h4><span class="dot prc"></span>PRC</h4><ul><li>Owns official payment channel and receipt.</li><li>Confirms whether funds were received.</li><li>Owns refund and payment-dispute policy.</li></ul></div>
+          </div>
+          <div class="stage-analysis"><div class="analysis-card pain"><h4>Pain points</h4><ul><li>GCash collaboration may not be ready.</li><li>Student may require adult payer approval.</li><li>Payment success may not return automatically.</li></ul></div><div class="analysis-card opportunity"><h4>Design opportunities</h4><ul><li>Use a clear external-payment interstitial.</li><li>Show exact payee, amount, and reference format.</li><li>Provide “I paid” reconciliation—not instant activation.</li></ul></div><div class="analysis-card recovery"><h4>Recovery</h4><ul><li>Failed or abandoned payment returns to pending.</li><li>Duplicate or wrong-reference payment is escalated.</li><li>If the beneficiary declines, follow approved cancellation/refund rules.</li></ul></div></div>
+          <div class="requirements"><div class="req-card"><h4>Requirements and controls</h4><p>Official channel only; final GCash/alternative decision; receipt owner; minor-payer rule; idempotent integrated payments if later added; reconciliation and refund process; never describe payment as consent or activation.</p></div><div class="req-card"><h4>Success evidence</h4><p class="metric">100% traceable payments</p><p>A referral is counted as a sponsorship only after sponsor-funded payment can be matched to the beneficiary’s registration.</p></div></div>
+        </div>
+      </article>
+
+      <article class="stage-card" id="stage-6">
+        <div class="stage-head"><div class="stage-id">06</div><div><h3>PRC handoff and reconciliation</h3><p>Transmit approved data, keep PRC as the source of truth, and surface exceptions.</p></div><span class="scope-tag">Committed MVP · manual/secure export</span></div>
+        <div class="stage-content">
+          <div class="stage-summary"><div class="summary-item"><span>Primary actors</span><strong>Project admin + PRC</strong></div><div class="summary-item"><span>Touchpoints</span><strong>Admin view, export, secure transfer</strong></div><div class="summary-item"><span>Emotional state</span><strong>Waiting / operational focus</strong></div><div class="summary-item"><span>Exit state</span><strong>PRC received or needs attention</strong></div></div>
+          <div class="lanes">
+            <div class="lane sponsor"><h4><span class="dot sponsor"></span>Sponsor</h4><ul><li>Sees high-level “submitted” or “needs attention.”</li><li>Does not see beneficiary fields or PRC notes.</li></ul></div>
+            <div class="lane beneficiary"><h4><span class="dot beneficiary"></span>Beneficiary</h4><ul><li>Receives reference and next-step expectations.</li><li>Provides corrections through approved route.</li></ul></div>
+            <div class="lane system"><h4><span class="dot system"></span>Platform</h4><ul><li>Displays only approved operational fields.</li><li>Persists real data only in PRC-controlled or formally approved storage; otherwise uses synthetic data.</li><li>Creates export/handoff manifest and audit event.</li><li>Tracks status without becoming the official record.</li></ul></div>
+            <div class="lane admin"><h4><span class="dot admin"></span>Project admin</h4><ul><li>Checks required fields and reference matches.</li><li>Exports in PRC-approved column order.</li><li>Transfers through approved secure method.</li><li>Logs PRC receipt and exceptions.</li></ul></div>
+            <div class="lane prc"><h4><span class="dot prc"></span>PRC</h4><ul><li>Receives and stores official registration/payment records.</li><li>Accepts, rejects, or asks for correction.</li><li>Returns authoritative membership status.</li></ul></div>
+          </div>
+          <div class="stage-analysis"><div class="analysis-card pain"><h4>Pain points</h4><ul><li>No direct PRC API in Iteration 01.</li><li>CSV/manual transfer risks delay and version mismatch.</li><li>Platform and PRC statuses may diverge.</li></ul></div><div class="analysis-card opportunity"><h4>Design opportunities</h4><ul><li>Use an immutable handoff batch ID.</li><li>Show status owner and last-updated time.</li><li>Separate validation failure from PRC rejection.</li></ul></div><div class="analysis-card recovery"><h4>Recovery</h4><ul><li>Rejected records enter “needs attention” with a safe correction request.</li><li>Duplicate batch detection prevents repeated handoff.</li><li>Mismatch report goes to PRC liaison.</li></ul></div></div>
+          <div class="requirements"><div class="req-card"><h4>Requirements and controls</h4><p>Approved data map and storage owner; controller/processor roles; PRC-controlled or explicitly approved real-data persistence; retention/deletion; role-based security; individual admin credentials; batch reference; secure transfer; access removal at handover; auditable source-of-truth rule.</p></div><div class="req-card"><h4>Success evidence</h4><p class="metric">≥95% clean handoffs</p><p>Every exported record is either acknowledged by PRC or assigned a named next action; no unauthorized data exposure.</p></div></div>
+        </div>
+      </article>
+
+      <article class="stage-card" id="stage-7">
+        <div class="stage-head"><div class="stage-id">07</div><div><h3>Membership verification and confirmation</h3><p>Deliver durable proof and close the loop for both parties without exposing sensitive data.</p></div><span class="scope-tag">Committed MVP · verification method open</span></div>
+        <div class="stage-content">
+          <div class="stage-summary"><div class="summary-item"><span>Primary actor</span><strong>Beneficiary</strong></div><div class="summary-item"><span>Touchpoints</span><strong>Confirmation page + PRC message</strong></div><div class="summary-item"><span>Emotional state</span><strong>Impatient → relieved</strong></div><div class="summary-item"><span>Exit state</span><strong>Verified member with proof</strong></div></div>
+          <div class="lanes">
+            <div class="lane sponsor"><h4><span class="dot sponsor"></span>Sponsor</h4><ul><li>Sees “completed” and payment receipt status.</li><li>Receives no Safe Card ID, health, or claims details unless explicitly authorized and necessary.</li></ul></div>
+            <div class="lane beneficiary"><h4><span class="dot beneficiary"></span>Beneficiary</h4><ul><li>Receives official membership confirmation.</li><li>Saves Safe Card ID and effective date.</li><li>Checks name/details and correction route.</li><li>Saves claims and emergency contacts.</li></ul></div>
+            <div class="lane system"><h4><span class="dot system"></span>Platform</h4><ul><li>Distinguishes platform submission from PRC verification.</li><li>Displays last-updated source and next action.</li><li>Provides printable/savable claims card.</li><li>May send SMS only if approved and in scope.</li></ul></div>
+            <div class="lane admin"><h4><span class="dot admin"></span>Project admin</h4><ul><li>Closes only after PRC verification evidence.</li><li>Handles missing platform notice.</li><li>Escalates missing official confirmation to PRC.</li></ul></div>
+            <div class="lane prc"><h4><span class="dot prc"></span>PRC</h4><ul><li>Issues authoritative Safe Card ID/effective date.</li><li>Owns activation and correction decisions.</li><li>Provides official support channels.</li></ul></div>
+          </div>
+          <div class="stage-analysis"><div class="analysis-card pain"><h4>Pain points</h4><ul><li>Processing time is not yet approved.</li><li>Platform reference may be mistaken for membership ID.</li><li>SMS delivery may fail or be out of scope.</li></ul></div><div class="analysis-card opportunity"><h4>Design opportunities</h4><ul><li>Use distinct visual labels for “submitted” and “active.”</li><li>Offer screenshot/print and resend options.</li><li>Show who owns the next action.</li></ul></div><div class="analysis-card recovery"><h4>Recovery</h4><ul><li>No promised turnaround until PRC approves one.</li><li>Missing confirmation creates a tracked escalation.</li><li>Wrong details route to official correction—not local edit.</li></ul></div></div>
+          <div class="requirements"><div class="req-card"><h4>Requirements and controls</h4><p>Authoritative status source; clear platform vs. PRC reference; minimal sponsor-visible status; optional SMS decision; resend/accessibility alternatives; correction/escalation route; no unsupported “insured” or “activated” language.</p></div><div class="req-card"><h4>Success evidence</h4><p class="metric">≥70% completion in 7 days</p><p>Target applies only after PRC confirms the operational baseline. Beneficiary can locate proof and official contacts without help.</p></div></div>
+        </div>
+      </article>
+
+      <article class="stage-card" id="stage-8">
+        <div class="stage-head"><div class="stage-id">08</div><div><h3>Membership use and claims readiness</h3><p>Ensure the beneficiary knows what to do in an emergency or after an incident.</p></div><span class="scope-tag">Education in MVP · claims handling by PRC</span></div>
+        <div class="stage-content">
+          <div class="stage-summary"><div class="summary-item"><span>Primary actor</span><strong>Beneficiary/member</strong></div><div class="summary-item"><span>Touchpoints</span><strong>Saved guide + Hotline 143 + PRC claims</strong></div><div class="summary-item"><span>Emotional state</span><strong>Stressed → directed</strong></div><div class="summary-item"><span>Exit state</span><strong>PRC claim/support underway</strong></div></div>
+          <div class="lanes">
+            <div class="lane sponsor"><h4><span class="dot sponsor"></span>Sponsor</h4><ul><li>May remind the member where official contacts are.</li><li>Does not receive claim status or medical details.</li></ul></div>
+            <div class="lane beneficiary"><h4><span class="dot beneficiary"></span>Beneficiary</h4><ul><li>For accident-related ambulance/blood emergency, calls 143 with member details.</li><li>Reports incident to PRC within 30 days.</li><li>Submits required documents within 60 days.</li><li>Uses PRC claims contacts for current requirements.</li></ul></div>
+            <div class="lane system"><h4><span class="dot system"></span>Platform</h4><ul><li>Shows approved emergency/claims guide.</li><li>Keeps source and review date visible.</li><li>Deep-links or calls official contacts.</li><li>Does not adjudicate or collect claim details.</li></ul></div>
+            <div class="lane admin"><h4><span class="dot admin"></span>Project admin</h4><ul><li>Supports access to the guide.</li><li>Immediately escalates benefit or claim questions to PRC.</li><li>Does not promise eligibility or outcome.</li></ul></div>
+            <div class="lane prc"><h4><span class="dot prc"></span>PRC</h4><ul><li>Provides emergency service and official claims instructions.</li><li>Receives documents.</li><li>Decides eligibility and claim outcome.</li></ul></div>
+          </div>
+          <div class="stage-analysis"><div class="analysis-card pain"><h4>Pain points</h4><ul><li>High stress and little time during an emergency.</li><li>Member may not remember ID/effective date.</li><li>Detailed deadlines currently need final PRC confirmation.</li></ul></div><div class="analysis-card opportunity"><h4>Design opportunities</h4><ul><li>Create a one-screen offline-friendly emergency card.</li><li>Use “Call 143” as the primary emergency action.</li><li>Explain 30/60-day deadlines in simple timeline form.</li></ul></div><div class="analysis-card recovery"><h4>Recovery</h4><ul><li>If the platform is unavailable, saved/printed PRC contacts remain usable.</li><li>Outdated content displays a warning and directs to PRC.</li><li>Claims disputes bypass project admin decision-making.</li></ul></div></div>
+          <div class="requirements"><div class="req-card"><h4>Requirements and controls</h4><p>PRC-approved Hotline 143 wording; 30-day notice and 60-day documents guidance; official claims contacts; offline/screenshot format; no medical/claims collection; content expiry/review alert; clear disclaimer that PRC controls decisions.</p></div><div class="req-card"><h4>Success evidence</h4><p class="metric">First action identified</p><p>In testing, members can state who to contact, what information to keep, and the two time limits without asking the sponsor.</p></div></div>
+        </div>
+      </article>
+
+      <article class="stage-card" id="stage-9">
+        <div class="stage-head"><div class="stage-id">09</div><div><h3>Renewal and responsible recognition</h3><p>Support continuity without pressuring beneficiaries or turning people into public metrics.</p></div><span class="scope-tag future">Deferred / future option</span></div>
+        <div class="stage-content">
+          <div class="stage-summary"><div class="summary-item"><span>Primary actors</span><strong>Beneficiary + sponsor</strong></div><div class="summary-item"><span>Touchpoints</span><strong>Private reminder and renewal handoff</strong></div><div class="summary-item"><span>Emotional state</span><strong>Reflective / willing</strong></div><div class="summary-item"><span>Exit state</span><strong>Renewed, declined, or expired</strong></div></div>
+          <div class="lanes">
+            <div class="lane sponsor"><h4><span class="dot sponsor"></span>Sponsor</h4><ul><li>Receives a private reminder if appropriate.</li><li>Can offer another sponsorship without obligation.</li><li>May receive a private service milestone.</li></ul></div>
+            <div class="lane beneficiary"><h4><span class="dot beneficiary"></span>Beneficiary</h4><ul><li>Reviews updated terms and price.</li><li>Decides again; prior agreement is not assumed.</li><li>Can renew through official process or decline.</li></ul></div>
+            <div class="lane system"><h4><span class="dot system"></span>Platform</h4><ul><li>Uses opt-in, non-sensitive reminders.</li><li>Does not publicly rank recipients or disclose names.</li><li>Revalidates content before renewal.</li></ul></div>
+            <div class="lane admin"><h4><span class="dot admin"></span>Project admin</h4><ul><li>Monitors aggregate renewal interest.</li><li>Handles reminder preferences.</li><li>Escalates official renewal questions.</li></ul></div>
+            <div class="lane prc"><h4><span class="dot prc"></span>PRC</h4><ul><li>Confirms renewal eligibility and official terms.</li><li>Records renewed membership.</li></ul></div>
+          </div>
+          <div class="stage-analysis"><div class="analysis-card pain"><h4>Pain points</h4><ul><li>Recognition can become competitive or coercive.</li><li>Contact preferences may change.</li><li>Terms may differ at renewal.</li></ul></div><div class="analysis-card opportunity"><h4>Design opportunities</h4><ul><li>Private recognition based on responsible actions, not volume alone.</li><li>Fresh education and agreement each year.</li><li>Simple opt-out and expiry status.</li></ul></div><div class="analysis-card recovery"><h4>Recovery</h4><ul><li>No reminder without approved basis and preference.</li><li>Decline stops follow-up.</li><li>Expired membership is never displayed as active.</li></ul></div></div>
+          <div class="requirements"><div class="req-card"><h4>Requirements and controls</h4><p>Not in Iteration 01. Before adding: PRC approval, reminder lawful basis, updated-content review, renewal-state model, non-coercive recognition policy, and clear opt-out.</p></div><div class="req-card"><h4>Future success evidence</h4><p class="metric">Responsible return, no pressure</p><p>Measure learning, renewal, or referral return while auditing for complaints, unwanted reminders, and privacy leakage.</p></div></div>
+        </div>
+      </article>
+    </section>
+
+    <section id="blueprint" aria-labelledby="blueprint-title">
+      <p class="eyebrow">Cross-functional view</p>
+      <h2 id="blueprint-title">MVP service blueprint</h2>
+      <p class="section-intro">This condensed blueprint makes ownership visible across the core MVP path. It is intentionally more conservative than the supplied future-state journey reference.</p>
+      <div class="blueprint-wrap" tabindex="0" aria-label="Scrollable service blueprint table">
+        <table>
+          <thead><tr><th>Layer</th><th>Discover / invite</th><th>Learn / decide</th><th>Agree / apply</th><th>Pay / reconcile</th><th>Handoff / confirm</th></tr></thead>
+          <tbody>
+            <tr><td>Beneficiary evidence</td><td>Trusted sender, official context, voluntary wording</td><td>Benefits, limits, sources, language choice</td><td>Privacy notice, agreement, review, reference</td><td>Who pays, official channel, payment status</td><td>PRC confirmation, Safe Card ID, effective date, support</td></tr>
+            <tr><td>Frontstage platform</td><td>Landing page, QR/link attribution, general fallback</td><td>Storyboard, FAQ, comprehension check</td><td>Validated form, review, success/error states</td><td>External official-payment handoff; conditional integration</td><td>Status page backed by PRC-controlled/approved data, minimal sponsor view, claims-readiness guide</td></tr>
+            <tr><td>Project admin</td><td>Issue/deactivate pilot referrals; support navigation</td><td>Maintain approved content; escalate program questions</td><td>Technical support; enforce privacy gate</td><td>Reconcile approved evidence; escalate disputes</td><td>Secure export/handoff; record PRC response; close exceptions</td></tr>
+            <tr><td>PRC responsibility</td><td>Approve brand, claims, and campaign framing</td><td>Approve benefits, exclusions, translations, contacts</td><td>Approve fields, notice/lawful basis, and data flow</td><td>Own payment channel, receipt, refund policy</td><td>Store official data; verify membership; decide claims</td></tr>
+            <tr><td>Data created</td><td>Referral slug; aggregate page events</td><td>Aggregate learning/comprehension event</td><td>Approved application fields, notice version, agreement evidence, reference—stored by PRC under the approved design</td><td>Payment reference/status only as approved and stored by PRC</td><td>Handoff batch/status; PRC verification reference; minimum audit trail</td></tr>
+            <tr><td>Primary control</td><td>No enrollment from a scan</td><td>No unsupported or undated benefit claim</td><td>No real data before privacy approval</td><td>No non-PRC payment destination</td><td>PRC record is authoritative</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="edge-cases" aria-labelledby="edge-title">
+      <p class="eyebrow">Resilience</p>
+      <h2 id="edge-title">Critical edge cases and recovery paths</h2>
+      <div class="edge-grid">
+        <article class="edge-card"><h3>Beneficiary declines</h3><p><strong>Response:</strong> close the invitation privately, stop reminders, do not collect registration data, and apply the approved cancellation/refund rule if money was already sent.</p></article>
+        <article class="edge-card"><h3>Sponsor assists too early</h3><p><strong>Response:</strong> block data entry until the beneficiary receives the notice and records agreement; remind both parties that assistance does not transfer decision-making.</p></article>
+        <article class="edge-card"><h3>Invalid or shared referral link</h3><p><strong>Response:</strong> load the general landing page without attribution, explain the issue, and allow legitimacy verification; never guess the intended sponsor.</p></article>
+        <article class="edge-card"><h3>Form fails on weak connectivity</h3><p><strong>Response:</strong> preserve unsent values locally, show a plain-language retry, prevent duplicates, and offer an approved offline or in-person route.</p></article>
+        <article class="edge-card"><h3>Payment succeeds but callback fails</h3><p><strong>Response:</strong> remain “pending verification,” retain the official reference, avoid a second charge, and reconcile with PRC before marking paid.</p></article>
+        <article class="edge-card"><h3>Payment made with wrong reference</h3><p><strong>Response:</strong> do not manually reassign without authorization; create a tracked PRC payment escalation and keep both users informed at a high level.</p></article>
+        <article class="edge-card"><h3>PRC rejects or requests correction</h3><p><strong>Response:</strong> use “needs attention,” state the next action without exposing internal notes to the sponsor, and send the beneficiary through an approved correction path.</p></article>
+        <article class="edge-card"><h3>Privacy approval is incomplete</h3><p><strong>Response:</strong> run the pilot using synthetic/test data only. Real applicant intake remains disabled until the privacy gate is formally cleared.</p></article>
+        <article class="edge-card"><h3>Content becomes stale</h3><p><strong>Response:</strong> expire or unpublish the affected claim, direct users to PRC, obtain a new review/approval, and preserve the audit history.</p></article>
+        <article class="edge-card"><h3>Emergency or claims question</h3><p><strong>Response:</strong> show Hotline 143 and official PRC claims routes. The project admin may help the user find the route but must not decide eligibility or outcome.</p></article>
+      </div>
+    </section>
+
+    <section aria-labelledby="measure-title">
+      <p class="eyebrow">Pilot scorecard</p>
+      <h2 id="measure-title">Measures attached to the journey</h2>
+      <div class="measure-grid">
+        <article class="measure"><span class="value">≥80%</span><strong>Understanding</strong><p>Users answer at least four of five comprehension questions correctly after the learning flow.</p></article>
+        <article class="measure"><span class="value">&lt;5 min</span><strong>Sponsor effort</strong><p>Median sponsor setup time, excluding external payment or official processing.</p></article>
+        <article class="measure"><span class="value">&lt;10 min</span><strong>Beneficiary effort</strong><p>Median education, agreement, and intake time, excluding official processing.</p></article>
+        <article class="measure"><span class="value">100%</span><strong>Agreement evidence</strong><p>Completed intake records include approved agreement evidence or documented lawful basis.</p></article>
+        <article class="measure"><span class="value">≥95%</span><strong>Reliable actions</strong><p>Platform actions complete without unhandled error; failure always exposes a recovery path.</p></article>
+        <article class="measure"><span class="value">30</span><strong>Verified memberships</strong><p>Proposed school-pilot target after baselines and PRC processing assumptions are confirmed.</p></article>
+        <article class="measure"><span class="value">0</span><strong>Unsupported claims</strong><p>No known unapproved benefit, eligibility, timing, or integration claims at launch.</p></article>
+        <article class="measure"><span class="value">0</span><strong>Public recipient exposure</strong><p>No public beneficiary identities, health/claims data, or recipient-ranking mechanics.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      <section aria-labelledby="source-title"><h2 id="source-title">Source basis</h2><ul><li>Safe Card Project Vision, Goals and Objectives, reviewed 4 September 2026.</li><li>Supplied SafeCard MVP Sprint Backlog artifact and MVP scope slides, reviewed 4 September 2026.</li><li>Supplied User Personas & Journey Maps artifact, used as an unvalidated discovery reference.</li><li><a href="https://redcross.org.ph/membership/">Philippine Red Cross membership information</a>, reviewed 4 September 2026.</li><li><a href="https://redcross.org.ph/2026/01/26/ph-red-cross-safe-card-launch-and-press-con-in-cebu-draws-in-prominent-leaders-and-heads/">PRC Safe Card launch and annual-fee reference</a>, reviewed 4 September 2026.</li><li><a href="https://www.redcrossisabela.online/MAAB_Registration.php">PRC Isabela MAAB benefit schedule</a>, reviewed 4 September 2026.</li><li><a href="https://www.pep.ph/pepalerts/fyi/190834/philippine-red-cross-safe-card-a717-20260206">PRC-attributed claims and exclusions explainer</a>, secondary and provisional pending national PRC confirmation; reviewed 4 September 2026.</li><li><a href="https://privacy.gov.ph/wp-content/uploads/2023/11/NPC-Circular-No.-2023-04_Guidelines-on-Consent_07Nov2023.pdf">National Privacy Commission Guidelines on Consent</a>, reviewed 4 September 2026.</li></ul></section>
+      <section aria-labelledby="gov-title"><h2 id="gov-title">Governance note</h2><p>This journey is an internal design and planning artifact. It does not authorize collection of real applicant data, payment processing, use of PRC identity, or public claims about benefits. Every production change requires PRC approval. Detailed claims and exclusions must be replaced or confirmed against controlling PRC terms before release.</p><p><a href="client-personas.html">Open the client personas →</a></p></section>
+    </div>
+  </footer>
+</body>
+</html>

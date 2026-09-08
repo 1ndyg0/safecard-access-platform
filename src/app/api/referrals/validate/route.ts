@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       valid: true,
+      referralLinkId: result.referralLinkId,
       campaignId: result.campaignId,
       sponsorDisplayName: result.sponsorDisplayName,
     });

@@ -49,6 +49,18 @@ The database lint/reset checks require the local Supabase stack to be running. A
 - `src/app/api/support` and `src/app/api/notifications`: categorized support/privacy requests and consented in-app events. No SMS provider is claimed in R1.
 - `supabase/migrations`: enums, relational model, immutable logs/exports, state-supporting constraints, RLS documentation, BFF grants, durable jobs, rate limiting, and metrics.
 
+## Product routes
+
+- Public education: `/`, `/benefits`, `/privacy`, `/help`
+- Consent-first application: `/apply` (legacy step URLs redirect here so they cannot bypass the gated flow)
+- Member access: `/member`, `/member/card`, `/member/status`
+- Ambassador access: `/ambassador/login`, `/ambassador`, `/ambassador/share`, `/r/[slug]`
+- Staff access: `/admin/login`, `/admin`, `/admin/submissions`, `/admin/submissions/[id]`, `/admin/export`
+
+Member access deliberately uses application reference plus registered mobile number without SMS OTP. Successful matching creates a signed, HTTP-only, 30-minute session; no bearer token or personal data is stored in browser storage. Staff and ambassador access uses Supabase email/password. Cost-bearing SMS, email delivery, payment providers, and direct PRC integrations are parked.
+
+See [`docs/implementation-status.md`](docs/implementation-status.md) for the requirements-to-build coverage and the exact items that still require governance, an external provider, or additional implementation.
+
 ## Deployment gates
 
 Keep `LAUNCH_GATES_COMPLETE=false` until product scope, PRC content, privacy/legal review, security review, support ownership, staff training, operational handoff, monitoring, backup/restore, UAT, and production readiness have documented approval. Configuration is an enforcement switch, not evidence that those approvals occurred.

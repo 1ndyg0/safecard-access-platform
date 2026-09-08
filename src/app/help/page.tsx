@@ -1,0 +1,6 @@
+import Link from "next/link";
+import { BrandMark } from "@/components/BrandMark";
+
+export default function HelpPage() {
+  return <main className="content-page"><header className="content-nav"><Link href="/"><BrandMark /></Link><Link href="/privacy">Privacy</Link></header><article className="content-shell"><p className="eyebrow">Independent help</p><h1>Ask before you decide.</h1><p className="content-lede">Questions about official benefits, eligibility, activation, or claims belong with Philippine Red Cross—not an ambassador, payer, school, or the SafeCard platform.</p><div className="help-callout"><span>Philippine Red Cross</span><strong>Hotline 143</strong><a className="button-primary" href="tel:143">Call 143</a></div><section className="content-section"><h2>What the platform can help with</h2><p>Application navigation, privacy rights, reference-number access, correction workflow, and technical problems. The platform cannot guarantee acceptance, activate a membership, or approve a claim.</p></section><div className="wizard-actions"><Link href="/apply" className="button-quiet">Return to the private decision flow</Link><Link href="/" className="button-quiet">Leave safely</Link></div></article></main>;
+}

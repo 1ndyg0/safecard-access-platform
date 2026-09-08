@@ -1,8 +1,4 @@
 {
-  "crons": [
-    {
-      "path": "/api/jobs/cron",
-      "schedule": "*/15 * * * *"
-    }
-  ]
+  "framework": "nextjs",
+  "regions": ["sin1"]
 }

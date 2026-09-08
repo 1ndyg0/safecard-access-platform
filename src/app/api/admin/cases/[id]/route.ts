@@ -1,0 +1,21 @@
+import { NextResponse } from "next/server";
+import { requireStaffAuth } from "@/lib/auth/session";
+import { requireAnyRole } from "@/lib/auth/permissions";
+import { getSupabaseAdminClient } from "@/lib/db/client";
+
+export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    const auth = await requireStaffAuth();
+    const { id } = await context.params;
+    const admin = getSupabaseAdminClient();
+    const { data: caseRecord } = await admin.from("recipient_cases").select("*").eq("id", id).single();
+    if (!caseRecord) return NextResponse.json({ error: "Case not found." }, { status: 404 });
+    const access = await requireAnyRole(auth.userId, ["privacy_admin_owner", "school_admin", "prc_liaison"], caseRecord.campaign_id);
+    if (!access.allowed) return NextResponse.json({ error: "Permission denied." }, { status: 403 });
+    const { data: profile } = await admin.from("recipient_profiles").select("first_name,middle_name,last_name,date_of_birth,sex,address_line1,address_line2,city,province,zip_code,mobile_number,email,fields_completed,updated_at").eq("case_id", id).maybeSingle();
+    const { data: payments } = await admin.from("payment_intents").select("id,expected_amount,payment_route,payment_state,payment_reference,created_at,updated_at").eq("case_id", id).order("created_at", { ascending: false });
+    return NextResponse.json({ case: caseRecord, profile, payments: payments ?? [] }, { headers: { "Cache-Control": "private, no-store" } });
+  } catch {
+    return NextResponse.json({ error: "Staff authentication required." }, { status: 401 });
+  }
+}
