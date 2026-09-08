@@ -1,0 +1,32 @@
+[project]
+id = ""
+# Fill in your Supabase project ID
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/**"]
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[auth.external.phone]
+enabled = false
+# Enable when SMS provider is approved
+
+[auth.anonymous]
+enabled = true
+# Low-friction recipient sessions on shared phones

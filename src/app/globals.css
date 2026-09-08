@@ -1,26 +1,232 @@
 @import "tailwindcss";
 
+/* ============================================================
+   SafeCard Design Tokens
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand */
+  --red: #C8102E;
+  --red-dark: #9B0C22;
+  --red-dim: rgba(200, 16, 46, 0.08);
+  --navy: #0F1B2D;
+  --amber: #D97706;
+  --amber-dim: rgba(217, 119, 6, 0.08);
+  --green: #0D7C56;
+  --green-dim: rgba(13, 124, 86, 0.08);
+  --blue: #2563EB;
+  --blue-dim: rgba(37, 99, 235, 0.08);
+  --violet: #7C3AED;
+
+  /* Surfaces */
+  --bg: #F5F6F8;
+  --surface: #FFFFFF;
+  --surface2: #EDEEF2;
+  --border: #E1E4EA;
+
+  /* Text */
+  --text: #1A1F36;
+  --text2: #4E5A6E;
+  --text3: #8892A8;
+
+  /* System */
+  --background: var(--bg);
+  --foreground: var(--text);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #080E1A;
+    --surface: #0E1824;
+    --surface2: #162030;
+    --border: #1E2E44;
+    --text: #E4EAF4;
+    --text2: #8FA4C0;
+    --text3: #4A6080;
+    --red-dim: rgba(200, 16, 46, 0.14);
+    --amber-dim: rgba(217, 119, 6, 0.14);
+    --green-dim: rgba(13, 124, 86, 0.14);
+    --blue-dim: rgba(37, 99, 235, 0.12);
+    --background: var(--bg);
+    --foreground: var(--text);
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-jakarta);
+  --font-sans: var(--font-dm-sans);
+  --font-mono: var(--font-ibm-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-dm-sans, 'DM Sans', system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   SafeCard Utility Classes
+   ============================================================ */
+
+.sc-surface {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.sc-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--red);
+  color: #fff;
+  font-family: var(--font-jakarta, 'Plus Jakarta Sans', sans-serif);
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 14px 24px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s;
+  text-decoration: none;
+  min-height: 48px;
+}
+
+.sc-btn-primary:hover { background: var(--red-dark); }
+.sc-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sc-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-jakarta, 'Plus Jakarta Sans', sans-serif);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 14px 24px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  text-decoration: none;
+  min-height: 48px;
+}
+
+.sc-btn-outline:hover {
+  border-color: var(--text3);
+  background: var(--surface2);
+}
+
+.sc-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.12s;
+  outline: none;
+  min-height: 48px;
+}
+
+.sc-input:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-dim);
+}
+
+.sc-input.error {
+  border-color: var(--red);
+}
+
+.sc-label {
+  display: block;
+  font-family: var(--font-jakarta, 'Plus Jakarta Sans', sans-serif);
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+
+.sc-error {
+  font-size: 0.72rem;
+  color: var(--red);
+  margin-top: 4px;
+}
+
+.sc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-family: var(--font-jakarta, 'Plus Jakarta Sans', sans-serif);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sc-badge.active { background: var(--green-dim); color: var(--green); }
+.sc-badge.pending { background: var(--amber-dim); color: var(--amber); }
+.sc-badge.expired { background: rgba(99,99,99,0.1); color: var(--text3); }
+.sc-badge.review { background: var(--blue-dim); color: var(--blue); }
+
+/* Progress bar */
+.sc-progress {
+  height: 3px;
+  background: var(--surface2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.sc-progress-fill {
+  height: 100%;
+  background: var(--red);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+/* Card ID */
+.sc-id-card {
+  background: linear-gradient(135deg, #0F1B2D 0%, #1a2f4a 50%, #0F1B2D 100%);
+  border-radius: 16px;
+  padding: 24px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(15,27,45,0.4);
+}
+
+.sc-id-card::before {
+  content: '+';
+  position: absolute;
+  right: -20px;
+  top: -20px;
+  font-size: 200px;
+  font-weight: 900;
+  color: rgba(200,16,46,0.08);
+  line-height: 1;
+  pointer-events: none;
+  font-family: var(--font-jakarta, 'Plus Jakarta Sans', sans-serif);
+}
+
+/* Mono reference number */
+.sc-ref {
+  font-family: var(--font-ibm-mono, 'IBM Plex Mono', monospace);
+  font-size: 1.1rem;
+  font-weight: 500;
+  background: var(--red-dim);
+  color: var(--red);
+  padding: 12px 20px;
+  border-radius: 8px;
+  display: inline-block;
+  letter-spacing: 0.05em;
 }
