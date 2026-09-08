@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test tests/e2e/smoke.spec.ts",
-    "verify": "npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e:smoke"
+    "test:e2e:happy-path": "playwright test tests/e2e/application-happy-path.spec.ts",
+    "verify": "npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e:smoke && npm run test:e2e:happy-path"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
