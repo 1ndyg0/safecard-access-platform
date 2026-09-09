@@ -510,3 +510,43 @@ button.button-primary, button.button-quiet { border: 0; cursor: pointer; }
   .content-section h2,
   .metric-grid strong { color: var(--text); }
 }
+
+/* ============================================================
+   Application review and member corrections
+   ============================================================ */
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%);
+  white-space: nowrap; border: 0;
+}
+
+.status-table th { width: 45%; color: var(--text3); font-size: .7rem; text-transform: uppercase; }
+.status-table td { color: var(--navy); font-weight: 700; text-transform: capitalize; }
+
+.correction-form .field-block { margin-bottom: 14px; }
+.field-error { margin: 5px 0 0; color: var(--red); font-size: .72rem; }
+
+.checkbox-row { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; }
+/* 44px minimum touch target on a shared phone. */
+.checkbox-row input { width: 24px; height: 24px; min-width: 24px; margin-top: 2px; flex: none; }
+.checkbox-row label { font-size: .84rem; line-height: 1.5; }
+
+.link-button {
+  padding: 8px 2px; min-height: 44px; border: 0; background: transparent;
+  color: var(--red); font: 700 .8rem/1 var(--font-jakarta);
+  text-decoration: underline; cursor: pointer;
+}
+
+.review-decision { display: grid; gap: 12px; margin-top: 14px; }
+.review-decision textarea {
+  width: 100%; min-height: 96px; padding: 11px 13px; border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); background: var(--surface); resize: vertical;
+}
+.decision-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.decision-actions button { min-height: 44px; }
+
+@media (max-width: 720px) {
+  .status-table th, .status-table td { white-space: normal; }
+  .decision-actions button { width: 100%; }
+}
