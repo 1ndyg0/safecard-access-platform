@@ -50,13 +50,37 @@ export interface SeededWorld {
 }
 
 /**
+ * Project refs that must never be seeded, whatever the environment says.
+ *
+ * This seed truncates every table listed in TABLES_TO_CLEAR. Pointing it
+ * at the project the application is actually wired to would destroy that
+ * data with no prompt and no undo. The ref below is the one named in
+ * .codex/config.toml, so it is exactly the value someone is most likely
+ * to paste in while trying to get the suite running.
+ *
+ * E2E_ALLOW_REMOTE deliberately does NOT override this list.
+ */
+const NEVER_SEED_PROJECT_REFS = ['ajyhlkzbocjeepglkhrl'];
+
+/**
  * Refuse to seed anything that is not obviously disposable.
  *
  * Truncating tables is not something to do against a URL that merely
  * happens to be configured. A hosted project must opt in explicitly by
- * setting E2E_ALLOW_REMOTE=1 on a branch database.
+ * setting E2E_ALLOW_REMOTE=1, and only for a branch database.
  */
 function assertDisposableTarget(url: string): void {
+  for (const ref of NEVER_SEED_PROJECT_REFS) {
+    if (url.includes(ref)) {
+      throw new Error(
+        `Refusing to seed project ${ref}. This is the database the application is ` +
+          'configured against, and the seed truncates every table. Create a Supabase ' +
+          'branch and point E2E_SUPABASE_URL at that instead. E2E_ALLOW_REMOTE does ' +
+          'not override this.',
+      );
+    }
+  }
+
   const isLocal =
     url.includes('127.0.0.1') || url.includes('localhost') || url.includes('kong:8000');
   if (isLocal) return;

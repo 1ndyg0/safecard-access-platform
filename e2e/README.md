@@ -42,3 +42,9 @@ Set `E2E_ALLOW_REMOTE=1` alongside `E2E_SUPABASE_URL`. Only ever point
 this at a Supabase **branch** database. The seed truncates every table
 listed in `fixtures/seed.ts` before it inserts, and there is no
 confirmation prompt.
+
+`ajyhlkzbocjeepglkhrl` — the project named in `.codex/config.toml`, which
+this application is actually configured against — is on a hard denylist
+in `fixtures/seed.ts`. `E2E_ALLOW_REMOTE` does not override it. If the
+app is ever repointed at a different project, update
+`NEVER_SEED_PROJECT_REFS`; a unit test fails until you do.
