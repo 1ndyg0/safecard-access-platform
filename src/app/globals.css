@@ -571,3 +571,62 @@ button.button-primary, button.button-quiet { border: 0; cursor: pointer; }
   .content-section h2,
   .metric-grid strong { color: var(--text); }
 }
+
+/* ============================================================
+   Benefit storyboard — additions on top of the payment/storyboards
+   presentation layer. The header, indicator and panel transition are
+   defined above and intentionally not restyled here.
+   ============================================================ */
+
+/* The header is a button inside a heading; the heading must not add
+   its own type scale on top of the button's. */
+.story-heading { margin: 0; font: inherit; }
+
+.storyboard-progress {
+  margin: 0 0 10px;
+  color: var(--text2);
+  font: 750 .74rem/1 var(--font-jakarta);
+}
+
+.story-card.read { border-color: rgba(13,124,86,.45); }
+
+.story-persona { margin-top: 0 !important; color: var(--text); }
+
+.story-hotline-note { color: var(--text2); font-size: .78rem; }
+
+.story-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.story-actions .hotline-action { margin-top: 0; }
+.story-read-action {
+  /* Matches the hotline action so the pair reads as one control group. */
+  min-height: 44px;
+  padding: 10px 14px;
+  font: 750 .78rem/1 var(--font-jakarta);
+}
+.story-read-action:disabled { color: var(--text2); cursor: default; }
+
+/*
+ * Scoped contrast fix. The shared --text3 token is #8892A8, which is
+ * 3.12:1 on white and below the 4.5:1 AA floor for normal text. It is
+ * used well beyond this component, so the token itself is left alone
+ * and flagged for a design-system review; only the storyboard's own
+ * footnote is corrected here.
+ */
+.benefit-storyboard .content-footnote { color: var(--text2); }
+
+/*
+ * The disclaimer is the line that stops a scenario reading as a promise
+ * about what PRC will pay for, so it is the last text in this component
+ * that should be hard to read. The shared --amber (#D97706) on
+ * --amber-dim (#FCF4EB) measures 2.92:1, well under the 4.5:1 AA floor.
+ *
+ * Scoped override, not a token change: --amber is used across the
+ * product and belongs to the design-system review flagged alongside
+ * --text3. #8A4A06 keeps the warning hue and reaches ~6.4:1 here.
+ */
+.benefit-storyboard .story-disclaimer { color: #8A4A06; }
+
+@media (max-width: 720px) {
+  .story-actions { flex-direction: column; align-items: stretch; }
+  .story-actions .hotline-action,
+  .story-read-action { width: 100%; justify-content: center; }
+}
