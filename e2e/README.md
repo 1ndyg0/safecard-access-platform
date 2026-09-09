@@ -23,7 +23,7 @@ Requires a disposable database. The seed refuses any other target.
 
 ```bash
 npx supabase start
-npx supabase db reset          # applies migrations, including 00010
+npx supabase db reset          # applies migrations, including 00011
 npm run build
 npm run test:e2e:install       # once, downloads Chromium
 E2E_SUPABASE_URL=http://127.0.0.1:54321 \

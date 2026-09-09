@@ -24,7 +24,7 @@ import {
  */
 
 const MIGRATION = readFileSync(
-  join(process.cwd(), 'supabase/migrations/00010_admin_operations_views.sql'),
+  join(process.cwd(), 'supabase/migrations/00011_admin_operations_views.sql'),
   'utf8',
 );
 
