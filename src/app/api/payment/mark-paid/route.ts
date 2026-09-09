@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     if (!access.allowed) throw new Error('Permission denied: payment access required');
     assertSyntheticText(parsed.data_mode, parsed.payment_reference);
 
-    await markPaymentPaid(parsed.payment_intent_id, parsed.payment_reference);
+    await markPaymentPaid(parsed.payment_intent_id, parsed.payment_reference, parsed.payer_declaration);
 
     return success({
       marked: true,

@@ -43,6 +43,10 @@ export async function GET(request: NextRequest) {
     const paymentState = paymentFilterSchema.optional().parse(request.nextUrl.searchParams.get('payment_state') ?? undefined);
     const page = z.coerce.number().int().min(1).parse(request.nextUrl.searchParams.get('page') ?? 1);
     const limit = z.coerce.number().int().min(1).max(100).parse(request.nextUrl.searchParams.get('limit') ?? 25);
+    const search = request.nextUrl.searchParams.get('q')?.trim();
+    const sort = z.enum(['newest', 'oldest', 'longest_waiting']).catch('newest').parse(request.nextUrl.searchParams.get('sort') ?? 'newest');
+    const from = request.nextUrl.searchParams.get('from');
+    const to = request.nextUrl.searchParams.get('to');
     const offset = (page - 1) * limit;
 
     const admin = getSupabaseAdminClient();
@@ -58,8 +62,12 @@ export async function GET(request: NextRequest) {
         { count: 'exact' },
       )
       .eq('campaign_id', campaignId)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: sort !== 'newest' })
       .range(offset, offset + limit - 1);
+
+    if (search) query = query.eq('application_ref', search);
+    if (from) query = query.gte('created_at', from);
+    if (to) query = query.lte('created_at', `${to}T23:59:59.999Z`);
 
     if (state) {
       // Generic state filter — search across all state machines

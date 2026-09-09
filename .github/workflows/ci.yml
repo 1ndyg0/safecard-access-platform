@@ -1,0 +1,29 @@
+name: SafeCard verification
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'codex/**']
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://synthetic.supabase.invalid
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: synthetic-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: synthetic-service-role-key
+      LAUNCH_GATES_COMPLETE: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e:smoke

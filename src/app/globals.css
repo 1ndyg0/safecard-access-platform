@@ -27,7 +27,7 @@
   /* Text */
   --text: #1A1F36;
   --text2: #4E5A6E;
-  --text3: #8892A8;
+  --text3: #5E6878;
 
   /* System */
   --background: var(--bg);
@@ -124,11 +124,11 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .programme-card::after { content: "+"; position: absolute; right: 20px; top: 10px; color: rgba(200,16,46,.18); font: 800 9rem/1 var(--font-jakarta); }
 .card-kicker { display: flex; align-items: center; gap: 10px; color: rgba(255,255,255,.54); text-transform: uppercase; letter-spacing: .11em; font: 700 .64rem/1 var(--font-jakarta); }
 .card-kicker span, .control-index { color: #ff879b; font-family: var(--font-ibm-mono); }
-.programme-card > strong { display: block; margin-top: 84px; max-width: 280px; font: 700 clamp(2.3rem, 5vw, 4rem)/1 var(--font-jakarta); letter-spacing: -.055em; }
-.programme-card > p { color: rgba(255,255,255,.65); font: 500 .85rem/1 var(--font-ibm-mono); }
+.programme-card > strong { display: block; margin-top: 84px; margin-bottom: 18px; padding-bottom: 6px; max-width: 280px; font: 700 clamp(2.3rem, 5vw, 4rem)/.92 var(--font-jakarta); letter-spacing: -.055em; }
+.programme-card > p { position: relative; z-index: 1; margin: 0; color: rgba(255,255,255,.65); font: 500 .85rem/1.3 var(--font-ibm-mono); }
 .card-rule { height: 1px; background: rgba(255,255,255,.13); margin: 36px 0 18px; }
 .programme-card small { display: block; max-width: 330px; color: rgba(255,255,255,.52); line-height: 1.55; }
-.control-card { position: absolute; left: -18px; right: 0; bottom: -18px; display: flex; gap: 18px; padding: 21px 24px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 22px 45px rgba(15,27,45,.13); }
+.control-card { position: absolute; left: -18px; right: 0; bottom: -48px; display: flex; gap: 18px; padding: 21px 24px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 22px 45px rgba(15,27,45,.13); }
 .control-card strong { font: 750 .9rem/1.2 var(--font-jakarta); }
 .control-card p { margin: 5px 0 0; color: var(--text2); font-size: .76rem; }
 
@@ -146,11 +146,13 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .process-section { padding: 100px max(24px, calc((100vw - 1180px)/2)); color: white; background: var(--navy); }
 .section-heading.inverse { max-width: 760px; }
 .section-heading.inverse h2 { color: white; }
+.section-heading.inverse > p { color: #ff879b; }
 .process-grid { list-style: none; padding: 0; margin: 60px 0 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: rgba(255,255,255,.12); }
 .process-grid li { min-height: 220px; padding: 26px; background: var(--navy); }
-.process-grid li > span { color: #ff738b; font: 500 .72rem/1 var(--font-ibm-mono); }
-.process-grid h3 { margin: 54px 0 10px; color: white; font: 750 1.05rem/1.2 var(--font-jakarta); }
-.process-grid p { margin: 0; color: rgba(255,255,255,.53); font-size: .76rem; line-height: 1.65; }
+.process-step-heading { display: flex; align-items: baseline; gap: 14px; }
+.process-step-heading > span { flex: 0 0 auto; color: #ff738b; font: 500 .72rem/1 var(--font-ibm-mono); }
+.process-grid h3 { margin: 0; color: white; font: 750 1.05rem/1.2 var(--font-jakarta); }
+.process-grid p { margin: 16px 0 0; color: rgba(255,255,255,.53); font-size: .76rem; line-height: 1.65; }
 .public-footer { width: min(1180px, calc(100% - 48px)); min-height: 120px; margin: auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; color: var(--navy); }
 .public-footer p { color: var(--text3); font-size: .72rem; text-align: center; }
 .public-footer a { justify-self: end; color: var(--red); text-decoration: none; font: 750 .75rem/1 var(--font-jakarta); }
@@ -158,7 +160,7 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .delay-1 { animation-delay: .12s; }
 @keyframes reveal { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; transition-delay: 0ms !important; } }
 @media (max-width: 900px) {
   .public-nav { grid-template-columns: 1fr auto; }
   .public-nav nav { display: none; }
@@ -180,7 +182,7 @@ a, button { -webkit-tap-highlight-color: transparent; }
   .benefit-limit { grid-column: 2; justify-self: start; text-align: left; }
   .process-grid { grid-template-columns: 1fr; }
   .process-grid li { min-height: 170px; }
-  .process-grid h3 { margin-top: 34px; }
+.process-grid h3 { margin-top: 0; }
   .public-footer { grid-template-columns: 1fr; padding: 30px 0; text-align: center; }
   .public-footer > *, .public-footer a { justify-self: center; }
 }
@@ -471,6 +473,62 @@ button.button-primary, button.button-quiet { border: 0; cursor: pointer; }
 .state-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 .state-grid strong { text-transform: capitalize; font-size: .78rem; }
 .payment-row { display: flex; justify-content: space-between; gap: 18px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.evidence-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; width: 100%; padding-top: 8px; color: var(--text2); font-size: .74rem; }
+.queue-controls { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; align-items: center; }
+.queue-controls form { display: flex; gap: 6px; }
+.queue-controls input, .queue-controls select { min-height: 42px; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--surface); font-size: .76rem; }
+.queue-pagination { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 14px; color: var(--text3); font-size: .74rem; }
+
+/* Benefit storyboard and controlled manual-payment experience */
+.benefit-storyboard { display: grid; gap: 12px; margin-top: 28px; }
+.benefit-storyboard.compact { margin-top: 0; }
+.story-card { overflow: hidden; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); transition: border-color 220ms ease, box-shadow 280ms ease, transform 280ms ease; }
+.story-card.open { border-color: var(--red); box-shadow: 0 10px 28px rgba(15,27,45,.08); transform: translateY(-2px); }
+.story-header { display: grid; grid-template-columns: 34px 34px minmax(0, 1fr) 30px; gap: 12px; align-items: center; width: 100%; min-height: 68px; padding: 15px 18px; border: 0; color: var(--text); background: transparent; text-align: left; cursor: pointer; transition: background-color 200ms ease; }
+.story-header:hover, .story-header[aria-expanded="true"] { background: var(--red-dim); }
+.story-number { color: var(--red); font: 600 .7rem/1 var(--font-ibm-mono); }
+.story-icon { font-size: 1.25rem; }
+.story-title { display: grid; gap: 4px; min-width: 0; font: 750 .92rem/1.2 var(--font-jakarta); }
+.story-title small { color: var(--text2); font: 500 .75rem/1.4 var(--font-dm-sans); }
+.story-indicator { position: relative; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: white; background: var(--red); transform: rotate(0deg); transition: transform 300ms cubic-bezier(.22,1,.36,1), background-color 200ms ease; }
+.story-indicator::before, .story-indicator::after { position: absolute; width: 11px; height: 2px; border-radius: 2px; background: currentColor; content: ""; transition: transform 300ms cubic-bezier(.22,1,.36,1), opacity 180ms ease; }
+.story-indicator::after { transform: rotate(90deg); }
+.story-header[aria-expanded="true"] .story-indicator { transform: rotate(180deg); }
+.story-header[aria-expanded="true"] .story-indicator::after { opacity: 0; transform: rotate(0deg); }
+.story-panel-shell { display: grid; grid-template-rows: 0fr; opacity: 0; overflow: hidden; visibility: hidden; transition: grid-template-rows 340ms cubic-bezier(.22,1,.36,1), opacity 220ms ease, visibility 0s linear 340ms; }
+.story-panel-shell.open { grid-template-rows: 1fr; opacity: 1; visibility: visible; transition: grid-template-rows 340ms cubic-bezier(.22,1,.36,1), opacity 260ms ease 60ms, visibility 0s linear 0s; }
+.story-panel { min-height: 0; overflow: hidden; color: var(--text2); font-size: .84rem; line-height: 1.65; transform: translateY(-8px); transition: transform 300ms cubic-bezier(.22,1,.36,1); }
+.story-panel-shell.open .story-panel { transform: translateY(0); }
+.story-panel-content { padding: 0 18px 20px 64px; }
+.story-panel p { margin: 11px 0 0; }
+.story-panel strong { color: var(--text); }
+.story-disclaimer { margin-top: 16px !important; padding: 12px 14px; border-left: 3px solid var(--amber); color: var(--amber); background: var(--amber-dim); font-size: .76rem; }
+.hotline-action { display: inline-flex; align-items: center; min-height: 44px; margin-top: 14px; padding: 10px 14px; border-radius: 8px; color: white; background: var(--red); font: 750 .78rem/1 var(--font-jakarta); text-decoration: none; }
+.content-footnote { color: var(--text3); font-size: .74rem; line-height: 1.55; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+.payment-panel { display: grid; gap: 16px; }
+.payment-panel > h1 { margin: 0; color: var(--navy); font: 780 clamp(2rem, 5vw, 3.4rem)/1 var(--font-jakarta); letter-spacing: -.055em; }
+.payment-panel .wizard-lede { margin: 0; }
+.payment-route-list { display: grid; gap: 10px; margin: 0; padding: 0; border: 0; }
+.payment-route-list legend { margin-bottom: 4px; color: var(--navy); font: 750 .88rem/1.3 var(--font-jakarta); }
+.payment-route { display: flex; gap: 12px; align-items: flex-start; padding: 15px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); cursor: pointer; }
+.payment-route:hover, .payment-route.selected { border-color: var(--red); background: var(--red-dim); }
+.payment-route input { margin-top: 3px; accent-color: var(--red); }
+.payment-route span { display: grid; gap: 4px; min-width: 0; }
+.payment-route small { color: var(--text2); font-size: .76rem; line-height: 1.45; }
+.payment-details { display: grid; gap: 10px; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface2); }
+.payment-details h2 { margin: 0; font: 750 1.1rem/1.2 var(--font-jakarta); }
+.payment-details > p { margin: 0; color: var(--text2); font-size: .8rem; }
+.payment-qr { width: min(300px, 100%); justify-self: center; border-radius: 10px; background: white; }
+.copy-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid var(--border); }
+.copy-row > span:first-child { display: grid; gap: 4px; min-width: 0; }
+.copy-row small { color: var(--text3); font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; }
+.copy-row strong { overflow-wrap: anywhere; font: 600 .82rem/1.3 var(--font-ibm-mono); }
+.copy-row .button-quiet { min-height: 38px; padding: 8px 12px; font-size: .72rem; }
+.upload-field { display: grid; gap: 8px; color: var(--text2); font: 700 .74rem/1.2 var(--font-jakarta); }
+.upload-field input[type="file"] { width: 100%; padding: 10px; border: 1px dashed var(--border); border-radius: 8px; color: var(--text2); background: var(--surface); }
+.receipt-preview { width: min(360px, 100%); max-height: 280px; justify-self: start; object-fit: contain; border: 1px solid var(--border); border-radius: 8px; background: white; }
 
 @media (max-width: 760px) {
   .boundary-grid, .content-grid, .metric-grid { grid-template-columns: 1fr; }
@@ -484,6 +542,9 @@ button.button-primary, button.button-quiet { border: 0; cursor: pointer; }
   .admin-sidebar button { margin: 0 0 0 auto; }
   .admin-content { padding: 28px 18px; }
   .state-grid { grid-template-columns: repeat(2, 1fr); }
+  .story-header { grid-template-columns: 26px 30px minmax(0, 1fr) 28px; padding-inline: 14px; }
+  .story-panel-content { padding-left: 48px; padding-right: 14px; }
+  .payment-panel > h1 { font-size: 2.2rem; }
 }
 
 @media print {
@@ -512,72 +573,60 @@ button.button-primary, button.button-quiet { border: 0; cursor: pointer; }
 }
 
 /* ============================================================
-   Benefit storyboard
+   Benefit storyboard — additions on top of the payment/storyboards
+   presentation layer. The header, indicator and panel transition are
+   defined above and intentionally not restyled here.
    ============================================================ */
 
-.benefit-storyboard { display: grid; gap: 12px; margin: 24px 0; }
-
-.storyboard-provenance { margin: 0; color: var(--text2); font-size: .72rem; }
-.storyboard-provenance[data-provenance="approved"] { color: #0d7c56; }
-.storyboard-progress { margin: 0 0 6px; color: var(--text2); font-size: .74rem; font-weight: 700; }
-
-.story-card { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
-.story-card.read { border-color: rgba(13,124,86,.45); }
+/* The header is a button inside a heading; the heading must not add
+   its own type scale on top of the button's. */
 .story-heading { margin: 0; font: inherit; }
 
-.story-header {
-  width: 100%;
-  /* Comfortably past 44px on a low-cost phone. */
-  min-height: 64px;
-  display: flex; align-items: center; gap: 14px;
-  padding: 16px 18px;
-  border: 0; background: transparent; cursor: pointer; text-align: left;
+.storyboard-progress {
+  margin: 0 0 10px;
+  color: var(--text2);
+  font: 750 .74rem/1 var(--font-jakarta);
 }
-.story-number { color: var(--text2); font: 750 .72rem/1 var(--font-ibm-mono); }
-.story-icon { font-size: 1.3rem; }
-.story-title { display: grid; gap: 3px; flex: 1; }
-.story-title strong { color: var(--navy); font: 750 .95rem/1.25 var(--font-jakarta); }
-.story-title small { color: var(--text2); font-size: .74rem; line-height: 1.4; }
-.story-read-tag {
-  padding: 5px 9px; border-radius: 999px; color: #0d7c56;
-  background: rgba(13,124,86,.14); font: 800 .6rem/1 var(--font-jakarta);
-  text-transform: uppercase;
-}
-.story-indicator {
-  width: 11px; height: 11px; flex: none;
-  border-right: 2px solid var(--text2); border-bottom: 2px solid var(--text2);
-  transform: rotate(45deg); transition: transform .18s ease;
-}
-.story-card.open .story-indicator { transform: rotate(225deg); }
 
-.story-panel { padding: 4px 18px 20px; border-top: 1px solid var(--border); }
-.story-panel p { margin: 10px 0; font-size: .85rem; line-height: 1.6; }
-.story-persona { color: var(--navy); font: 750 .95rem/1.3 var(--font-jakarta); }
-.story-disclaimer {
-  padding: 12px 14px; border-radius: 8px;
-  color: var(--text2); background: var(--surface2);
-  font-size: .78rem;
-}
+.story-card.read { border-color: rgba(13,124,86,.45); }
+
+.story-persona { margin-top: 0 !important; color: var(--text); }
+
 .story-hotline-note { color: var(--text2); font-size: .78rem; }
 
-.story-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-.story-actions .hotline-action,
-.story-actions button {
-  min-height: 48px; display: inline-flex; align-items: center; justify-content: center;
-  padding: 12px 18px; border-radius: 8px; font: 750 .8rem/1 var(--font-jakarta);
+.story-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.story-actions .hotline-action { margin-top: 0; }
+.story-read-action {
+  /* Matches the hotline action so the pair reads as one control group. */
+  min-height: 44px;
+  padding: 10px 14px;
+  font: 750 .78rem/1 var(--font-jakarta);
 }
-.hotline-action {
-  color: white; background: var(--red); text-decoration: none;
-}
-.story-actions button:disabled { color: var(--text2); cursor: default; }
+.story-read-action:disabled { color: var(--text2); cursor: default; }
+
+/*
+ * Scoped contrast fix. The shared --text3 token is #8892A8, which is
+ * 3.12:1 on white and below the 4.5:1 AA floor for normal text. It is
+ * used well beyond this component, so the token itself is left alone
+ * and flagged for a design-system review; only the storyboard's own
+ * footnote is corrected here.
+ */
+.benefit-storyboard .content-footnote { color: var(--text2); }
+
+/*
+ * The disclaimer is the line that stops a scenario reading as a promise
+ * about what PRC will pay for, so it is the last text in this component
+ * that should be hard to read. The shared --amber (#D97706) on
+ * --amber-dim (#FCF4EB) measures 2.92:1, well under the 4.5:1 AA floor.
+ *
+ * Scoped override, not a token change: --amber is used across the
+ * product and belongs to the design-system review flagged alongside
+ * --text3. #8A4A06 keeps the warning hue and reaches ~6.4:1 here.
+ */
+.benefit-storyboard .story-disclaimer { color: #8A4A06; }
 
 @media (max-width: 720px) {
-  .story-header { padding: 14px; gap: 10px; }
-  .story-actions .hotline-action, .story-actions button { width: 100%; }
-}
-
-/* Someone who asked for less motion gets none of it. */
-@media (prefers-reduced-motion: reduce) {
-  .story-indicator { transition: none !important; }
-  .story-card, .story-panel { animation: none !important; transition: none !important; }
+  .story-actions { flex-direction: column; align-items: stretch; }
+  .story-actions .hotline-action,
+  .story-read-action { width: 100%; justify-content: center; }
 }

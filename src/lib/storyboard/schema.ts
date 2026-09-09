@@ -14,7 +14,9 @@
 
 import { z } from 'zod';
 
-export const BENEFIT_IDS = ['ambulance', 'blood', 'hospital_allowance', 'exclusions'] as const;
+// Identifiers follow the payment/storyboards branch, which owns the
+// presentation layer these cards render in.
+export const BENEFIT_IDS = ['ambulance', 'blood', 'hospital', 'exclusions'] as const;
 export type BenefitId = (typeof BENEFIT_IDS)[number];
 
 export const STORYBOARD_LOCALES = ['fil', 'en'] as const;
@@ -31,11 +33,16 @@ const scenario = z.object({
   situation: z.string().trim().min(10).max(600),
   action: z.string().trim().min(10).max(600),
   mayProvide: z.string().trim().min(10).max(600),
-  /** Optional: an exclusions card has no cost example. */
-  costExample: z.string().trim().max(400).optional(),
+  /** Named `cost` to match the content file this validates. */
+  cost: z.string().trim().max(600).optional(),
   /** Required. This is what stops a scenario reading as a promise. */
   disclaimer: z.string().trim().min(20).max(600),
-  hotlineGuidance: z.string().trim().min(10).max(400),
+  /**
+   * Optional line of hotline guidance. The hotline *action* is rendered
+   * by the component on every panel regardless, so a card without this
+   * line still tells the reader to call 143.
+   */
+  hotlineGuidance: z.string().trim().min(10).max(400).optional(),
 });
 
 export const benefitCardSchema = z.object({

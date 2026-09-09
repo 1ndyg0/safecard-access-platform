@@ -16,7 +16,7 @@ Assessment baseline: 8 September 2026. This register maps the supplied vision, b
 | Electronic SafeCard boundary | Card and locally generated QR appear only after `active_confirmed` plus recorded PRC membership evidence |
 | Ambassador workspace | Email/password login, owned referral creation, downloadable local QR, privacy-safe aggregate progress |
 | Staff access and RBAC | Email/password login, role-scoped overview, queue filters, protected case detail, minimal profile and payment views |
-| Payment boundary | Application and payment remain separate; no hard-coded bank/GCash details; approved handoff config is disabled by default |
+| Payment boundary | Application and payment remain separate; typed manual GCash/bank configuration is centralized and gated; no direct payment processor or membership activation from payment |
 | PRC handoff/export backend | Eligibility controls, immutable batches/items, checksum protection, acknowledgement/correction states, role and AAL2 gate |
 | Content governance backend | Versioning, review/approval/publish/rollback, material-change handling and consent expiry |
 | Operational foundations | RLS/grants, append-only audit controls, durable jobs, support cases, in-app notifications, rate limiting and privacy-safe metrics |
@@ -27,11 +27,23 @@ Assessment baseline: 8 September 2026. This register maps the supplied vision, b
 |---|---|---|
 | Filipino localization | Core landing copy and journey framing are bilingual | Complete professional translation and language QA for every form, validation message, admin page, and policy text |
 | Draft resume | Server model and case continuity exist; current browser session retains the case ID | Add an approved re-identification/recovery method for a different device without adding SMS cost or weakening privacy |
-| Admin review operations | Queue, filters, detail views and backend payment/export/content operations exist | Add production operator controls for corrections, payment verification, notes, bulk selection, and user/role management; complete role-by-role UAT |
+| Admin review operations | Queue, exact-reference search, independent filters, sorting, pagination, case detail, correction request, payment verification and evidence replacement controls exist | Complete role-by-role UAT, audit-history presentation, bulk selection, and user/role management |
 | Export experience | Secure batch, download and acknowledgement APIs exist | UI intentionally stops at the approval boundary; add schema preview, dual confirmation, approved recipients, and download controls after PRC transfer procedure approval |
 | Notifications | Consent-aware in-app event backend exists | Add inbox UI; external SMS/email/push remains parked |
 | Offline use | Static public routes and the loaded card can remain in browser cache | A formally tested service-worker/offline card package is not implemented |
-| Automated quality | Unit tests, TypeScript, ESLint and production build gates exist | Add browser E2E, accessibility automation, security tests, low-bandwidth/device matrix and operational restore drill |
+| Automated quality | Unit tests, TypeScript, ESLint, production build gate, Playwright/axe smoke suite, browser matrix, and CI workflow exist | Add authenticated synthetic API/E2E fixtures, full upload abuse/security regression, performance budgets, and operational restore drill |
+
+## Newly covered requirements (2026-09-08)
+
+| Requirement | Status | Evidence / remaining gate |
+|---|---|---|
+| Clickable Filipino/English benefit storyboard with keyboard semantics, scenarios, disclaimers, Hotline 143, and analytics hooks | Implemented and verified | `src/components/BenefitStoryboard.tsx`, `src/lib/benefit-storyboards.ts`, Playwright smoke; professional content approval remains required |
+| Manual GCash and bank routes with exact approved values and individual copy actions | Implemented but awaiting approval | `src/lib/payment/config.ts`, `ManualPaymentPanel`; owner/PRC verification and private QR upload remain required |
+| Private receipt evidence validation, checksum, non-enumerable path, metadata, replacement state, signed review URL | Partial | `00010_payment_proof_storage_and_review.sql`, evidence routes; remote migration/bucket validation and retention approval remain blocked |
+| Staff payment verification cannot activate membership | Implemented and verified | `verifyPayment` updates payment only; membership requires separate PRC confirmation path |
+| Admin aggregate dashboard, queue search/filter/sort/pagination, correction and evidence review controls | Partial | `src/components/admin/*`, admin API routes; authenticated UAT and audit history display remain |
+| Playwright browser/accessibility smoke and CI required scripts | Implemented and verified | `playwright.config.ts`, `tests/e2e/smoke.spec.ts`, `.github/workflows/ci.yml`; browser downloads and live backend fixtures are environment gates |
+| Source artifact access and document traceability | Implemented and verified | `docs/product/source-artifact-access.md` and seven replacement records; original Claude artifacts remain inaccessible |
 
 ## Parked by cost or external dependency
 

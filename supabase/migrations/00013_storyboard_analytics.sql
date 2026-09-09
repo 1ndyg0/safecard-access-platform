@@ -27,7 +27,7 @@ create table public.storyboard_events (
   benefit_id          text not null check (benefit_id in (
     'ambulance',
     'blood',
-    'hospital_allowance',
+    'hospital',
     'exclusions'
   )),
 

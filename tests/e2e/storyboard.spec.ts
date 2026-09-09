@@ -11,7 +11,7 @@ import { expect, test, type Page } from '@playwright/test';
  * test that waits for it would hang on correct behaviour.
  */
 
-const BENEFITS = ['ambulance', 'blood', 'hospital_allowance', 'exclusions'] as const;
+const BENEFITS = ['ambulance', 'blood', 'hospital', 'exclusions'] as const;
 
 async function useLocale(page: Page, locale: 'fil' | 'en') {
   await page.addInitScript(
@@ -26,6 +26,29 @@ function header(page: Page, id: string) {
 
 function panel(page: Page, id: string) {
   return page.locator(`#storyboard-panel-${id}`);
+}
+
+/**
+ * Wait for the open panel's entry transition to finish.
+ *
+ * The shell animates opacity, so scanning mid-transition reports every
+ * line of text as a contrast failure — semi-transparent text genuinely
+ * does fail, it just is not the state a reader ever sits in.
+ */
+async function settleOpenPanel(page: Page) {
+  await page
+    .locator('.story-panel-shell.open')
+    .first()
+    .evaluate(
+      (node) =>
+        new Promise<void>((resolve) => {
+          const check = () => {
+            if (parseFloat(getComputedStyle(node).opacity) >= 1) resolve();
+            else requestAnimationFrame(check);
+          };
+          check();
+        }),
+    );
 }
 
 async function openBenefits(page: Page) {
@@ -85,36 +108,36 @@ test.describe('benefit storyboard', () => {
   test('a closed panel holds no keyboard-focusable control', async ({ page }) => {
     await openBenefits(page);
     await header(page, 'ambulance').click();
+    await expect(panel(page, 'ambulance')).toBeVisible();
 
-    // The hotline link inside every *closed* panel must be unreachable.
-    const reachable = await page.evaluate(() => {
-      const focusables = Array.from(
-        document.querySelectorAll('.story-panel a, .story-panel button'),
-      );
-      return focusables.filter((element) => {
-        const panelElement = element.closest('.story-panel') as HTMLElement | null;
-        return panelElement?.hidden === false || panelElement?.hasAttribute('hidden') === false;
-      }).length;
-    });
-    // Exactly the one open panel contributes focusable controls.
-    expect(reachable).toBeGreaterThan(0);
-
-    const hiddenFocusables = await page.evaluate(
-      () =>
-        Array.from(document.querySelectorAll('.story-panel[hidden] a, .story-panel[hidden] button'))
-          .length,
-    );
-    // They exist in the DOM but `hidden` takes them out of the tab order.
-    const tabbable = await page.evaluate(() => {
-      const active: string[] = [];
-      document.querySelectorAll('.story-panel[hidden] a').forEach((element) => {
-        const rect = (element as HTMLElement).getBoundingClientRect();
-        if (rect.width > 0 || rect.height > 0) active.push(element.tagName);
+    // Tab through the whole document and record every element focus
+    // actually lands on. Asserting the tab order directly means this
+    // keeps working whether the panel is closed with `hidden`,
+    // `visibility`, or `display` — it tests the behaviour, not the
+    // mechanism.
+    await page.locator('body').press('Tab');
+    const visited: string[] = [];
+    for (let step = 0; step < 40; step += 1) {
+      const info = await page.evaluate(() => {
+        const element = document.activeElement as HTMLElement | null;
+        if (!element) return null;
+        const shell = element.closest('.story-panel-shell');
+        return {
+          id: element.id || element.className || element.tagName,
+          panelId: shell?.id ?? null,
+          panelOpen: shell?.classList.contains('open') ?? null,
+        };
       });
-      return active.length;
-    });
-    expect(hiddenFocusables).toBeGreaterThan(0);
-    expect(tabbable).toBe(0);
+      if (info?.panelId) {
+        visited.push(`${info.panelId}:${info.panelOpen}`);
+        // Focus may only ever land inside the panel that is open.
+        expect(info.panelOpen, `focus reached ${info.panelId} while closed`).toBe(true);
+      }
+      await page.keyboard.press('Tab');
+    }
+
+    // And it did reach the open panel, so the walk was meaningful.
+    expect(visited.some((entry) => entry.startsWith('storyboard-panel-ambulance'))).toBe(true);
   });
 
   test('each scenario carries persona, situation, action, PRC role and a disclaimer', async ({
@@ -156,7 +179,7 @@ test.describe('benefit storyboard', () => {
 
   test('says whether the content is approved or provisional', async ({ page }) => {
     await openBenefits(page);
-    const provenance = page.locator('.storyboard-provenance');
+    const provenance = page.locator('.benefit-storyboard .content-footnote');
     await expect(provenance).toBeVisible();
     // Without a published registry entry, it must not claim approval.
     await expect(provenance).toHaveAttribute('data-provenance', 'provisional');
@@ -177,6 +200,7 @@ test.describe('benefit storyboard', () => {
       await useLocale(page, locale);
       await openBenefits(page);
       await header(page, 'ambulance').click();
+      await settleOpenPanel(page);
 
       // Scoped to the storyboard, which is what this module owns. The
       // surrounding /benefits page carries pre-existing contrast
@@ -228,10 +252,18 @@ test.describe('benefit storyboard', () => {
     await openBenefits(page);
     await header(page, 'ambulance').click();
 
-    const transition = await page
+    // The shared rule uses the near-zero idiom (.01ms) rather than 0s,
+    // so transitionend still fires for anything that depends on it.
+    // Assert "effectively instant" rather than an exact string.
+    const seconds = await page
       .locator('.story-card.open .story-indicator')
-      .evaluate((node) => getComputedStyle(node).transitionDuration);
-    expect(['0s', '0ms']).toContain(transition);
+      .evaluate((node) => parseFloat(getComputedStyle(node).transitionDuration));
+    expect(seconds).toBeLessThan(0.05);
+
+    const panelSeconds = await page
+      .locator('.story-panel-shell.open')
+      .evaluate((node) => parseFloat(getComputedStyle(node).transitionDuration));
+    expect(panelSeconds).toBeLessThan(0.05);
   });
 
   test('keeps 44px touch targets', async ({ page }) => {
@@ -247,7 +279,7 @@ test.describe('benefit storyboard', () => {
     await page.setViewportSize({ width: 320, height: 720 });
     await useLocale(page, 'fil');
     await openBenefits(page);
-    await header(page, 'hospital_allowance').click();
+    await header(page, 'hospital').click();
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

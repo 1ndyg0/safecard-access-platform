@@ -1,22 +1,20 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { getSupabaseAdminClient } from "@/lib/db/client";
+import { getPaymentRoutes, MANUAL_PAYMENT_CONFIG } from "@/lib/payment/config";
 
 export const dynamic = "force-dynamic";
 
-const routeSchema = z.object({
-  id: z.string().min(1),
-  label: z.string().min(1),
-  instructions: z.string().min(1),
-  accountName: z.string().min(1).optional(),
-  accountNumber: z.string().min(1).optional(),
-  qrImageUrl: z.string().url().optional(),
-});
-
-const configSchema = z.object({
-  amount: z.number().positive(),
-  currency: z.literal("PHP"),
-  routes: z.array(routeSchema).min(1),
-});
+async function getQrImageUrl() {
+  try {
+    const bucket = process.env.PAYMENT_PROOFS_BUCKET ?? "payment-proofs";
+    const { data } = await getSupabaseAdminClient().storage
+      .from(bucket)
+      .createSignedUrl(MANUAL_PAYMENT_CONFIG.qrObjectPath, 300);
+    return data?.signedUrl ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export async function GET() {
   if (process.env.LAUNCH_GATES_COMPLETE !== "true" || process.env.ENABLE_OFFICIAL_PAYMENT_HANDOFF !== "true") {
@@ -30,8 +28,17 @@ export async function GET() {
   }
 
   try {
-    const parsed = configSchema.parse(JSON.parse(process.env.PRC_PAYMENT_ROUTES_JSON ?? ""));
-    return NextResponse.json({ available: true, reason: null, ...parsed }, {
+    const qrImageUrl = await getQrImageUrl();
+    return NextResponse.json({
+      available: true,
+      reason: null,
+      amount: MANUAL_PAYMENT_CONFIG.amount,
+      monthlyEquivalent: MANUAL_PAYMENT_CONFIG.monthlyEquivalent,
+      currency: MANUAL_PAYMENT_CONFIG.currency,
+      accountName: MANUAL_PAYMENT_CONFIG.accountName,
+    routes: getPaymentRoutes(qrImageUrl ?? undefined),
+      controlledPilotWarning: "Verify the QR and account details with the payment owner and PRC before production activation.",
+    }, {
       headers: { "Cache-Control": "private, no-store" },
     });
   } catch {
