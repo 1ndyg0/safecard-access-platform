@@ -16,6 +16,7 @@ import {
   assertCampaignAccess,
   listAccessibleCampaigns,
   resolveStaffScope,
+  rolesForCampaign,
 } from '@/lib/admin/access';
 import { handleAdminError, PRIVATE_NO_STORE } from '@/lib/admin/respond';
 
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       {
         user: user ?? null,
-        roles: scope.roles,
+        roles: selectedCampaignId ? rolesForCampaign(scope, selectedCampaignId) : [],
         campaigns,
         selectedCampaignId,
         counts,

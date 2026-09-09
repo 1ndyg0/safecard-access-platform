@@ -22,11 +22,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSupabaseAdminClient } from '@/lib/db/client';
 import { badRequest, conflict, forbidden, notFound } from '@/lib/api/response';
-import { assertCampaignAccess, resolveStaffScope } from '@/lib/admin/access';
+import { assertCampaignAccess, rolesForCampaign, resolveStaffScope } from '@/lib/admin/access';
 import { handleAdminError, PRIVATE_NO_STORE } from '@/lib/admin/respond';
 import { resolveCaseAccessPolicy } from '@/lib/admin/field-policy';
-import { validatePaymentTransition } from '@/lib/state-machines';
-import { writeAuditEvent } from '@/lib/audit';
 import type { PaymentState } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
@@ -45,6 +43,7 @@ const bodySchema = z.discriminatedUnion('action', [
   z.object({
     action: z.literal('request_reupload'),
     payment_intent_id: z.string().uuid(),
+    evidence_id: z.string().uuid(),
     confirm: z.literal(true),
     /** Shown to the applicant, so it must be safe to read. */
     reason: z.string().trim().min(10).max(500),
@@ -60,11 +59,6 @@ export async function POST(
     const scope = await resolveStaffScope();
     const { id } = await context.params;
     if (!z.string().uuid().safeParse(id).success) return badRequest('Case id must be a UUID.');
-
-    const policy = resolveCaseAccessPolicy(scope.roles);
-    if (!policy?.canActOnPayments) {
-      return forbidden('Your role cannot act on payment evidence.');
-    }
 
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
@@ -84,11 +78,17 @@ export async function POST(
     if (caseError) throw new Error(`Failed to load case: ${caseError.message}`);
     if (!caseRecord) return notFound('Case not found.');
     assertCampaignAccess(scope, caseRecord.campaign_id as string);
+    const policy = resolveCaseAccessPolicy(
+      rolesForCampaign(scope, caseRecord.campaign_id as string),
+    );
+    if (!policy?.canActOnPayments) {
+      return forbidden('Your role cannot act on payment evidence.');
+    }
 
     // Per-record validation: the intent must belong to this case.
     const { data: intent, error: intentError } = await admin
       .from('payment_intents')
-      .select('id,case_id,payment_state,expected_amount')
+      .select('id,case_id,state,expected_amount')
       .eq('id', body.payment_intent_id)
       .maybeSingle();
     if (intentError) throw new Error(`Failed to load payment intent: ${intentError.message}`);
@@ -97,133 +97,76 @@ export async function POST(
     }
 
     // Stale-screen guard: refuse if the state moved since it was rendered.
-    if (intent.payment_state !== body.expected_payment_state) {
+    if (intent.state !== body.expected_payment_state) {
       return conflict(
-        `This payment has moved to "${intent.payment_state}" since the page was loaded. Reload and review it again.`,
+        `This payment has moved to "${intent.state}" since the page was loaded. Reload and review it again.`,
       );
     }
 
-    const priorState = intent.payment_state as PaymentState;
+    const priorState = intent.state as PaymentState;
 
     if (body.action === 'verify_payment') {
-      const { data: evidence, error: evidenceError } = await admin
-        .from('payment_evidence')
-        .select('id,payment_intent_id,amount_confirmed')
-        .eq('id', body.evidence_id)
-        .maybeSingle();
-      if (evidenceError) throw new Error(`Failed to load evidence: ${evidenceError.message}`);
-      if (!evidence || evidence.payment_intent_id !== body.payment_intent_id) {
-        return notFound('Evidence not found for this payment intent.');
-      }
-
-      const nextState: PaymentState = 'verified_by_official_source';
-      validatePaymentTransition(priorState, nextState);
-
-      const { error: updateError } = await admin
-        .from('payment_intents')
-        .update({ payment_state: nextState })
-        .eq('id', intent.id)
-        .eq('payment_state', priorState);
-      if (updateError) throw new Error(`Failed to verify payment: ${updateError.message}`);
-
-      const { error: evidenceUpdateError } = await admin
-        .from('payment_evidence')
-        .update({
-          is_verified: true,
-          confirmed_at: new Date().toISOString(),
-          confirmed_by: scope.userId,
-        })
-        .eq('id', evidence.id);
-      if (evidenceUpdateError) {
-        throw new Error(`Failed to record evidence confirmation: ${evidenceUpdateError.message}`);
-      }
-
-      // Mirror onto the case's payment state machine only.
-      const { error: caseUpdateError } = await admin
-        .from('recipient_cases')
-        .update({ payment_state: nextState })
-        .eq('id', id);
-      if (caseUpdateError) {
-        throw new Error(`Failed to update case payment state: ${caseUpdateError.message}`);
-      }
-
-      await writeAuditEvent({
-        event_type: 'payment_status_change',
-        actor_id: scope.userId,
-        actor_type: 'user',
-        action: 'Verified payment evidence',
-        target_type: 'payment_intent',
-        target_id: intent.id as string,
-        case_id: id,
-        campaign_id: caseRecord.campaign_id as string,
-        details: {
-          prior_state: priorState,
-          resulting_state: nextState,
-          evidence_id: evidence.id,
-          reason: 'Evidence matched the expected payment.',
-          membership_unchanged: caseRecord.membership_state,
+      const { data, error: actionError } = await admin.rpc(
+        'verify_payment_evidence_atomic',
+        {
+          p_payment_intent_id: body.payment_intent_id,
+          p_evidence_version_id: body.evidence_id,
+          p_verified_by: scope.userId,
+          p_verification_source: 'manual_prc_reconciliation',
+          p_expected_state: priorState,
+          p_verification_evidence: { reviewer_confirmed_match: true },
         },
-        severity: 'warning',
-      });
+      );
+      if (actionError) {
+        if (
+          actionError.message.includes('since it was loaded')
+          || actionError.message.includes('not pending verification')
+          || actionError.message.includes('not verifiable')
+        ) return conflict(actionError.message);
+        throw new Error(`Failed to verify payment: ${actionError.message}`);
+      }
+      const result = Array.isArray(data) ? data[0] : data;
+      if (!result) throw new Error('Failed to verify payment: no result returned');
 
       return NextResponse.json(
         {
-          paymentState: nextState,
+          paymentState: result.payment_state,
           priorState,
-          // Restated in the response so a client cannot infer activation.
-          membershipState: caseRecord.membership_state,
+          prcHandoffState: result.prc_handoff_state,
+          membershipState: result.membership_state,
           membershipChanged: false,
         },
         { headers: PRIVATE_NO_STORE },
       );
     }
 
-    // Requesting replacement evidence is the defined retry path, not a
-    // self-transition: the current attempt is cancelled and the official
-    // handoff is reopened so the payer can supply new evidence. Both
-    // steps are validated against the payment state machine.
-    const cancelledState: PaymentState = 'failed_or_cancelled';
-    const nextState: PaymentState = 'official_handoff_opened';
-    validatePaymentTransition(priorState, cancelledState);
-    validatePaymentTransition(cancelledState, nextState);
-
-    const { error: updateError } = await admin
-      .from('payment_intents')
-      .update({ payment_state: nextState })
-      .eq('id', intent.id)
-      .eq('payment_state', priorState);
-    if (updateError) throw new Error(`Failed to request replacement: ${updateError.message}`);
-
-    const { error: caseUpdateError } = await admin
-      .from('recipient_cases')
-      .update({ payment_state: nextState })
-      .eq('id', id);
-    if (caseUpdateError) {
-      throw new Error(`Failed to update case payment state: ${caseUpdateError.message}`);
-    }
-
-    await writeAuditEvent({
-      event_type: 'payment_status_change',
-      actor_id: scope.userId,
-      actor_type: 'user',
-      action: 'Requested replacement payment evidence',
-      target_type: 'payment_intent',
-      target_id: intent.id as string,
-      case_id: id,
-      campaign_id: caseRecord.campaign_id as string,
-      details: {
-        prior_state: priorState,
-        resulting_state: nextState,
-        reason: body.reason,
+    const { data, error: actionError } = await admin.rpc(
+      'request_payment_evidence_reupload_atomic',
+      {
+        p_payment_intent_id: body.payment_intent_id,
+        p_evidence_version_id: body.evidence_id,
+        p_requested_by: scope.userId,
+        p_reason: body.reason,
+        p_expected_state: priorState,
       },
-      severity: 'warning',
-    });
+    );
+    if (actionError) {
+      if (
+        actionError.message.includes('since it was loaded')
+        || actionError.message.includes('not pending verification')
+        || actionError.message.includes('not awaiting verification')
+      ) return conflict(actionError.message);
+      throw new Error(`Failed to request replacement: ${actionError.message}`);
+    }
+    const result = Array.isArray(data) ? data[0] : data;
+    if (!result) throw new Error('Failed to request replacement: no result returned');
 
     return NextResponse.json(
       {
-        paymentState: nextState,
+        paymentState: result.payment_state,
         priorState,
-        membershipState: caseRecord.membership_state,
+        evidenceState: 'reupload_requested',
+        membershipState: result.membership_state,
         membershipChanged: false,
       },
       { headers: PRIVATE_NO_STORE },

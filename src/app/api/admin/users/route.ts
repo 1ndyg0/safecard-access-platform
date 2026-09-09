@@ -9,15 +9,24 @@
 import { NextRequest } from 'next/server';
 import { requireStaffAuth } from '@/lib/auth/session';
 import { requireAnyRole } from '@/lib/auth/permissions';
-import { writeAuditEvent } from '@/lib/audit';
 import { getSupabaseAdminClient } from '@/lib/db/client';
 import { success, created, badRequest, forbidden, conflict, handleApiError } from '@/lib/api/response';
 import { z } from 'zod';
 
-const createUserSchema = z.object({
+const createUserSchema = z.strictObject({
   organization_id: z.string().uuid(),
+  campaign_id: z.string().uuid(),
   email: z.string().email('Valid email required'),
   full_name: z.string().min(2, 'Full name required').max(200),
+  role: z.enum([
+    'school_admin',
+    'prc_liaison',
+    'support_agent',
+    'finance_export',
+    'content_approver',
+    'privacy_admin_owner',
+  ]),
+  reason: z.string().trim().min(10).max(500),
 });
 
 export async function GET(request: NextRequest) {
@@ -30,15 +39,24 @@ export async function GET(request: NextRequest) {
     if (!roleCheck.allowed) return forbidden(roleCheck.reason);
 
     const admin = getSupabaseAdminClient();
+    const { data: campaign } = await admin
+      .from('pilot_campaigns')
+      .select('organization_id')
+      .eq('id', campaignId)
+      .maybeSingle();
+    if (!campaign) return badRequest('Campaign not found');
 
-    // Get all users who have role assignments in this campaign
+    // Campaign-specific assignments plus organization assignments that
+    // are effective for every campaign in this organization.
     const { data: assignments, error } = await admin
       .from('role_assignments')
       .select(`
         role, is_active,
         users!inner (id, email, full_name, mfa_enabled, is_active, created_at)
       `)
-      .eq('campaign_id', campaignId)
+      .or(
+        `campaign_id.eq.${campaignId},and(campaign_id.is.null,organization_id.eq.${campaign.organization_id})`,
+      )
       .order('granted_at', { ascending: false });
 
     if (error) throw new Error(`Failed to list users: ${error.message}`);
@@ -76,8 +94,7 @@ export async function POST(request: NextRequest) {
     const roleCheck = await requireAnyRole(
       auth.userId,
       ['privacy_admin_owner'],
-      undefined,
-      parsed.organization_id,
+      parsed.campaign_id,
     );
     if (!roleCheck.allowed) return forbidden('Only the organization privacy admin can invite users');
 
@@ -91,6 +108,15 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existing) return conflict('A user with this email already exists');
+
+    const { data: campaign } = await admin
+      .from('pilot_campaigns')
+      .select('organization_id')
+      .eq('id', parsed.campaign_id)
+      .maybeSingle();
+    if (!campaign || campaign.organization_id !== parsed.organization_id) {
+      return forbidden('Campaign does not belong to the requested organization scope');
+    }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL is required to send staff invitations');
@@ -106,35 +132,26 @@ export async function POST(request: NextRequest) {
       throw new Error(`Failed to invite staff user: ${invitationError?.message}`);
     }
 
-    const { data, error } = await admin
-      .from('users')
-      .insert({
-        id: invitation.user.id,
-        email: parsed.email,
-        full_name: parsed.full_name,
-      })
-      .select('id, email, full_name')
-      .single();
-
-    if (error) {
+    const { data, error } = await admin.rpc('provision_invited_staff_atomic', {
+      p_actor_id: auth.userId,
+      p_user_id: invitation.user.id,
+      p_email: parsed.email,
+      p_full_name: parsed.full_name,
+      p_campaign_id: parsed.campaign_id,
+      p_role: parsed.role,
+      p_reason: parsed.reason,
+    });
+    const result = Array.isArray(data) ? data[0] : data;
+    if (error || !result) {
       await admin.auth.admin.deleteUser(invitation.user.id);
-      throw new Error(`Failed to create user profile: ${error.message}`);
+      throw new Error(`Failed to provision invited staff: ${error?.message ?? 'no result returned'}`);
     }
 
-    await writeAuditEvent({
-      event_type: 'user_created',
-      actor_id: auth.userId,
-      actor_type: 'user',
-      action: 'Invited staff user',
-      target_type: 'user',
-      target_id: data.id,
-      details: { organization_id: parsed.organization_id },
-    });
-
     return created({
-      userId: data.id,
-      email: data.email,
-      fullName: data.full_name,
+      userId: result.user_id,
+      roleAssignmentId: result.role_assignment_id,
+      email: parsed.email,
+      fullName: parsed.full_name,
     });
   } catch (error) {
     return handleApiError(error, 'User creation');

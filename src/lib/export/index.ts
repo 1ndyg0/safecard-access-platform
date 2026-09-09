@@ -13,15 +13,10 @@
  */
 
 import { getSupabaseAdminClient } from '@/lib/db/client';
-import { writeAuditEvent } from '@/lib/audit';
+import { hashSensitiveIdentifier } from '@/lib/audit';
 import { requireRole, requireMfa, logPermissionDenial } from '@/lib/auth/permissions';
-import {
-  validatePrcHandoffTransition,
-  validateMembershipTransition,
-} from '@/lib/state-machines';
-import type { PrcHandoffState } from '@/types/database';
-import type { MembershipState } from '@/types/database';
 import { createHash, randomBytes } from 'node:crypto';
+import { v4 as uuidv4 } from 'uuid';
 
 // ============================================================
 // CSV injection protection
@@ -112,6 +107,7 @@ export async function createExportBatch(
       application_ref,
       consent_state,
       application_state,
+      application_review_state,
       payment_state,
       recipient_profiles!inner (
         first_name,
@@ -144,6 +140,7 @@ export async function createExportBatch(
     .eq('campaign_id', input.campaignId)
     .eq('consent_state', 'agreed')
     .in('application_state', ['submitted', 'resubmitted'])
+    .eq('application_review_state', 'approved')
     .eq('payment_state', 'verified_by_official_source')
     .eq('payment_intents.state', 'verified_by_official_source')
     .eq('prc_handoff_state', 'ready_for_export')
@@ -225,78 +222,34 @@ export async function createExportBatch(
   const contentToHash = input.format === 'csv' ? csvContent! : JSON.stringify(jsonContent);
   const checksum = createHash('sha256').update(contentToHash).digest('hex');
 
-  // Create the immutable batch record
-  const { data: batch, error: batchError } = await admin
-    .from('prc_export_batches')
-    .insert({
-      campaign_id: input.campaignId,
-      batch_ref: batchRef,
-      created_by: input.userId,
-      creation_reason: input.creationReason,
-      reauth_method: input.reauthMethod,
-      reauth_at: new Date().toISOString(),
-      record_count: cases.length,
-      column_order: columnOrder,
-      checksum,
-      format: input.format,
-    })
-    .select('id')
-    .single();
-
-  if (batchError || !batch) {
-    throw new Error(`Failed to create export batch: ${batchError?.message}`);
-  }
-
-  // Create export items (one per case)
-  const exportItems = cases.map((c: Record<string, unknown>, index) => {
+  const submissionIds = cases.map((c: Record<string, unknown>) => {
     const submission = Array.isArray(c.application_submissions)
       ? c.application_submissions[0]
       : c.application_submissions as Record<string, unknown> | undefined;
-    return {
-      batch_id: batch.id,
-      case_id: c.id,
-      submission_id: submission?.id,
-      export_order: index,
-      prc_status: 'pending',
-      original_values: exportRows[index],
-    };
+    return submission?.id as string;
   });
+  if (submissionIds.some((id) => !id)) throw new Error('Export submission version is missing');
 
-  const { error: itemError } = await admin.from('prc_export_items').insert(exportItems);
-  if (itemError) throw new Error(`Failed to create export items: ${itemError.message}`);
-
-  // Update case handoff states
-  const { error: caseUpdateError } = await admin
-    .from('recipient_cases')
-    .update({
-      prc_handoff_state: 'exported',
-      membership_state: 'pending_prc_confirmation',
-    })
-    .in('id', requestedCaseIds);
-  if (caseUpdateError) throw new Error(`Failed to advance exported cases: ${caseUpdateError.message}`);
-
-  // Audit
-  await writeAuditEvent({
-    event_type: 'export_created',
-    actor_id: input.userId,
-    actor_type: 'user',
-    action: `Export batch ${batchRef} created with ${cases.length} records`,
-    campaign_id: input.campaignId,
-    target_type: 'prc_export_batch',
-    target_id: batch.id,
-    details: {
-      batch_ref: batchRef,
-      record_count: cases.length,
-      format: input.format,
-      checksum,
-      reauth_method: input.reauthMethod,
-      case_ids: requestedCaseIds,
-    },
-    actor_ip: input.userIp,
+  const batchId = uuidv4();
+  const { error: batchError } = await admin.rpc('create_prc_export_batch_atomic', {
+    p_batch_id: batchId,
+    p_campaign_id: input.campaignId,
+    p_batch_ref: batchRef,
+    p_created_by: input.userId,
+    p_creation_reason: input.creationReason,
+    p_reauth_method: input.reauthMethod,
+    p_column_order: columnOrder,
+    p_checksum: checksum,
+    p_format: input.format,
+    p_case_ids: requestedCaseIds,
+    p_submission_ids: submissionIds,
+    p_original_values: exportRows,
+    p_actor_ip_hash: input.userIp ? hashSensitiveIdentifier(input.userIp) : null,
   });
+  if (batchError) throw new Error(`Failed to create export batch: ${batchError.message}`);
 
   return {
-    batchId: batch.id,
+    batchId,
     batchRef,
     recordCount: cases.length,
     checksum,
@@ -325,171 +278,28 @@ export async function acknowledgePrcItem(
   input: AcknowledgePrcItemInput,
 ): Promise<void> {
   const admin = getSupabaseAdminClient();
-
-  // Get current item and case
-  const { data: item } = await admin
+  const { data: item, error: itemError } = await admin
     .from('prc_export_items')
-    .select('id, case_id, prc_status, submission_id')
+    .select('id,prc_export_batches!inner(campaign_id)')
     .eq('id', input.exportItemId)
-    .single();
+    .maybeSingle();
+  if (itemError || !item) throw new Error('Export item not found');
+  const batch = Array.isArray(item.prc_export_batches)
+    ? item.prc_export_batches[0]
+    : item.prc_export_batches;
+  const access = await requireRole(input.actorId, 'prc_liaison', batch.campaign_id);
+  if (!access.allowed) throw new Error('Permission denied: campaign PRC liaison role required');
 
-  if (!item) {
-    throw new Error('Export item not found');
-  }
-
-  validatePrcHandoffTransition(item.prc_status === 'pending' ? 'exported' : item.prc_status as PrcHandoffState, input.prcStatus);
-
-  // Update the export item
-  await admin
-    .from('prc_export_items')
-    .update({
-      prc_status: input.prcStatus,
-      prc_responded_at: new Date().toISOString(),
-      prc_response_by: input.actorId,
-      prc_notes: input.prcNotes ?? null,
-      correction_reason: input.correctionReason ?? null,
-      correction_fields: input.correctionFields ?? null,
-      prc_membership_id: input.prcMembershipId ?? null,
-      prc_effective_date: input.prcEffectiveDate ?? null,
-      prc_expiry_date: input.prcExpiryDate ?? null,
-      prc_source_timestamp: new Date().toISOString(),
-    })
-    .eq('id', input.exportItemId);
-
-  // Update case handoff state
-  let newHandoffState: PrcHandoffState;
-  switch (input.prcStatus) {
-    case 'acknowledged':
-      newHandoffState = 'acknowledged';
-      break;
-    case 'correction_requested':
-      newHandoffState = 'correction_requested';
-      // Also update application state
-      await admin
-        .from('recipient_cases')
-        .update({ application_state: 'correction_needed' })
-        .eq('id', item.case_id);
-      break;
-    case 'accepted':
-      newHandoffState = 'accepted';
-      break;
-    case 'rejected':
-      newHandoffState = 'rejected';
-      break;
-    default:
-      newHandoffState = 'acknowledged';
-  }
-
-  await admin
-    .from('recipient_cases')
-    .update({ prc_handoff_state: newHandoffState })
-    .eq('id', item.case_id);
-
-  // If PRC accepted and provided membership ID, activate membership
-  if (input.prcStatus === 'accepted' && input.prcMembershipId && input.prcEffectiveDate) {
-    await activateMembership(
-      item.case_id,
-      input.exportItemId,
-      input.prcMembershipId,
-      input.prcEffectiveDate,
-      input.prcExpiryDate,
-      input.actorId,
-    );
-  }
-
-  // If PRC rejected, update membership state
-  if (input.prcStatus === 'rejected') {
-    await admin
-      .from('recipient_cases')
-      .update({ membership_state: 'declined' })
-      .eq('id', item.case_id);
-
-    await admin.from('membership_status_events').insert({
-      case_id: item.case_id,
-      previous_state: 'pending_prc_confirmation',
-      new_state: 'declined',
-      changed_by: input.actorId,
-      change_source: 'prc_rejection',
-      prc_export_item_id: input.exportItemId,
-      reason: input.prcNotes ?? 'Rejected by PRC',
-    });
-  }
-
-  await writeAuditEvent({
-    event_type: 'prc_acknowledgment',
-    actor_id: input.actorId,
-    actor_type: 'user',
-    action: `PRC ${input.prcStatus} for export item ${input.exportItemId}`,
-    case_id: item.case_id,
-    target_type: 'prc_export_item',
-    target_id: input.exportItemId,
-    details: {
-      prc_status: input.prcStatus,
-      prc_membership_id: input.prcMembershipId,
-      correction_reason: input.correctionReason,
-    },
+  const { error } = await admin.rpc('acknowledge_prc_export_item_atomic', {
+    p_export_item_id: input.exportItemId,
+    p_prc_status: input.prcStatus,
+    p_prc_notes: input.prcNotes ?? null,
+    p_correction_reason: input.correctionReason ?? null,
+    p_correction_fields: input.correctionFields ?? null,
+    p_prc_membership_id: input.prcMembershipId ?? null,
+    p_prc_effective_date: input.prcEffectiveDate ?? null,
+    p_prc_expiry_date: input.prcExpiryDate ?? null,
+    p_actor_id: input.actorId,
   });
-}
-
-// ============================================================
-// Activate membership (PRC confirmation ONLY)
-// ============================================================
-
-async function activateMembership(
-  caseId: string,
-  exportItemId: string,
-  prcMembershipId: string,
-  effectiveDate: string,
-  expiryDate: string | undefined,
-  actorId: string,
-): Promise<void> {
-  const admin = getSupabaseAdminClient();
-
-  // Get current membership state
-  const { data: caseRecord } = await admin
-    .from('recipient_cases')
-    .select('membership_state')
-    .eq('id', caseId)
-    .single();
-
-  if (!caseRecord) return;
-
-  validateMembershipTransition(
-    caseRecord.membership_state as MembershipState,
-    'active_confirmed',
-  );
-
-  // Update case
-  await admin
-    .from('recipient_cases')
-    .update({ membership_state: 'active_confirmed' })
-    .eq('id', caseId);
-
-  // Create immutable membership event
-  await admin.from('membership_status_events').insert({
-    case_id: caseId,
-    previous_state: caseRecord.membership_state,
-    new_state: 'active_confirmed',
-    changed_by: actorId,
-    change_source: 'prc_confirmation',
-    prc_export_item_id: exportItemId,
-    prc_membership_id: prcMembershipId,
-    prc_effective_date: effectiveDate,
-    prc_expiry_date: expiryDate ?? null,
-    reason: 'Membership confirmed by PRC',
-    evidence: { prc_membership_id: prcMembershipId },
-  });
-
-  await writeAuditEvent({
-    event_type: 'membership_status_change',
-    actor_id: actorId,
-    actor_type: 'user',
-    action: `Membership activated for case ${caseId}: ${prcMembershipId}`,
-    case_id: caseId,
-    details: {
-      prc_membership_id: prcMembershipId,
-      effective_date: effectiveDate,
-      expiry_date: expiryDate,
-    },
-  });
+  if (error) throw new Error(`PRC response could not be recorded: ${error.message}`);
 }

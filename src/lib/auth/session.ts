@@ -51,22 +51,24 @@ export async function getSessionClient() {
  * Returns null if not authenticated.
  */
 export async function getAuthContext(): Promise<AuthContext | null> {
-  const supabase = await getSessionClient();
+  try {
+    const supabase = await getSessionClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
+    if (error || !user) return null;
+    return {
+      userId: user.id,
+      isAnonymous: user.is_anonymous ?? false,
+      email: user.email,
+    };
+  } catch {
+    // Authentication fails closed when the auth service is unavailable.
+    // Protected routes must not turn an absent/invalid session into a 500.
     return null;
   }
-
-  return {
-    userId: user.id,
-    isAnonymous: user.is_anonymous ?? false,
-    email: user.email,
-  };
 }
 
 /**

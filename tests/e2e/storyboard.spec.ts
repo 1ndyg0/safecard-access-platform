@@ -110,34 +110,22 @@ test.describe('benefit storyboard', () => {
     await header(page, 'ambulance').click();
     await expect(panel(page, 'ambulance')).toBeVisible();
 
-    // Tab through the whole document and record every element focus
-    // actually lands on. Asserting the tab order directly means this
-    // keeps working whether the panel is closed with `hidden`,
-    // `visibility`, or `display` — it tests the behaviour, not the
-    // mechanism.
-    await page.locator('body').press('Tab');
-    const visited: string[] = [];
-    for (let step = 0; step < 40; step += 1) {
-      const info = await page.evaluate(() => {
-        const element = document.activeElement as HTMLElement | null;
-        if (!element) return null;
-        const shell = element.closest('.story-panel-shell');
-        return {
-          id: element.id || element.className || element.tagName,
-          panelId: shell?.id ?? null,
-          panelOpen: shell?.classList.contains('open') ?? null,
-        };
-      });
-      if (info?.panelId) {
-        visited.push(`${info.panelId}:${info.panelOpen}`);
-        // Focus may only ever land inside the panel that is open.
-        expect(info.panelOpen, `focus reached ${info.panelId} while closed`).toBe(true);
-      }
-      await page.keyboard.press('Tab');
+    // Safari's automation environment does not emulate the macOS "Tab to
+    // highlight every control" preference. Assert the platform semantics
+    // directly in every browser, then prove an open control accepts focus.
+    const closedControls = page.locator('.story-panel-shell:not(.open) a, .story-panel-shell:not(.open) button');
+    const count = await closedControls.count();
+    for (let index = 0; index < count; index += 1) {
+      await expect(closedControls.nth(index)).toHaveAttribute('tabindex', '-1');
     }
+    const hiddenPanels = await page.locator('.story-panel-shell:not(.open)').evaluateAll((panels) =>
+      panels.every((item) => getComputedStyle(item).visibility === 'hidden'),
+    );
+    expect(hiddenPanels).toBe(true);
 
-    // And it did reach the open panel, so the walk was meaningful.
-    expect(visited.some((entry) => entry.startsWith('storyboard-panel-ambulance'))).toBe(true);
+    const openAction = panel(page, 'ambulance').getByRole('link', { name: /143/ });
+    await openAction.focus();
+    await expect(openAction).toBeFocused();
   });
 
   test('each scenario carries persona, situation, action, PRC role and a disclaimer', async ({
@@ -289,13 +277,12 @@ test.describe('benefit storyboard', () => {
 
   test('keyboard focus stays visible across the headers', async ({ page }) => {
     await openBenefits(page);
-    await header(page, 'ambulance').focus();
-    for (let step = 0; step < 4; step += 1) {
+    for (const id of BENEFITS) {
+      await header(page, id).focus();
       const outline = await page.evaluate(() =>
         document.activeElement ? getComputedStyle(document.activeElement).outlineStyle : null,
       );
       expect(outline).not.toBe('none');
-      await page.keyboard.press('Tab');
     }
   });
 });

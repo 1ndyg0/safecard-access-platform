@@ -6,9 +6,10 @@
  *
  * What this route guarantees:
  *
- *   - It changes application_review_state and nothing else. Payment,
- *     PRC handoff and membership are read before and re-asserted after,
- *     and the response says so explicitly.
+ *   - It changes the review decision and, for a correction request, the
+ *     applicant-facing application state. Payment and membership are never
+ *     advanced here. Handoff readiness is derived transactionally only when
+ *     both application approval and verified payment are present.
  *   - It requires an explicit confirmation flag, so a decision cannot be
  *     made by a stray click.
  *   - It requires the review state the reviewer was looking at. If
@@ -25,16 +26,13 @@ import { getSupabaseAdminClient } from '@/lib/db/client';
 import { requireStaffAuth } from '@/lib/auth/session';
 import { requireAnyRole } from '@/lib/auth/permissions';
 import { badRequest, conflict, forbidden, handleApiError, notFound } from '@/lib/api/response';
-import { writeAuditEvent } from '@/lib/audit';
 import {
   REASON_MAX,
   REASON_MIN,
   REVIEW_DECISIONS,
   REVIEW_STATES,
-  assertTransition,
   requiresReason,
   type ReviewDecision,
-  type ReviewState,
 } from '@/lib/review/state';
 
 export const dynamic = 'force-dynamic';
@@ -94,108 +92,39 @@ export async function POST(
     );
     if (!access.allowed) return forbidden('Your role cannot decide applications for this campaign.');
 
-    const priorState = caseRecord.application_review_state as ReviewState;
-
-    // Stale-screen and conflicting-decision guard.
-    if (priorState !== body.expected_review_state) {
-      return conflict(
-        `This application moved to "${priorState}" since the page was loaded. Reload and review it again.`,
-      );
-    }
-
-    const resultingState = body.decision as ReviewState;
-    assertTransition(priorState, resultingState);
-
-    const { data: submission } = await admin
-      .from('application_submissions')
-      .select('id')
-      .eq('case_id', id)
-      .eq('is_current', true)
-      .maybeSingle();
-
-    // Insert first. The unique idempotency key means a duplicate request
-    // fails here, before anything is mutated.
-    const { error: decisionError } = await admin
-      .from('application_review_decisions')
-      .insert({
-        case_id: id,
-        campaign_id: caseRecord.campaign_id,
-        submission_id: submission?.id ?? null,
-        reviewer_id: auth.userId,
-        decision: resultingState,
-        prior_state: priorState,
-        resulting_state: resultingState,
-        reason: body.reason ?? null,
-        idempotency_key: body.idempotency_key,
-      });
+    const { data, error: decisionError } = await admin.rpc(
+      'record_application_review_atomic',
+      {
+        p_case_id: id,
+        p_reviewer_id: auth.userId,
+        p_decision: body.decision,
+        p_reason: body.reason ?? null,
+        p_expected_state: body.expected_review_state,
+        p_idempotency_key: body.idempotency_key,
+        p_is_reopen: false,
+      },
+    );
     if (decisionError) {
-      if (decisionError.code === '23505') {
-        return conflict('This decision has already been recorded.');
+      if (
+        decisionError.message.includes('already been recorded')
+        || decisionError.message.includes('since it was loaded')
+        || decisionError.message.includes('Invalid application review transition')
+      ) {
+        return conflict(decisionError.message);
       }
       throw new Error(`Failed to record decision: ${decisionError.message}`);
     }
-
-    // Conditional update: if another request changed the state between
-    // the read and here, this matches zero rows and we report a conflict
-    // rather than clobbering it.
-    const { data: updated, error: updateError } = await admin
-      .from('recipient_cases')
-      .update({ application_review_state: resultingState })
-      .eq('id', id)
-      .eq('application_review_state', priorState)
-      .select('id');
-    if (updateError) throw new Error(`Failed to apply decision: ${updateError.message}`);
-    if (!updated || updated.length === 0) {
-      return conflict('Another reviewer decided this application first. Reload and check.');
-    }
-
-    // A resubmission request also moves the applicant-facing application
-    // state, because the applicant now has something to do. Approve and
-    // reject do not: the application itself is unchanged by being judged.
-    if (resultingState === 'resubmission_requested') {
-      await admin
-        .from('recipient_cases')
-        .update({ application_state: 'correction_needed' })
-        .eq('id', id)
-        .in('application_state', ['submitted', 'resubmitted', 'ready_for_review']);
-      if (submission?.id) {
-        await admin
-          .from('application_submissions')
-          .update({ correction_reason: body.reason ?? null })
-          .eq('id', submission.id);
-      }
-    }
-
-    await writeAuditEvent({
-      event_type: 'data_correction',
-      actor_id: auth.userId,
-      actor_type: 'user',
-      action: `Application review decision: ${resultingState}`,
-      target_type: 'application_review',
-      target_id: id,
-      case_id: id,
-      campaign_id: caseRecord.campaign_id as string,
-      details: {
-        prior_state: priorState,
-        resulting_state: resultingState,
-        reason: body.reason ?? null,
-        submission_id: submission?.id ?? null,
-        // Recorded so the trail shows these were untouched.
-        payment_state: caseRecord.payment_state,
-        prc_handoff_state: caseRecord.prc_handoff_state,
-        membership_state: caseRecord.membership_state,
-      },
-      severity: resultingState === 'rejected' ? 'critical' : 'warning',
-    });
+    const result = Array.isArray(data) ? data[0] : data;
+    if (!result) throw new Error('Failed to record decision: no result returned');
 
     return NextResponse.json(
       {
-        reviewState: resultingState,
-        priorState,
+        reviewState: result.resulting_state,
+        priorState: result.prior_state,
         // Restated so no client can infer that a decision moved anything else.
-        paymentState: caseRecord.payment_state,
-        prcHandoffState: caseRecord.prc_handoff_state,
-        membershipState: caseRecord.membership_state,
+        paymentState: result.payment_state,
+        prcHandoffState: result.prc_handoff_state,
+        membershipState: result.membership_state,
         membershipChanged: false,
         paymentChanged: false,
       },

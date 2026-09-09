@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MANUAL_PAYMENT_CONFIG, getPaymentRoutes } from './config';
+import { MANUAL_PAYMENT_CONFIG, getApprovedPaymentRoutes, getPaymentRoutes } from './config';
 
 describe('manual payment configuration', () => {
   it('keeps the approved annual fee and explanatory monthly equivalent exact', () => {
@@ -22,5 +22,16 @@ describe('manual payment configuration', () => {
     const routes = getPaymentRoutes('https://signed.example/qr');
     expect(routes.find((route) => route.id === 'gcash')?.qrImageUrl).toBe('https://signed.example/qr');
     expect(routes.filter((route) => route.id !== 'gcash').every((route) => !('qrImageUrl' in route))).toBe(true);
+  });
+
+  it('shows only route types approved for the selected campaign', () => {
+    expect(getApprovedPaymentRoutes(new Set(['gcash']))).toHaveLength(1);
+    expect(getApprovedPaymentRoutes(new Set(['gcash']))[0]?.id).toBe('gcash');
+    expect(getApprovedPaymentRoutes(new Set(['bank_transfer'])).map((route) => route.id)).toEqual([
+      'bpi',
+      'bdo',
+      'security-bank',
+      'metrobank',
+    ]);
   });
 });

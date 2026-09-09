@@ -15,6 +15,7 @@
  */
 
 import { useId, useState } from "react";
+import Image from "next/image";
 
 type Evidence = {
   id: string;
@@ -23,6 +24,12 @@ type Evidence = {
   amount_confirmed: string | number | null;
   is_verified: boolean;
   created_at: string;
+  version_number: number;
+  content_type: string;
+  file_size_bytes: number;
+  sha256: string;
+  state: string;
+  uploaded_at: string;
 };
 
 export function PaymentActions({
@@ -46,12 +53,27 @@ export function PaymentActions({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
+  const [preview, setPreview] = useState<{ id: string; url: string } | null>(null);
 
   function reset() {
     setMode("idle");
     setConfirmed(false);
     setReason("");
     setBusy(false);
+  }
+
+  async function openEvidence(id: string) {
+    setMessage("");
+    setFailed(false);
+    try {
+      const response = await fetch(`/api/payment/evidence/${id}`, { cache: "no-store" });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error ?? "Evidence could not be opened.");
+      setPreview({ id, url: body.signedUrl });
+    } catch (caught) {
+      setFailed(true);
+      setMessage(caught instanceof Error ? caught.message : "Evidence could not be opened.");
+    }
   }
 
   async function submit(action: "verify_payment" | "request_reupload") {
@@ -74,6 +96,7 @@ export function PaymentActions({
               confirm: true as const,
               reason,
               expected_payment_state: paymentState,
+              evidence_id: evidenceId,
             };
 
       const response = await fetch(`/api/admin/cases/${caseId}/payment`, {
@@ -107,7 +130,34 @@ export function PaymentActions({
       </div>
 
       {mode === "idle" && (
-        <div className="filter-actions">
+        <div className="stack">
+          {evidence.map((item) => (
+            <article className="evidence-summary" key={item.id}>
+              <div>
+                <strong>Version {item.version_number} · {item.state.replaceAll("_", " ")}</strong>
+                <span>{item.content_type} · {Math.ceil(item.file_size_bytes / 1024)} KB</span>
+                <span>SHA-256 {item.sha256.slice(0, 12)}…</span>
+              </div>
+              <button type="button" className="button-quiet" onClick={() => void openEvidence(item.id)}>
+                Open evidence
+              </button>
+            </article>
+          ))}
+          {preview && (
+            <div className="evidence-preview">
+              <Image
+                src={preview.url}
+                alt="Payment evidence selected for reconciliation"
+                width={960}
+                height={960}
+                unoptimized
+              />
+              <button type="button" className="link-button" onClick={() => setPreview(null)}>
+                Close preview
+              </button>
+            </div>
+          )}
+          <div className="filter-actions">
           <button
             type="button"
             className="button-primary"
@@ -116,12 +166,18 @@ export function PaymentActions({
           >
             Verify payment
           </button>
-          <button type="button" className="button-quiet" onClick={() => setMode("reupload")}>
+          <button
+            type="button"
+            className="button-quiet"
+            onClick={() => setMode("reupload")}
+            disabled={evidence.length === 0}
+          >
             Request replacement evidence
           </button>
           {evidence.length === 0 && (
             <p className="field-hint">No evidence has been submitted to verify yet.</p>
           )}
+          </div>
         </div>
       )}
 
@@ -180,6 +236,21 @@ export function PaymentActions({
             void submit("request_reupload");
           }}
         >
+          <div className="field-block compact">
+            <label htmlFor={`${baseId}-reupload-evidence`}>Evidence that needs replacement</label>
+            <select
+              id={`${baseId}-reupload-evidence`}
+              value={evidenceId}
+              onChange={(event) => setEvidenceId(event.target.value)}
+              required
+            >
+              {evidence.map((item) => (
+                <option key={item.id} value={item.id}>
+                  Version {item.version_number} · {item.state.replaceAll("_", " ")}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="field-block compact">
             <label htmlFor={`${baseId}-reason`}>Reason shown to the applicant</label>
             <textarea

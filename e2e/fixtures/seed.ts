@@ -30,6 +30,7 @@ export interface SeededWorld {
     finance: SeededStaff;
     support: SeededStaff;
     schoolAdmin: SeededStaff;
+    prcLiaison: SeededStaff;
     /** Holds a role, but only on the other campaign. */
     outsider: SeededStaff;
     /** Authenticates but holds no active role at all. */
@@ -105,21 +106,29 @@ export function createSeedClient(): SupabaseClient {
 
 /** Order matters: children before parents. */
 const TABLES_TO_CLEAR = [
+  'storyboard_events',
   'audit_events',
+  'notification_events',
+  'jobs',
+  'rate_limit_buckets',
+  'aggregate_metrics',
+  'application_review_decisions',
+  'payment_evidence_versions',
   'payment_evidence',
   'payment_intents',
-  'application_submissions',
-  'support_cases',
   'membership_status_events',
   'prc_export_items',
   'prc_export_batches',
+  'application_submissions',
+  'support_cases',
+  'relationships',
   'recipient_profiles',
-  'recipient_cases',
   'consent_records',
+  'recipient_cases',
+  'content_versions',
   'referral_links',
   'sponsors',
   'role_assignments',
-  'aggregate_metrics',
   'pilot_campaigns',
   'organizations',
 ] as const;
@@ -173,6 +182,7 @@ async function insertCase(
   states: {
     consent_state?: string;
     application_state?: string;
+    application_review_state?: string;
     payment_state?: string;
     prc_handoff_state?: string;
     membership_state?: string;
@@ -186,15 +196,19 @@ async function insertCase(
   } = {},
 ): Promise<string> {
   const caseId = randomUUID();
+  const versionId = await contentVersionId(admin);
   const { error } = await admin.from('recipient_cases').insert({
     id: caseId,
     campaign_id: campaignId,
     application_ref: options.applicationRef ?? null,
     consent_state: states.consent_state ?? 'agreed',
     application_state: states.application_state ?? 'draft',
+    application_review_state: states.application_review_state ?? 'pending',
     payment_state: states.payment_state ?? 'not_started',
     prc_handoff_state: states.prc_handoff_state ?? 'not_ready',
     membership_state: states.membership_state ?? 'not_active',
+    consent_content_version_id: versionId,
+    privacy_notice_version_id: versionId,
     created_at: options.createdAt ?? new Date().toISOString(),
   });
   if (error) throw new Error(`Failed to insert case: ${error.message}`);
@@ -208,7 +222,8 @@ async function insertCase(
         application_ref: options.applicationRef,
         submitted_data: {},
         consent_record_id: await consentRecordFor(admin, caseId),
-        privacy_notice_version_id: await contentVersionId(admin),
+        content_versions_seen: [versionId],
+        privacy_notice_version_id: versionId,
         submitted_at: new Date(Date.now() - 20 * 86_400_000).toISOString(),
         idempotency_key: randomUUID(),
         request_hash: randomUUID(),
@@ -220,7 +235,8 @@ async function insertCase(
       application_ref: options.applicationRef,
       submitted_data: {},
       consent_record_id: await consentRecordFor(admin, caseId),
-      privacy_notice_version_id: await contentVersionId(admin),
+      content_versions_seen: [versionId],
+      privacy_notice_version_id: versionId,
       submitted_at: options.submittedAt,
       original_submission_id: original,
       correction_reason: options.correctionReason ?? null,
@@ -246,24 +262,31 @@ async function insertCase(
     zip_code: '0000',
     mobile_number: '+639000000000',
     email: `case-${caseId.slice(0, 8)}@e2e.safecard.test`,
-    fields_completed: 8,
+    fields_completed: true,
   });
 
   return caseId;
 }
 
 let cachedContentVersionId: string | null = null;
+let contentCreatedBy: string | null = null;
 async function contentVersionId(admin: SupabaseClient): Promise<string> {
   if (cachedContentVersionId) return cachedContentVersionId;
+  if (!contentCreatedBy) throw new Error('Content seed owner is not initialized');
   const id = randomUUID();
-  await admin.from('content_versions').insert({
+  const { error } = await admin.from('content_versions').insert({
     id,
     content_type: 'privacy_notice',
     locale: 'en',
-    version_label: 'e2e-1',
+    version: 1,
+    created_by: contentCreatedBy,
+    title: 'Synthetic privacy notice',
     body: 'Synthetic privacy notice for tests.',
-    approval_status: 'published',
+    approval_status: 'approved',
+    is_published: true,
+    published_at: new Date().toISOString(),
   });
+  if (error) throw new Error(`Failed to insert content version: ${error.message}`);
   cachedContentVersionId = id;
   return id;
 }
@@ -273,13 +296,17 @@ async function consentRecordFor(admin: SupabaseClient, caseId: string): Promise<
   const existing = consentByCase.get(caseId);
   if (existing) return existing;
   const id = randomUUID();
-  await admin.from('consent_records').insert({
+  const { error } = await admin.from('consent_records').insert({
     id,
     case_id: caseId,
     consent_content_version_id: await contentVersionId(admin),
     privacy_notice_version_id: await contentVersionId(admin),
-    granted_at: new Date().toISOString(),
+    locale: 'en',
+    state: 'agreed',
+    agreed_at: new Date().toISOString(),
+    request_hash: randomUUID(),
   });
+  if (error) throw new Error(`Failed to insert consent: ${error.message}`);
   consentByCase.set(caseId, id);
   return id;
 }
@@ -287,15 +314,20 @@ async function consentRecordFor(admin: SupabaseClient, caseId: string): Promise<
 export async function seedWorld(): Promise<SeededWorld> {
   const admin = createSeedClient();
   cachedContentVersionId = null;
+  contentCreatedBy = null;
   consentByCase.clear();
 
-  await deleteExistingStaff(admin);
   await clear(admin);
+  await deleteExistingStaff(admin);
 
   const organizationId = randomUUID();
+  const otherOrganizationId = randomUUID();
   await admin
     .from('organizations')
-    .insert({ id: organizationId, name: 'E2E School', organization_type: 'school' });
+    .insert([
+      { id: organizationId, name: 'E2E School', organization_type: 'school' },
+      { id: otherOrganizationId, name: 'E2E Other School', organization_type: 'school' },
+    ]);
 
   const campaignId = randomUUID();
   const otherCampaignId = randomUUID();
@@ -304,17 +336,27 @@ export async function seedWorld(): Promise<SeededWorld> {
       id: campaignId,
       organization_id: organizationId,
       name: 'E2E Primary Campaign',
+      slug: `e2e-primary-${campaignId.slice(0, 8)}`,
       start_date: '2026-01-01',
       max_applications: 1000,
       is_active: true,
+      approved_payment_routes: [
+        { type: 'gcash', is_active: true },
+        { type: 'bank_transfer', is_active: true },
+      ],
     },
     {
       id: otherCampaignId,
-      organization_id: randomUUID(),
+      organization_id: otherOrganizationId,
       name: 'E2E Other Campaign',
+      slug: `e2e-other-${otherCampaignId.slice(0, 8)}`,
       start_date: '2026-01-01',
       max_applications: 1000,
       is_active: true,
+      approved_payment_routes: [
+        { type: 'gcash', is_active: true },
+        { type: 'bank_transfer', is_active: true },
+      ],
     },
   ]);
 
@@ -323,15 +365,18 @@ export async function seedWorld(): Promise<SeededWorld> {
     finance: await createStaff(admin, 'finance@e2e.safecard.test', 'Finance Reviewer'),
     support: await createStaff(admin, 'support@e2e.safecard.test', 'Support Agent'),
     schoolAdmin: await createStaff(admin, 'school@e2e.safecard.test', 'School Admin'),
+    prcLiaison: await createStaff(admin, 'prc@e2e.safecard.test', 'PRC Liaison'),
     outsider: await createStaff(admin, 'outsider@e2e.safecard.test', 'Other Campaign Staff'),
     unassigned: await createStaff(admin, 'unassigned@e2e.safecard.test', 'No Role'),
   };
+  contentCreatedBy = staff.privacyAdmin.userId;
 
   await admin.from('role_assignments').insert([
     { user_id: staff.privacyAdmin.userId, role: 'privacy_admin_owner', campaign_id: campaignId, is_active: true },
     { user_id: staff.finance.userId, role: 'finance_export', campaign_id: campaignId, is_active: true },
     { user_id: staff.support.userId, role: 'support_agent', campaign_id: campaignId, is_active: true },
     { user_id: staff.schoolAdmin.userId, role: 'school_admin', campaign_id: campaignId, is_active: true },
+    { user_id: staff.prcLiaison.userId, role: 'prc_liaison', campaign_id: campaignId, is_active: true },
     { user_id: staff.outsider.userId, role: 'school_admin', campaign_id: otherCampaignId, is_active: true },
   ]);
 
@@ -367,6 +412,7 @@ export async function seedWorld(): Promise<SeededWorld> {
       campaignId,
       {
         application_state: 'submitted',
+        application_review_state: 'approved',
         payment_state: 'verified_by_official_source',
         prc_handoff_state: 'ready_for_export',
         membership_state: 'not_active',
@@ -420,16 +466,20 @@ export async function seedWorld(): Promise<SeededWorld> {
   const { error: intentError } = await admin.from('payment_intents').insert({
     id: paymentIntentId,
     case_id: cases.approvedUnverifiedPayment,
+    campaign_id: campaignId,
+    payer_type: 'other',
     expected_amount: 1200,
     currency: 'PHP',
     payment_route: 'approved-route',
-    payment_state: 'verification_pending',
+    state: 'verification_pending',
+    request_hash: randomUUID(),
   });
   if (intentError) throw new Error(`Failed to insert intent: ${intentError.message}`);
 
+  const parentEvidenceId = randomUUID();
   const paymentEvidenceId = randomUUID();
-  await admin.from('payment_evidence').insert({
-    id: paymentEvidenceId,
+  const { error: evidenceError } = await admin.from('payment_evidence').insert({
+    id: parentEvidenceId,
     payment_intent_id: paymentIntentId,
     evidence_type: 'manual_receipt_reference',
     reference_number: 'E2E-RECEIPT-0001',
@@ -437,6 +487,23 @@ export async function seedWorld(): Promise<SeededWorld> {
     source: 'applicant_upload',
     is_verified: false,
   });
+  if (evidenceError) throw new Error(`Failed to insert evidence: ${evidenceError.message}`);
+
+  const { error: versionError } = await admin.from('payment_evidence_versions').insert({
+    id: paymentEvidenceId,
+    payment_evidence_id: parentEvidenceId,
+    payment_intent_id: paymentIntentId,
+    version_number: 1,
+    object_path: `campaigns/${campaignId}/cases/${cases.approvedUnverifiedPayment}/payments/${paymentIntentId}/evidence/${paymentEvidenceId}.png`,
+    content_type: 'image/png',
+    file_size_bytes: 24,
+    sha256: 'a'.repeat(64),
+    image_width: 1,
+    image_height: 1,
+    state: 'verification_pending',
+    uploaded_by: staff.finance.userId,
+  });
+  if (versionError) throw new Error(`Failed to insert evidence version: ${versionError.message}`);
 
   await admin
     .from('recipient_cases')

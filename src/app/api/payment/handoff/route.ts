@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       expectedAmount: parsed.data.expected_amount,
       paymentRoute: parsed.data.payment_route,
       idempotencyKey: parsed.data.idempotency_key,
+      actorId: auth.userId,
     });
 
     return NextResponse.json(

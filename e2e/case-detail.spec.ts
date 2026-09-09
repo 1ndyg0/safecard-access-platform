@@ -204,6 +204,7 @@ test.describe('payment verification', () => {
         data: {
           action: 'request_reupload',
           payment_intent_id: world.paymentIntentId,
+          evidence_id: world.paymentEvidenceId,
           confirm: true,
           reason,
           expected_payment_state: 'verification_pending',

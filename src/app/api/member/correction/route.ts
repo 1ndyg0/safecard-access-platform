@@ -22,7 +22,6 @@ import { requireMemberSession } from '@/lib/auth/member-session';
 import { getSupabaseAdminClient } from '@/lib/db/client';
 import { badRequest, conflict, handleApiError, notFound } from '@/lib/api/response';
 import { enforceRateLimit } from '@/lib/api/rate-limit';
-import { writeAuditEvent } from '@/lib/audit';
 import { recipientProfileSchema } from '@/lib/validation/schemas';
 import { assertProfileDataAllowed, resolveDataMode } from '@/lib/safety/data-mode';
 import {
@@ -67,19 +66,32 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       .eq('case_id', caseId)
       .maybeSingle();
 
-    const { data: decision } = await admin
-      .from('application_review_decisions')
-      .select('reason,decided_at')
-      .eq('case_id', caseId)
-      .order('decided_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const [{ data: decision }, { data: prcCorrection }] = await Promise.all([
+      admin
+        .from('application_review_decisions')
+        .select('reason,decided_at')
+        .eq('case_id', caseId)
+        .order('decided_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      admin
+        .from('prc_export_items')
+        .select('correction_reason,prc_responded_at')
+        .eq('case_id', caseId)
+        .eq('prc_status', 'correction_requested')
+        .order('prc_responded_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
     return NextResponse.json(
       {
         reference: caseRecord.application_ref,
         eligibility,
-        reviewReason: decision?.reason ?? null,
+        reviewReason:
+          caseRecord.prc_handoff_state === 'correction_requested'
+            ? prcCorrection?.correction_reason ?? decision?.reason ?? null
+            : decision?.reason ?? null,
         fields: CORRECTABLE_FIELDS,
         values: profile ?? null,
       },
@@ -141,96 +153,42 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // declare itself into live mode.
     assertProfileDataAllowed(resolveDataMode(), body.profile);
 
-    const { data: current } = await admin
-      .from('application_submissions')
-      .select('id,application_ref,consent_record_id,privacy_notice_version_id')
-      .eq('case_id', caseId)
-      .eq('is_current', true)
-      .maybeSingle();
-    if (!current) return conflict('There is no submission to correct.');
-
     const requestHash = createHash('sha256')
       .update(JSON.stringify(body.profile))
       .digest('hex');
-
-    // Supersede first so the partial unique index on is_current cannot
-    // reject the insert, then insert the new version.
-    const { error: supersedeError } = await admin
-      .from('application_submissions')
-      .update({ is_current: false })
-      .eq('id', current.id);
-    if (supersedeError) throw new Error(`Failed to supersede: ${supersedeError.message}`);
-
-    const { data: inserted, error: insertError } = await admin
-      .from('application_submissions')
-      .insert({
-        case_id: caseId,
-        application_ref: current.application_ref,
-        submitted_data: body.profile,
-        consent_record_id: current.consent_record_id,
-        privacy_notice_version_id: current.privacy_notice_version_id,
-        submitted_at: new Date().toISOString(),
-        submitted_by: 'recipient',
-        original_submission_id: current.id,
-        idempotency_key: body.idempotency_key,
-        request_hash: requestHash,
-        is_current: true,
-      })
-      .select('id')
-      .single();
-
-    if (insertError) {
-      // Put the previous version back if the new one did not land, so a
-      // failed correction never leaves the case with no current version.
-      await admin
-        .from('application_submissions')
-        .update({ is_current: true })
-        .eq('id', current.id);
-      if (insertError.code === '23505') {
-        return conflict('This correction has already been submitted.');
-      }
-      throw new Error(`Failed to record correction: ${insertError.message}`);
-    }
-
-    // The profile of record follows the accepted correction.
-    await admin.from('recipient_profiles').update(body.profile).eq('case_id', caseId);
-
-    // Application state moves back into review; review state resets to
-    // pending. Payment, handoff and membership are deliberately untouched.
-    await admin
-      .from('recipient_cases')
-      .update({ application_state: 'resubmitted', application_review_state: 'pending' })
-      .eq('id', caseId);
-
-    await writeAuditEvent({
-      event_type: 'application_submit',
-      actor_id: null,
-      actor_type: 'anonymous',
-      action: 'Applicant submitted a correction',
-      target_type: 'application_submission',
-      target_id: inserted.id as string,
-      case_id: caseId,
-      campaign_id: caseRecord.campaign_id as string,
-      details: {
-        prior_state: caseRecord.application_review_state,
-        resulting_state: 'pending',
-        superseded_submission_id: current.id,
-        // Field names only; the values live in the submission row.
-        fields_submitted: Object.keys(body.profile),
+    const { data, error: correctionError } = await admin.rpc(
+      'submit_member_correction_atomic',
+      {
+        p_case_id: caseId,
+        p_profile_data: body.profile,
+        p_idempotency_key: body.idempotency_key,
+        p_request_hash: requestHash,
       },
-      severity: 'info',
-    });
+    );
+    if (correctionError) {
+      if (
+        correctionError.message.includes('already been submitted')
+        || correctionError.message.includes('has not been requested')
+        || correctionError.message.includes('Active consent is required')
+        || correctionError.message.includes('There is no submission to correct')
+      ) {
+        return conflict(correctionError.message);
+      }
+      throw new Error(`Failed to record correction: ${correctionError.message}`);
+    }
+    const result = Array.isArray(data) ? data[0] : data;
+    if (!result) throw new Error('Failed to record correction: no result returned');
 
     return NextResponse.json(
       {
         submitted: true,
-        submissionId: inserted.id,
-        previousSubmissionId: current.id,
-        reviewState: 'pending',
+        submissionId: result.submission_id,
+        previousSubmissionId: result.previous_submission_id,
+        reviewState: result.review_state,
         // Restated so nothing can be inferred as having advanced.
-        paymentState: caseRecord.payment_state,
-        prcHandoffState: caseRecord.prc_handoff_state,
-        membershipState: caseRecord.membership_state,
+        paymentState: result.payment_state,
+        prcHandoffState: result.prc_handoff_state,
+        membershipState: result.membership_state,
         membershipChanged: false,
       },
       { headers: { 'Cache-Control': 'private, no-store' } },

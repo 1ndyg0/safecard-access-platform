@@ -19,8 +19,7 @@ import { getSupabaseAdminClient } from '@/lib/db/client';
 import { requireStaffAuth } from '@/lib/auth/session';
 import { requireRole } from '@/lib/auth/permissions';
 import { badRequest, conflict, forbidden, handleApiError, notFound } from '@/lib/api/response';
-import { writeAuditEvent } from '@/lib/audit';
-import { REASON_MAX, REASON_MIN, canReopen, type ReviewState } from '@/lib/review/state';
+import { REASON_MAX, REASON_MIN } from '@/lib/review/state';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,65 +62,40 @@ export async function POST(
       return forbidden('Only a privacy administrator may reopen a rejected application.');
     }
 
-    const priorState = caseRecord.application_review_state as ReviewState;
-    if (!canReopen(priorState)) {
+    if (caseRecord.application_review_state !== 'rejected') {
       return conflict(
-        `Only a rejected application can be reopened. This one is "${priorState}".`,
+        `Only a rejected application can be reopened. This one is "${caseRecord.application_review_state}".`,
       );
     }
 
-    const { error: decisionError } = await admin
-      .from('application_review_decisions')
-      .insert({
-        case_id: id,
-        campaign_id: caseRecord.campaign_id,
-        reviewer_id: auth.userId,
-        decision: 'pending',
-        prior_state: priorState,
-        resulting_state: 'pending',
-        reason: parsed.data.reason,
-        is_reopen: true,
-        idempotency_key: parsed.data.idempotency_key,
-      });
+    const { data, error: decisionError } = await admin.rpc(
+      'record_application_review_atomic',
+      {
+        p_case_id: id,
+        p_reviewer_id: auth.userId,
+        p_decision: 'pending',
+        p_reason: parsed.data.reason,
+        p_expected_state: 'rejected',
+        p_idempotency_key: parsed.data.idempotency_key,
+        p_is_reopen: true,
+      },
+    );
     if (decisionError) {
-      if (decisionError.code === '23505') return conflict('This reopen has already been recorded.');
+      if (
+        decisionError.message.includes('already been recorded')
+        || decisionError.message.includes('since it was loaded')
+        || decisionError.message.includes('Only a rejected application')
+      ) return conflict(decisionError.message);
       throw new Error(`Failed to record reopen: ${decisionError.message}`);
     }
-
-    const { data: updated, error: updateError } = await admin
-      .from('recipient_cases')
-      .update({ application_review_state: 'pending' })
-      .eq('id', id)
-      .eq('application_review_state', 'rejected')
-      .select('id');
-    if (updateError) throw new Error(`Failed to reopen: ${updateError.message}`);
-    if (!updated || updated.length === 0) {
-      return conflict('This application is no longer rejected. Reload and check.');
-    }
-
-    await writeAuditEvent({
-      event_type: 'data_correction',
-      actor_id: auth.userId,
-      actor_type: 'user',
-      action: 'Reopened a rejected application',
-      target_type: 'application_review',
-      target_id: id,
-      case_id: id,
-      campaign_id: caseRecord.campaign_id as string,
-      details: {
-        prior_state: priorState,
-        resulting_state: 'pending',
-        reason: parsed.data.reason,
-        is_reopen: true,
-      },
-      severity: 'critical',
-    });
+    const result = Array.isArray(data) ? data[0] : data;
+    if (!result) throw new Error('Failed to reopen: no result returned');
 
     return NextResponse.json(
       {
         reviewState: 'pending',
-        priorState,
-        membershipState: caseRecord.membership_state,
+        priorState: result.prior_state,
+        membershipState: result.membership_state,
         membershipChanged: false,
       },
       { headers: { 'Cache-Control': 'private, no-store' } },

@@ -19,6 +19,7 @@ import { badRequest, forbidden, notFound } from '@/lib/api/response';
 import {
   assertCampaignAccess,
   logCaseAccess,
+  rolesForCampaign,
   resolveStaffScope,
 } from '@/lib/admin/access';
 import { handleAdminError, PRIVATE_NO_STORE } from '@/lib/admin/respond';
@@ -43,9 +44,6 @@ export async function GET(
     const { id } = await context.params;
     if (!z.string().uuid().safeParse(id).success) return badRequest('Case id must be a UUID.');
 
-    const policy = resolveCaseAccessPolicy(scope.roles);
-    if (!policy) return forbidden('Your role cannot open individual cases.');
-
     const admin = getSupabaseAdminClient();
     const { data: caseRecord, error: caseError } = await admin
       .from('recipient_cases')
@@ -57,6 +55,10 @@ export async function GET(
 
     // Cross-campaign access is a 403, not an empty body.
     assertCampaignAccess(scope, caseRecord.campaign_id as string);
+    const policy = resolveCaseAccessPolicy(
+      rolesForCampaign(scope, caseRecord.campaign_id as string),
+    );
+    if (!policy) return forbidden('Your role cannot open individual cases.');
 
     const profileColumns = profileSelectClause(policy);
     let profile: Record<string, unknown> | null = null;
@@ -86,7 +88,7 @@ export async function GET(
       const { data, error } = await admin
         .from('payment_intents')
         .select(
-          'id,expected_amount,currency,payment_route,payment_state,payment_reference,created_at,updated_at',
+          'id,expected_amount,currency,payment_route,state,payment_reference,created_at,updated_at',
         )
         .eq('case_id', id)
         .order('created_at', { ascending: false });
@@ -99,12 +101,12 @@ export async function GET(
       const intentIds = payments.map((payment) => payment.id as string);
       if (intentIds.length > 0) {
         const { data: evidence, error: evidenceError } = await admin
-          .from('payment_evidence')
+          .from('payment_evidence_versions')
           .select(
-            'id,payment_intent_id,evidence_type,reference_number,amount_confirmed,currency,source,is_verified,confirmed_at,created_at',
+            'id,payment_evidence_id,payment_intent_id,version_number,content_type,file_size_bytes,sha256,state,uploaded_at,reviewed_at,payment_evidence!inner(evidence_type,reference_number,amount_confirmed,currency,source,is_verified,confirmed_at,created_at)',
           )
           .in('payment_intent_id', intentIds)
-          .order('created_at', { ascending: false });
+          .order('uploaded_at', { ascending: false });
         if (evidenceError) {
           throw new Error(`Failed to load payment evidence: ${evidenceError.message}`);
         }
@@ -112,10 +114,31 @@ export async function GET(
         (evidence ?? []).forEach((row) => {
           const key = row.payment_intent_id as string;
           if (!byIntent.has(key)) byIntent.set(key, []);
-          byIntent.get(key)?.push(row as Record<string, unknown>);
+          const parent = Array.isArray(row.payment_evidence)
+            ? row.payment_evidence[0]
+            : row.payment_evidence;
+          byIntent.get(key)?.push({
+            id: row.id,
+            version_number: row.version_number,
+            content_type: row.content_type,
+            file_size_bytes: row.file_size_bytes,
+            sha256: row.sha256,
+            state: row.state,
+            uploaded_at: row.uploaded_at,
+            reviewed_at: row.reviewed_at,
+            evidence_type: parent?.evidence_type,
+            reference_number: parent?.reference_number,
+            amount_confirmed: parent?.amount_confirmed,
+            currency: parent?.currency,
+            source: parent?.source,
+            is_verified: parent?.is_verified,
+            confirmed_at: parent?.confirmed_at,
+            created_at: parent?.created_at,
+          });
         });
         payments = payments.map((payment, index) => ({
           ...payment,
+          payment_state: payment.state,
           evidence: byIntent.get(payment.id as string) ?? [],
           // The newest row is current; anything after it was superseded.
           isLatestIntent: index === 0,

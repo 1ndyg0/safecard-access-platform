@@ -37,6 +37,12 @@ type Payment = {
     amount_confirmed: string | number | null;
     is_verified: boolean;
     created_at: string;
+    version_number: number;
+    content_type: string;
+    file_size_bytes: number;
+    sha256: string;
+    state: string;
+    uploaded_at: string;
   }>;
 };
 

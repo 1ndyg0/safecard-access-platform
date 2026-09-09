@@ -43,21 +43,37 @@ export async function GET() {
       .limit(1)
       .maybeSingle();
 
-    // A payment reviewer's replacement request, if one is outstanding.
-    const { data: paymentEvent } = await admin
-      .from('audit_events')
-      .select('details,created_at')
+    const [{ data: paymentIntent }, { data: prcCorrection }] = await Promise.all([
+      admin
+      .from('payment_intents')
+      .select('id,state')
       .eq('case_id', caseId)
-      .eq('event_type', 'payment_status_change')
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle();
-
-    const paymentDetails = (paymentEvent?.details ?? null) as Record<string, unknown> | null;
-    const paymentReason =
-      typeof paymentDetails?.reason === 'string' ? paymentDetails.reason : null;
-    const replacementRequested =
-      data.payment_state === 'official_handoff_opened' && Boolean(paymentReason);
+      .maybeSingle(),
+      admin
+        .from('prc_export_items')
+        .select('correction_reason,prc_responded_at')
+        .eq('case_id', caseId)
+        .eq('prc_status', 'correction_requested')
+        .order('prc_responded_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+    const { data: evidence } = paymentIntent
+      ? await admin
+          .from('payment_evidence_versions')
+          .select('state,metadata')
+          .eq('payment_intent_id', paymentIntent.id)
+          .order('version_number', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : { data: null };
+    const evidenceMetadata = (evidence?.metadata ?? null) as Record<string, unknown> | null;
+    const paymentReason = typeof evidenceMetadata?.reupload_reason === 'string'
+      ? evidenceMetadata.reupload_reason
+      : null;
+    const replacementRequested = evidence?.state === 'reupload_requested';
 
     return NextResponse.json(
       {
@@ -73,7 +89,10 @@ export async function GET() {
         review: {
           state: data.application_review_state,
           // Applicant-safe text written by the reviewer.
-          reason: decision?.reason ?? null,
+          reason:
+            data.prc_handoff_state === 'correction_requested'
+              ? prcCorrection?.correction_reason ?? decision?.reason ?? null
+              : decision?.reason ?? null,
           decidedAt: decision?.decided_at ?? null,
           correctionRequested: data.application_review_state === 'resubmission_requested',
           rejected: data.application_review_state === 'rejected',

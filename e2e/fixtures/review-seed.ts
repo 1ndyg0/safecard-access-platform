@@ -53,23 +53,29 @@ export function createSeedClient(): SupabaseClient {
 }
 
 const TABLES_TO_CLEAR = [
+  'storyboard_events',
   'audit_events',
+  'notification_events',
+  'jobs',
+  'rate_limit_buckets',
+  'aggregate_metrics',
   'application_review_decisions',
+  'payment_evidence_versions',
   'payment_evidence',
   'payment_intents',
-  'application_submissions',
-  'support_cases',
   'membership_status_events',
   'prc_export_items',
   'prc_export_batches',
+  'application_submissions',
+  'support_cases',
+  'relationships',
   'recipient_profiles',
-  'recipient_cases',
   'consent_records',
+  'recipient_cases',
   'content_versions',
   'referral_links',
   'sponsors',
   'role_assignments',
-  'aggregate_metrics',
   'pilot_campaigns',
   'organizations',
 ] as const;
@@ -188,7 +194,7 @@ async function insertCase(
   });
   if (error) throw new Error(`Failed to insert case: ${error.message}`);
 
-  await admin.from('recipient_profiles').insert({ case_id: id, ...profile, fields_completed: 10 });
+  await admin.from('recipient_profiles').insert({ case_id: id, ...profile, fields_completed: true });
 
   const consentId = randomUUID();
   await admin.from('consent_records').insert({
@@ -199,6 +205,7 @@ async function insertCase(
     locale: 'tl',
     state: states.consent_state === 'withdrawn' ? 'withdrawn' : 'agreed',
     agreed_at: new Date().toISOString(),
+    request_hash: randomUUID(),
   });
 
   await admin.from('application_submissions').insert({
@@ -206,6 +213,7 @@ async function insertCase(
     application_ref: reference,
     submitted_data: profile,
     consent_record_id: consentId,
+    content_versions_seen: [content.consentVersionId, content.privacyVersionId],
     privacy_notice_version_id: content.privacyVersionId,
     submitted_at: new Date(Date.now() - 3_600_000).toISOString(),
     correction_reason: options.correctionReason ?? null,
@@ -221,8 +229,8 @@ export async function seedWorld(): Promise<SeededWorld> {
   const admin = createSeedClient();
   sequence = 0;
 
-  await deleteExistingStaff(admin);
   await clear(admin);
+  await deleteExistingStaff(admin);
 
   const organizationId = randomUUID();
   await admin
@@ -234,9 +242,14 @@ export async function seedWorld(): Promise<SeededWorld> {
     id: campaignId,
     organization_id: organizationId,
     name: 'E2E Review Campaign',
+    slug: `e2e-review-${campaignId.slice(0, 8)}`,
     start_date: '2026-01-01',
     max_applications: 1000,
     is_active: true,
+    approved_payment_routes: [
+      { type: 'gcash', is_active: true },
+      { type: 'bank_transfer', is_active: true },
+    ],
   });
 
   const reviewer = await createStaff(admin, 'reviewer@e2e.safecard.test', 'School Reviewer');
@@ -263,7 +276,7 @@ export async function seedWorld(): Promise<SeededWorld> {
       created_by: privacyAdmin.userId,
       title: 'Consent',
       body: 'Synthetic consent text.',
-      approval_status: 'published',
+      approval_status: 'approved',
       is_published: true,
       published_at: new Date(Date.now() - 86_400_000).toISOString(),
     },
@@ -275,7 +288,7 @@ export async function seedWorld(): Promise<SeededWorld> {
       created_by: privacyAdmin.userId,
       title: 'Privacy notice',
       body: 'Synthetic privacy notice.',
-      approval_status: 'published',
+      approval_status: 'approved',
       is_published: true,
       published_at: new Date(Date.now() - 86_400_000).toISOString(),
     },
@@ -352,7 +365,7 @@ export async function publishMaterialConsentChange(
     created_by: createdBy,
     title: 'Consent v2',
     body: 'Synthetic consent text, materially revised.',
-    approval_status: 'published',
+    approval_status: 'approved',
     is_published: true,
     is_material_change: true,
     change_summary: 'The data retention period changed.',

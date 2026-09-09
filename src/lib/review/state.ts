@@ -96,11 +96,11 @@ export function validateReason(reason: string | undefined): string | null {
 }
 
 /**
- * A review decision never touches these. Exported so the tests can
- * assert the list rather than trusting a comment.
+ * A review decision never changes payment or membership. PRC handoff
+ * readiness is the one derived coordination state: approval may make an
+ * already-paid case ready, and withdrawing approval removes that readiness.
  */
 export const STATES_A_REVIEW_MUST_NOT_CHANGE = [
   'payment_state',
-  'prc_handoff_state',
   'membership_state',
 ] as const;

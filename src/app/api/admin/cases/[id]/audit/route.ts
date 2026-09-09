@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSupabaseAdminClient } from '@/lib/db/client';
 import { badRequest, forbidden, notFound } from '@/lib/api/response';
-import { assertCampaignAccess, resolveStaffScope } from '@/lib/admin/access';
+import { assertCampaignAccess, rolesForCampaign, resolveStaffScope } from '@/lib/admin/access';
 import { handleAdminError, PRIVATE_NO_STORE } from '@/lib/admin/respond';
 import { resolveCaseAccessPolicy } from '@/lib/admin/field-policy';
 
@@ -44,9 +44,6 @@ export async function GET(
     const { id } = await context.params;
     if (!z.string().uuid().safeParse(id).success) return badRequest('Case id must be a UUID.');
 
-    const policy = resolveCaseAccessPolicy(scope.roles);
-    if (!policy?.canViewAudit) return forbidden('Your role cannot view the case audit history.');
-
     const limit = z.coerce
       .number()
       .int()
@@ -64,6 +61,10 @@ export async function GET(
     if (caseError) throw new Error(`Failed to load case: ${caseError.message}`);
     if (!caseRecord) return notFound('Case not found.');
     assertCampaignAccess(scope, caseRecord.campaign_id as string);
+    const policy = resolveCaseAccessPolicy(
+      rolesForCampaign(scope, caseRecord.campaign_id as string),
+    );
+    if (!policy?.canViewAudit) return forbidden('Your role cannot view the case audit history.');
 
     const { data, error } = await admin
       .from('audit_events')

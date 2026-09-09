@@ -81,3 +81,12 @@ export function getPaymentRoutes(qrImageUrl?: string) {
     return { ...route, qrImageUrl: qrImageUrl ?? null };
   });
 }
+
+export function getApprovedPaymentRoutes(
+  approvedTypes: ReadonlySet<string>,
+  qrImageUrl?: string,
+) {
+  return getPaymentRoutes(qrImageUrl).filter((route) =>
+    approvedTypes.has(route.id === 'gcash' ? 'gcash' : 'bank_transfer'),
+  );
+}

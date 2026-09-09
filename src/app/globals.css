@@ -91,7 +91,7 @@ html { scroll-behavior: smooth; }
 body { margin: 0; }
 button, input, select, textarea { font: inherit; }
 a, button { -webkit-tap-highlight-color: transparent; }
-:focus-visible { outline: 3px solid #f6bd35; outline-offset: 3px; }
+:focus-visible, .story-header:focus { outline: 3px solid #f6bd35; outline-offset: 3px; }
 
 .site-frame { min-height: 100dvh; background: var(--bg); overflow: hidden; }
 .public-nav { width: min(1180px, calc(100% - 48px)); height: 76px; margin: auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 28px; }
@@ -734,4 +734,58 @@ button.button-primary, button.button-quiet { border: 0; cursor: pointer; }
 @media (max-width: 720px) {
   .status-table th, .status-table td { white-space: normal; }
   .decision-actions button { width: 100%; }
+}
+
+/* Staff access, evidence review, export reconciliation, and member payment resume */
+.button-danger {
+  min-height: 48px; display: inline-flex; align-items: center; justify-content: center;
+  padding: 12px 18px; border: 1px solid var(--red); border-radius: 8px;
+  color: #fff; background: var(--red-dark); cursor: pointer;
+  font: 750 .8rem/1.2 var(--font-jakarta);
+}
+.button-danger:disabled, .button-quiet:disabled { opacity: .45; cursor: not-allowed; }
+.confirmation-check { display: flex; align-items: flex-start; gap: 10px; color: var(--text2); font-size: .8rem; line-height: 1.5; }
+.confirmation-check input { width: 18px; height: 18px; margin-top: 2px; flex: none; accent-color: var(--red); }
+.field-block textarea {
+  width: 100%; min-height: 96px; padding: 11px 13px; border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); background: var(--surface); resize: vertical;
+  font: inherit;
+}
+.admin-two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.admin-two-column .admin-panel { margin-top: 0; }
+.admin-panel.stack > * + *, .export-workspace .stack > * + *, .member-payment-resume > * + * { margin-top: 14px; }
+.role-list { display: grid; gap: 10px; }
+.role-list article { display: flex; justify-content: space-between; align-items: start; gap: 18px; padding: 16px; border: 1px solid var(--border); border-radius: 10px; }
+.role-list article > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.role-list article > div span:not(.status-pill) { width: 100%; color: var(--text2); font-size: .75rem; }
+.role-list details { min-width: 220px; }
+.role-list summary { color: var(--red); cursor: pointer; font: 700 .75rem/1.3 var(--font-jakarta); }
+.role-list form { margin-top: 12px; }
+.evidence-summary { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; }
+.evidence-summary > div { display: grid; gap: 4px; min-width: 0; }
+.evidence-summary span { color: var(--text2); font-size: .68rem; overflow-wrap: anywhere; }
+.evidence-preview { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface2); }
+.evidence-preview img { width: 100%; height: auto; max-height: 560px; object-fit: contain; border-radius: 7px; background: #fff; }
+.member-payment-resume { margin-top: 24px; padding: 22px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface2); }
+.member-payment-resume h2 { margin: 6px 0; font: 750 1.25rem/1.25 var(--font-jakarta); }
+.member-payment-resume p { color: var(--text2); }
+.export-workspace { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 20px; align-items: start; }
+.export-workspace .admin-panel { display: block; margin-top: 0; }
+.export-case-list { max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; }
+.export-case-list label { display: flex; align-items: flex-start; gap: 12px; padding: 13px 14px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.export-case-list label:last-child { border-bottom: 0; }
+.export-case-list input { margin-top: 3px; accent-color: var(--red); }
+.export-case-list span { display: grid; gap: 3px; }
+.export-case-list small { color: var(--text2); }
+.batch-summary { display: grid; gap: 8px; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface2); }
+.batch-summary code { overflow-wrap: anywhere; color: var(--text2); font-size: .68rem; }
+.export-item { padding: 16px 0; border-top: 1px solid var(--border); }
+.export-item > div:first-child { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+
+@media (max-width: 900px) {
+  .export-workspace, .admin-two-column { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .role-list article, .evidence-summary { display: grid; }
+  .role-list details { min-width: 0; }
 }

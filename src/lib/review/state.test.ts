@@ -70,7 +70,6 @@ describe('review state machine', () => {
   it('names the states a review must never move', () => {
     expect(STATES_A_REVIEW_MUST_NOT_CHANGE).toEqual([
       'payment_state',
-      'prc_handoff_state',
       'membership_state',
     ]);
   });
@@ -90,6 +89,18 @@ describe('a review decision touches nothing else', () => {
     join(process.cwd(), 'src/app/api/member/correction/route.ts'),
     'utf8',
   );
+  const ATOMIC_REVIEW_MIGRATION = readFileSync(
+    join(process.cwd(), 'supabase/migrations/00014_atomic_review_and_payment.sql'),
+    'utf8',
+  );
+  const ATOMIC_CORRECTION_MIGRATION = readFileSync(
+    join(process.cwd(), 'supabase/migrations/00016_atomic_member_correction.sql'),
+    'utf8',
+  );
+  const ATOMIC_HANDOFF_MIGRATION = readFileSync(
+    join(process.cwd(), 'supabase/migrations/00015_atomic_prc_handoff.sql'),
+    'utf8',
+  );
 
   it('never writes membership state from a review decision', () => {
     expect(REVIEW_ROUTE).not.toMatch(/membership_state:\s*['"]/);
@@ -101,9 +112,18 @@ describe('a review decision touches nothing else', () => {
     expect(REVIEW_ROUTE).not.toContain('verified_by_official_source');
   });
 
-  it('never writes handoff state from a review decision', () => {
+  it('keeps handoff coordination inside the locked database transaction', () => {
     expect(REVIEW_ROUTE).not.toMatch(/prc_handoff_state:\s*['"]/);
     expect(REVIEW_ROUTE).not.toContain('ready_for_export');
+    expect(ATOMIC_REVIEW_MIGRATION).toContain(
+      "and payment_state = 'verified_by_official_source'",
+    );
+    expect(ATOMIC_REVIEW_MIGRATION).toContain(
+      "then 'ready_for_export'::public.prc_handoff_state",
+    );
+    expect(ATOMIC_REVIEW_MIGRATION).not.toContain(
+      "then 'exported'::public.prc_handoff_state",
+    );
   });
 
   it('never writes membership, payment or handoff from a correction', () => {
@@ -118,11 +138,35 @@ describe('a review decision touches nothing else', () => {
 
   it('requires the state the reviewer saw, so a stale screen is refused', () => {
     expect(REVIEW_ROUTE).toContain('expected_review_state');
-    expect(REVIEW_ROUTE).toMatch(/priorState !== body\.expected_review_state/);
+    expect(REVIEW_ROUTE).toContain('p_expected_state: body.expected_review_state');
+    expect(ATOMIC_REVIEW_MIGRATION).toContain('if v_prior <> p_expected_state then');
   });
 
-  it('applies the decision conditionally, so a race cannot clobber', () => {
-    expect(REVIEW_ROUTE).toContain(".eq('application_review_state', priorState)");
+  it('locks and applies the review transactionally, so a race cannot clobber', () => {
+    expect(REVIEW_ROUTE).toContain("'record_application_review_atomic'");
+    expect(ATOMIC_REVIEW_MIGRATION).toMatch(/where id = p_case_id\s+for update;/);
+    expect(ATOMIC_REVIEW_MIGRATION).toContain('insert into public.application_review_decisions');
+    expect(ATOMIC_REVIEW_MIGRATION).toContain('insert into public.audit_events');
+  });
+
+  it('submits profile, version, state and audit in one correction transaction', () => {
+    expect(CORRECTION_ROUTE).toContain("'submit_member_correction_atomic'");
+    expect(ATOMIC_CORRECTION_MIGRATION).toMatch(/where id = p_case_id\s+for update;/);
+    expect(ATOMIC_CORRECTION_MIGRATION).toContain('update public.recipient_profiles');
+    expect(ATOMIC_CORRECTION_MIGRATION).toContain('insert into public.application_submissions');
+    expect(ATOMIC_CORRECTION_MIGRATION).toContain('insert into public.audit_events');
+    expect(ATOMIC_CORRECTION_MIGRATION).toContain('to service_role');
+    expect(ATOMIC_CORRECTION_MIGRATION).toContain('from public, anon, authenticated');
+  });
+
+  it('makes a PRC-requested correction eligible for a new reviewed export cycle', () => {
+    expect(ATOMIC_HANDOFF_MIGRATION).toContain(
+      "when p_prc_status = 'correction_requested' then 'not_active'::public.membership_state",
+    );
+    expect(ATOMIC_CORRECTION_MIGRATION).toContain("application_state = 'resubmitted'");
+    expect(ATOMIC_REVIEW_MIGRATION).toContain(
+      "prc_handoff_state in ('not_ready', 'correction_requested')",
+    );
   });
 
   it('takes the member case id only from the session', () => {

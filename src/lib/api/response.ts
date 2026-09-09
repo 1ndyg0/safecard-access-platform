@@ -107,7 +107,7 @@ export function handleApiError(error: unknown, context: string): NextResponse {
     if (msg.includes('consent must be') || msg.includes('application must be')) {
       return conflict(msg);
     }
-    if (msg.includes('already exists') || msg.includes('duplicate') || msg.includes('Idempotency key')) {
+    if (msg.includes('already exists') || msg.includes('duplicate') || msg.includes('Idempotency key') || msg.includes('last privacy administrator')) {
       return conflict(msg);
     }
     if (msg.startsWith('Cannot ') || msg.includes(' requires ') || msg.includes(' does not match ') || msg.includes(' is not linked ')) {

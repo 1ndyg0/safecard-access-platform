@@ -24,6 +24,8 @@ export interface StaffScope {
   roles: StaffRole[];
   /** Campaigns reachable directly or through an organization assignment. */
   campaignIds: string[];
+  /** Effective roles resolved independently for every reachable campaign. */
+  rolesByCampaign: Record<string, StaffRole[]>;
 }
 
 export class NoStaffAssignmentError extends Error {
@@ -65,28 +67,61 @@ export async function resolveStaffScope(): Promise<StaffScope> {
     .map((a) => a.campaign_id)
     .filter((id): id is string => Boolean(id));
   const organizationIds = assignments
+    // A campaign assignment may retain organization metadata for audit,
+    // but it must never expand into every campaign in that organization.
+    .filter((assignment) => !assignment.campaign_id)
     .map((a) => a.organization_id)
     .filter((id): id is string => Boolean(id));
 
   const campaignIds = new Set(directCampaignIds);
+  const roleSetsByCampaign = new Map<string, Set<StaffRole>>();
+
+  for (const assignment of assignments) {
+    if (!assignment.campaign_id) continue;
+    const campaignId = assignment.campaign_id as string;
+    if (!roleSetsByCampaign.has(campaignId)) roleSetsByCampaign.set(campaignId, new Set());
+    roleSetsByCampaign.get(campaignId)?.add(assignment.role as StaffRole);
+  }
 
   if (organizationIds.length > 0) {
     const { data: orgCampaigns, error: orgError } = await admin
       .from('pilot_campaigns')
-      .select('id')
+      .select('id,organization_id')
       .in('organization_id', organizationIds);
     if (orgError) throw new Error(`Failed to resolve campaign scope: ${orgError.message}`);
-    orgCampaigns?.forEach((campaign) => campaignIds.add(campaign.id as string));
+    orgCampaigns?.forEach((campaign) => {
+      const campaignId = campaign.id as string;
+      campaignIds.add(campaignId);
+      if (!roleSetsByCampaign.has(campaignId)) roleSetsByCampaign.set(campaignId, new Set());
+      assignments
+        .filter((assignment) =>
+          !assignment.campaign_id
+          && assignment.organization_id === campaign.organization_id,
+        )
+        .forEach((assignment) => {
+          roleSetsByCampaign.get(campaignId)?.add(assignment.role as StaffRole);
+        });
+    });
   }
 
   if (campaignIds.size === 0) throw new NoStaffAssignmentError();
 
-  return { userId: auth.userId, roles, campaignIds: [...campaignIds] };
+  const rolesByCampaign = Object.fromEntries(
+    [...roleSetsByCampaign].map(([campaignId, roleSet]) => [campaignId, [...roleSet]]),
+  );
+
+  return { userId: auth.userId, roles, campaignIds: [...campaignIds], rolesByCampaign };
 }
 
 /** Throw unless the campaign is inside the caller's scope. */
 export function assertCampaignAccess(scope: StaffScope, campaignId: string): void {
   if (!scope.campaignIds.includes(campaignId)) throw new CampaignAccessError();
+}
+
+/** Return only the roles effective for one campaign. */
+export function rolesForCampaign(scope: StaffScope, campaignId: string): StaffRole[] {
+  assertCampaignAccess(scope, campaignId);
+  return scope.rolesByCampaign[campaignId] ?? [];
 }
 
 /**
@@ -96,7 +131,7 @@ export async function listAccessibleCampaigns(scope: StaffScope) {
   const admin = getSupabaseAdminClient();
   const { data, error } = await admin
     .from('pilot_campaigns')
-    .select('id,name,is_active,start_date,end_date')
+    .select('id,name,organization_id,is_active,start_date,end_date')
     .in('id', scope.campaignIds)
     .order('start_date', { ascending: false });
 
@@ -126,7 +161,7 @@ export async function logCaseAccess(params: {
     case_id: params.caseId,
     campaign_id: params.campaignId,
     details: {
-      roles: params.scope.roles,
+      roles: rolesForCampaign(params.scope, params.campaignId),
       // The field names disclosed, never the values.
       fields_disclosed: params.fieldsDisclosed,
     },

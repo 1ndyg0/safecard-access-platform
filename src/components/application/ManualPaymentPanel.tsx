@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useLocale } from "@/components/LocaleProvider";
 
 type PaymentRoute = {
@@ -42,8 +43,8 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
   const [copied, setCopied] = useState("");
 
   useEffect(() => {
-    fetch("/api/payment-config", { cache: "no-store" }).then((response) => response.json()).then((data: PaymentConfig) => setConfig(data)).catch(() => setConfig({ available: false, reason: "Payment configuration is unavailable.", amount: null, currency: "PHP", routes: [] }));
-  }, []);
+    fetch(`/api/payment-config?campaign_id=${encodeURIComponent(campaignId)}`, { cache: "no-store" }).then((response) => response.json()).then((data: PaymentConfig) => setConfig(data)).catch(() => setConfig({ available: false, reason: "Payment configuration is unavailable.", amount: null, currency: "PHP", routes: [] }));
+  }, [campaignId]);
 
   useEffect(() => {
     if (!file) {
@@ -57,7 +58,9 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
   }, [file]);
 
   const selectedRoute = useMemo(() => config?.routes.find((route) => route.id === routeId), [config, routeId]);
-  const selectedPaymentRoute = selectedRoute?.bank ? "bank_transfer" : selectedRoute?.id ?? "";
+  const selectedPaymentRoute = selectedRoute?.bank
+    ? `bank_transfer_${selectedRoute.id.replaceAll("-", "_")}`
+    : selectedRoute?.id ?? "";
 
   async function copy(value: string, label: string) {
     if (!value || !navigator.clipboard) return;
@@ -93,9 +96,9 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
     {!config.available && <div className="parked-panel"><strong>{ui.warning}</strong><p>{isFil ? ui.parked : (config.reason ?? ui.parked)}</p></div>}
     {config.available && <>
       <fieldset className="payment-route-list"><legend>{ui.routeLegend}</legend>{config.routes.map((route) => <label className={`payment-route ${route.id === routeId ? "selected" : ""}`} key={route.id}><input type="radio" name="payment-route" value={route.id} checked={route.id === routeId} onChange={() => setRouteId(route.id)} /><span><strong>{route.label}</strong><small>{route.instructions}</small></span></label>)}</fieldset>
-      {selectedRoute && <section className="payment-details" aria-live="polite"><h2>{selectedRoute.label}</h2>{(selectedRoute.accountName ?? config.accountName) && <CopyRow label={ui.accountName} value={selectedRoute.accountName ?? config.accountName ?? ""} copied={copied} onCopy={copy} />}{selectedRoute.bank && <CopyRow label={ui.bank} value={selectedRoute.bank} copied={copied} onCopy={copy} />}{selectedRoute.qrImageUrl && <img src={selectedRoute.qrImageUrl} alt={ui.qrAlt} className="payment-qr" />}{selectedRoute.accountNumber && <CopyRow label={ui.accountNumber} value={selectedRoute.accountNumber} copied={copied} onCopy={copy} />}{selectedRoute.swiftCode && <CopyRow label={ui.swift} value={selectedRoute.swiftCode} copied={copied} onCopy={copy} />}{selectedRoute.branch && <CopyRow label={ui.branch} value={selectedRoute.branch} copied={copied} onCopy={copy} />}<p className="content-footnote">{ui.transferHelp}</p></section>}
+      {selectedRoute && <section className="payment-details" aria-live="polite"><h2>{selectedRoute.label}</h2>{(selectedRoute.accountName ?? config.accountName) && <CopyRow label={ui.accountName} value={selectedRoute.accountName ?? config.accountName ?? ""} copied={copied} onCopy={copy} />}{selectedRoute.bank && <CopyRow label={ui.bank} value={selectedRoute.bank} copied={copied} onCopy={copy} />}{selectedRoute.qrImageUrl && <Image src={selectedRoute.qrImageUrl} alt={ui.qrAlt} className="payment-qr" width={360} height={360} unoptimized />}{selectedRoute.accountNumber && <CopyRow label={ui.accountNumber} value={selectedRoute.accountNumber} copied={copied} onCopy={copy} />}{selectedRoute.swiftCode && <CopyRow label={ui.swift} value={selectedRoute.swiftCode} copied={copied} onCopy={copy} />}{selectedRoute.branch && <CopyRow label={ui.branch} value={selectedRoute.branch} copied={copied} onCopy={copy} />}<p className="content-footnote">{ui.transferHelp}</p></section>}
       <label className="field-block"><span>{ui.reference}</span><input value={reference} onChange={(event) => setReference(event.target.value)} placeholder={ui.referencePlaceholder} autoComplete="off" /></label>
-      <label className="upload-field"><span>{ui.proof}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />{previewUrl && <img src={previewUrl} alt={ui.preview} className="receipt-preview" />}</label>
+      <label className="upload-field"><span>{ui.proof}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />{previewUrl && <Image src={previewUrl} alt={ui.preview} className="receipt-preview" width={720} height={960} unoptimized />}</label>
       <label className="consent-row"><input type="checkbox" checked={declaration} onChange={(event) => setDeclaration(event.target.checked)} /><span>{ui.declaration}</span></label>
       {error && <p className="form-message error" role="alert">{error}</p>}{notice && <p className="form-message" role="status">{notice}</p>}
       <button className="button-primary" type="button" disabled={busy} onClick={submitPayment}>{busy ? ui.uploading : ui.submit}</button>
