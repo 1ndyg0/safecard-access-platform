@@ -172,14 +172,11 @@ export const submitApplicationSchema = z.object({
 
 export const createPaymentIntentSchema = z.object({
   case_id: uuidSchema,
-  campaign_id: uuidSchema,
   payer_type: z.enum(['sponsor', 'guardian', 'other']),
   payer_name: z.string().max(100).optional(),
   payer_sponsor_id: uuidSchema.optional(),
-  expected_amount: z.number().positive(),
   payment_route: z.string().min(1).max(50),
   idempotency_key: idempotencyKeySchema,
-  data_mode: dataModeSchema,
 });
 
 export const markPaymentPaidSchema = z.object({
@@ -188,8 +185,7 @@ export const markPaymentPaidSchema = z.object({
     .string()
     .min(1, 'Payment reference is required')
     .max(100),
-  payer_declaration: z.string().trim().min(10).max(500),
-  data_mode: dataModeSchema,
+  payer_declaration_accepted: z.literal(true),
 });
 
 // ============================================================

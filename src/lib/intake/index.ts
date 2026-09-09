@@ -446,77 +446,28 @@ export async function submitApplication(
   const applicationRef = caseRecord.application_ref ?? generateApplicationReference();
 
   const submissionId = uuidv4();
-
-  // Save profile data
-  await admin
-    .from('recipient_profiles')
-    .update({ ...input.profileData, fields_completed: true })
-    .eq('case_id', input.caseId);
-
-  const { data: priorSubmission } = await admin
-    .from('application_submissions')
-    .select('id')
-    .eq('case_id', input.caseId)
-    .eq('is_current', true)
-    .maybeSingle();
-  if (priorSubmission) {
-    const { error: supersedeError } = await admin
-      .from('application_submissions')
-      .update({ is_current: false })
-      .eq('id', priorSubmission.id);
-    if (supersedeError) throw new Error(`Failed to supersede prior submission: ${supersedeError.message}`);
-  }
-
-  // Create submission record
-  const { error: submitError } = await admin.from('application_submissions').insert({
-    id: submissionId,
-    case_id: input.caseId,
-    application_ref: applicationRef,
-    submitted_data: input.profileData,
-    consent_record_id: input.consentRecordId,
-    content_versions_seen: input.contentVersionsSeen,
-    privacy_notice_version_id: input.privacyNoticeVersionId,
-    comprehension_score: comprehensionScore,
-    comprehension_passed: comprehensionPassed,
-    submitted_by: input.submittedBy,
-    assisted_by_name: input.assistedByName ?? null,
-    original_submission_id: priorSubmission?.id ?? null,
-    idempotency_key: input.idempotencyKey,
-    request_hash: requestHash,
-    is_current: true,
+  const { data: committed, error: commitError } = await admin.rpc('submit_application_version', {
+    p_submission_id: submissionId,
+    p_case_id: input.caseId,
+    p_application_ref: applicationRef,
+    p_consent_record_id: input.consentRecordId,
+    p_content_versions_seen: seenVersionIds,
+    p_privacy_notice_version_id: input.privacyNoticeVersionId,
+    p_profile_data: input.profileData,
+    p_comprehension_score: comprehensionScore,
+    p_comprehension_passed: comprehensionPassed,
+    p_submitted_by: input.submittedBy,
+    p_assisted_by_name: input.assistedByName ?? null,
+    p_idempotency_key: input.idempotencyKey,
+    p_request_hash: requestHash,
   });
+  if (commitError) throw new Error(`Failed to submit application atomically: ${commitError.message}`);
+  const committedResult = Array.isArray(committed) ? committed[0] : committed;
+  if (!committedResult) throw new Error('Failed to submit application atomically: no result returned');
 
-  if (submitError) {
-    if (priorSubmission) {
-      await admin.from('application_submissions').update({ is_current: true }).eq('id', priorSubmission.id);
-    }
-    throw new Error(`Failed to submit application: ${submitError.message}`);
-  }
-
-  // Update case state
-  await admin
-    .from('recipient_cases')
-    .update({
-      application_ref: applicationRef,
-      application_state: targetState,
-    })
-    .eq('id', input.caseId);
-
-  await writeAuditEvent({
-    event_type: 'application_submit',
-    actor_id: null,
-    actor_type: 'anonymous',
-    action: `Application submitted: ${applicationRef}`,
-    case_id: input.caseId,
-    target_type: 'application_submission',
-    target_id: submissionId,
-    details: {
-      application_ref: applicationRef,
-      submitted_by: input.submittedBy,
-      comprehension_score: comprehensionScore,
-      comprehension_passed: comprehensionPassed,
-    },
-  });
-
-  return { submissionId, applicationRef, status: 'created' };
+  return {
+    submissionId: committedResult.submission_id,
+    applicationRef: committedResult.application_ref,
+    status: committedResult.status as 'created' | 'exists',
+  };
 }

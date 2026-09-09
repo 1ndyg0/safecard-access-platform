@@ -25,6 +25,7 @@ const stateFilterSchema = z.enum([
 const consentFilterSchema = z.enum(['not_started', 'reviewing', 'agreed', 'withdrawn', 'expired_due_to_content_change']);
 const applicationFilterSchema = z.enum(['draft', 'ready_for_review', 'submitted', 'correction_needed', 'resubmitted', 'withdrawn']);
 const paymentFilterSchema = z.enum(['not_started', 'official_handoff_opened', 'payer_marked_paid', 'verification_pending', 'verified_by_official_source', 'failed_or_cancelled', 'refunded_or_reversed']);
+const reviewFilterSchema = z.enum(['pending', 'approved', 'resubmission_requested', 'rejected']);
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,6 +42,7 @@ export async function GET(request: NextRequest) {
     const consentState = consentFilterSchema.optional().parse(request.nextUrl.searchParams.get('consent_state') ?? undefined);
     const applicationState = applicationFilterSchema.optional().parse(request.nextUrl.searchParams.get('application_state') ?? undefined);
     const paymentState = paymentFilterSchema.optional().parse(request.nextUrl.searchParams.get('payment_state') ?? undefined);
+    const reviewState = reviewFilterSchema.optional().parse(request.nextUrl.searchParams.get('review_state') ?? undefined);
     const page = z.coerce.number().int().min(1).parse(request.nextUrl.searchParams.get('page') ?? 1);
     const limit = z.coerce.number().int().min(1).max(100).parse(request.nextUrl.searchParams.get('limit') ?? 25);
     const search = request.nextUrl.searchParams.get('q')?.trim();
@@ -56,7 +58,7 @@ export async function GET(request: NextRequest) {
       .from('recipient_cases')
       .select(
         `id, application_ref, campaign_id,
-         consent_state, application_state, payment_state,
+         consent_state, application_state, application_review_state, payment_state,
          prc_handoff_state, membership_state,
          created_at, updated_at`,
         { count: 'exact' },
@@ -79,6 +81,7 @@ export async function GET(request: NextRequest) {
     if (consentState) query = query.eq('consent_state', consentState);
     if (applicationState) query = query.eq('application_state', applicationState);
     if (paymentState) query = query.eq('payment_state', paymentState);
+    if (reviewState) query = query.eq('application_review_state', reviewState);
 
     const { data, error, count } = await query;
 

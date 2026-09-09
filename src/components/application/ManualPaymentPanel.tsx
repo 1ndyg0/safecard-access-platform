@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale } from "@/components/LocaleProvider";
+import { uploadPaymentEvidence } from "@/lib/payment/upload-client";
 
 type PaymentRoute = {
   id: string;
@@ -21,7 +23,7 @@ type PaymentConfig = { available: boolean; reason: string | null; amount: number
 
 function key(prefix: string) { return `${prefix}-${crypto.randomUUID()}`; }
 
-export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { caseId: string; campaignId: string; live: boolean; onComplete: () => void }) {
+export function ManualPaymentPanel({ caseId, live, onComplete }: { caseId: string; campaignId: string; live: boolean; onComplete: () => void }) {
   const { locale } = useLocale();
   const isFil = locale === "fil";
   const ui = isFil ? {
@@ -32,6 +34,7 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
   const [config, setConfig] = useState<PaymentConfig | null>(null);
   const [routeId, setRouteId] = useState("");
   const [paymentIntentId, setPaymentIntentId] = useState("");
+  const [markedPaid, setMarkedPaid] = useState(false);
   const [reference, setReference] = useState("");
   const [declaration, setDeclaration] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -40,6 +43,9 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState("");
+  const [progress, setProgress] = useState(0);
+  const handoffKey = useRef("");
+  const uploadKey = useRef("");
 
   useEffect(() => {
     fetch("/api/payment-config", { cache: "no-store" }).then((response) => response.json()).then((data: PaymentConfig) => setConfig(data)).catch(() => setConfig({ available: false, reason: "Payment configuration is unavailable.", amount: null, currency: "PHP", routes: [] }));
@@ -57,7 +63,7 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
   }, [file]);
 
   const selectedRoute = useMemo(() => config?.routes.find((route) => route.id === routeId), [config, routeId]);
-  const selectedPaymentRoute = selectedRoute?.bank ? "bank_transfer" : selectedRoute?.id ?? "";
+  const selectedPaymentRoute = selectedRoute?.bank ? `bank_transfer_${selectedRoute.id}` : selectedRoute?.id ?? "";
 
   async function copy(value: string, label: string) {
     if (!value || !navigator.clipboard) return;
@@ -68,17 +74,23 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
     setError(""); setNotice("");
     if (!config?.available || !config.amount || !selectedRoute) { setError(config?.reason ?? ui.chooseRoute); return; }
     if (!reference.trim() || !file || !declaration) { setError(ui.required); return; }
-    setBusy(true);
+    setBusy(true); setProgress(0);
     try {
-      const handoffPayload = { case_id: caseId, campaign_id: campaignId, payer_type: "other", expected_amount: config.amount, payment_route: selectedPaymentRoute, idempotency_key: key("payment"), data_mode: live ? "live" : "synthetic", ...(live ? {} : { payer_name: "Synthetic payer" }) };
-      const handoff = await fetch("/api/payment/handoff", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(handoffPayload) });
-      const handoffBody = await handoff.json(); if (!handoff.ok) throw new Error(handoffBody.error ?? ui.handoffError);
-      const intentId = handoffBody.paymentIntentId as string; setPaymentIntentId(intentId);
-      const marked = await fetch("/api/payment/mark-paid", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payment_intent_id: intentId, payment_reference: reference.trim(), payer_declaration: "I completed this transfer outside SafeCard and understand it does not activate membership.", data_mode: live ? "live" : "synthetic" }) });
-      const markedBody = await marked.json(); if (!marked.ok) throw new Error(markedBody.error ?? ui.referenceError);
-      const form = new FormData(); form.set("payment_intent_id", intentId); form.set("case_id", caseId); form.set("campaign_id", campaignId); form.set("amount", String(config.amount)); form.set("reference_number", reference.trim()); form.set("payer_declaration", "I completed this transfer outside SafeCard and understand it does not activate membership."); form.set("data_mode", live ? "live" : "synthetic"); form.set("file", file);
-      const uploaded = await fetch("/api/payment/evidence/upload", { method: "POST", body: form });
-      const uploadBody = await uploaded.json(); if (!uploaded.ok) throw new Error(uploadBody.error ?? ui.uploadError);
+      let intentId = paymentIntentId;
+      if (!intentId) {
+        if (!handoffKey.current) handoffKey.current = key("payment");
+        const handoffPayload = { case_id: caseId, payer_type: "other", payment_route: selectedPaymentRoute, idempotency_key: handoffKey.current, ...(live ? {} : { payer_name: "Synthetic payer" }) };
+        const handoff = await fetch("/api/payment/handoff", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(handoffPayload) });
+        const handoffBody = await handoff.json(); if (!handoff.ok) throw new Error(handoffBody.error ?? ui.handoffError);
+        intentId = handoffBody.paymentIntentId as string; setPaymentIntentId(intentId);
+      }
+      if (!markedPaid) {
+        const marked = await fetch("/api/payment/mark-paid", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payment_intent_id: intentId, payment_reference: reference.trim(), payer_declaration_accepted: true }) });
+        const markedBody = await marked.json(); if (!marked.ok) throw new Error(markedBody.error ?? ui.referenceError);
+        setMarkedPaid(true);
+      }
+      if (!uploadKey.current) uploadKey.current = key("evidence");
+      await uploadPaymentEvidence({ paymentIntentId: intentId, file, idempotencyKey: uploadKey.current, onProgress: setProgress });
       setNotice(ui.received); onComplete();
     } catch (caught) { setError(caught instanceof Error ? caught.message : ui.completeError); }
     finally { setBusy(false); }
@@ -93,12 +105,13 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
     {!config.available && <div className="parked-panel"><strong>{ui.warning}</strong><p>{isFil ? ui.parked : (config.reason ?? ui.parked)}</p></div>}
     {config.available && <>
       <fieldset className="payment-route-list"><legend>{ui.routeLegend}</legend>{config.routes.map((route) => <label className={`payment-route ${route.id === routeId ? "selected" : ""}`} key={route.id}><input type="radio" name="payment-route" value={route.id} checked={route.id === routeId} onChange={() => setRouteId(route.id)} /><span><strong>{route.label}</strong><small>{route.instructions}</small></span></label>)}</fieldset>
-      {selectedRoute && <section className="payment-details" aria-live="polite"><h2>{selectedRoute.label}</h2>{(selectedRoute.accountName ?? config.accountName) && <CopyRow label={ui.accountName} value={selectedRoute.accountName ?? config.accountName ?? ""} copied={copied} onCopy={copy} />}{selectedRoute.bank && <CopyRow label={ui.bank} value={selectedRoute.bank} copied={copied} onCopy={copy} />}{selectedRoute.qrImageUrl && <img src={selectedRoute.qrImageUrl} alt={ui.qrAlt} className="payment-qr" />}{selectedRoute.accountNumber && <CopyRow label={ui.accountNumber} value={selectedRoute.accountNumber} copied={copied} onCopy={copy} />}{selectedRoute.swiftCode && <CopyRow label={ui.swift} value={selectedRoute.swiftCode} copied={copied} onCopy={copy} />}{selectedRoute.branch && <CopyRow label={ui.branch} value={selectedRoute.branch} copied={copied} onCopy={copy} />}<p className="content-footnote">{ui.transferHelp}</p></section>}
-      <label className="field-block"><span>{ui.reference}</span><input value={reference} onChange={(event) => setReference(event.target.value)} placeholder={ui.referencePlaceholder} autoComplete="off" /></label>
-      <label className="upload-field"><span>{ui.proof}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />{previewUrl && <img src={previewUrl} alt={ui.preview} className="receipt-preview" />}</label>
+      {selectedRoute && <section className="payment-details" aria-live="polite"><h2>{selectedRoute.label}</h2>{(selectedRoute.accountName ?? config.accountName) && <CopyRow label={ui.accountName} value={selectedRoute.accountName ?? config.accountName ?? ""} copied={copied} onCopy={copy} />}{selectedRoute.bank && <CopyRow label={ui.bank} value={selectedRoute.bank} copied={copied} onCopy={copy} />}{selectedRoute.qrImageUrl && <Image src={selectedRoute.qrImageUrl} alt={ui.qrAlt} className="payment-qr" width={480} height={480} unoptimized />}{selectedRoute.accountNumber && <CopyRow label={ui.accountNumber} value={selectedRoute.accountNumber} copied={copied} onCopy={copy} />}{selectedRoute.swiftCode && <CopyRow label={ui.swift} value={selectedRoute.swiftCode} copied={copied} onCopy={copy} />}{selectedRoute.branch && <CopyRow label={ui.branch} value={selectedRoute.branch} copied={copied} onCopy={copy} />}<p className="content-footnote">{ui.transferHelp}</p></section>}
+      <label className="field-block"><span>{ui.reference}</span><input value={reference} disabled={markedPaid} onChange={(event) => setReference(event.target.value)} placeholder={ui.referencePlaceholder} autoComplete="off" /></label>
+      <label className="upload-field"><span>{ui.proof}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { uploadKey.current = ""; setFile(event.target.files?.[0] ?? null); }} /></label>{previewUrl && <div className="upload-preview"><Image src={previewUrl} alt={ui.preview} className="receipt-preview" width={720} height={960} unoptimized /><button className="button-quiet" type="button" disabled={busy} onClick={() => { uploadKey.current = ""; setFile(null); }}>{isFil ? "Alisin" : "Remove"}</button></div>}
       <label className="consent-row"><input type="checkbox" checked={declaration} onChange={(event) => setDeclaration(event.target.checked)} /><span>{ui.declaration}</span></label>
+      {busy && <div className="upload-progress" aria-live="polite"><span>{ui.uploading} {progress}%</span><progress value={progress} max={100} /></div>}
       {error && <p className="form-message error" role="alert">{error}</p>}{notice && <p className="form-message" role="status">{notice}</p>}
-      <button className="button-primary" type="button" disabled={busy} onClick={submitPayment}>{busy ? ui.uploading : ui.submit}</button>
+      <button className="button-primary" type="button" disabled={busy} onClick={submitPayment}>{busy ? ui.uploading : error ? (isFil ? "Subukan muli" : "Retry submission") : ui.submit}</button>
     </>}
     {copied && <p className="form-message" role="status">{ui.copied} {copied}.</p>}
     {paymentIntentId && <p className="content-footnote">{ui.recorded}</p>}

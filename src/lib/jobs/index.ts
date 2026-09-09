@@ -16,6 +16,7 @@ import { getSupabaseAdminClient } from '@/lib/db/client';
 import { checkContentExpiry } from '@/lib/content';
 import { deactivateExpiredLinks } from '@/lib/referrals';
 import { calculateDailyMetrics } from '@/lib/metrics';
+import { cleanupExpiredPaymentUploads, purgeDuePaymentEvidence } from '@/lib/payment/evidence';
 import { v4 as uuidv4 } from 'uuid';
 
 // ============================================================
@@ -152,6 +153,14 @@ async function executeJob(
       }
       break;
     }
+
+    case 'cleanup_payment_uploads':
+      await cleanupExpiredPaymentUploads();
+      break;
+
+    case 'purge_payment_evidence':
+      await purgeDuePaymentEvidence(jobId);
+      break;
 
     case 'send_notification':
       throw new Error(`Notification provider is not configured for job ${jobId}`);

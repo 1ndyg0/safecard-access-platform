@@ -73,9 +73,6 @@ export function handleApiError(error: unknown, context: string): NextResponse {
   }
 
   if (error instanceof AuthError) {
-    if (error.message.includes('Staff')) {
-      return forbidden(error.message);
-    }
     return unauthorized(error.message);
   }
 

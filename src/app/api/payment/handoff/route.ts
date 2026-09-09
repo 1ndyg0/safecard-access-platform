@@ -34,15 +34,17 @@ export async function POST(request: NextRequest) {
     if (!ownership.allowed) {
       return NextResponse.json({ error: ownership.reason }, { status: 403 });
     }
-    assertSyntheticText(parsed.data.data_mode, parsed.data.payer_name);
+    const dataMode = process.env.LAUNCH_GATES_COMPLETE === 'true' && process.env.NEXT_PUBLIC_DATA_MODE === 'live'
+      ? 'live'
+      : 'synthetic';
+    assertSyntheticText(dataMode, parsed.data.payer_name);
 
     const result = await createPaymentIntent({
       caseId: parsed.data.case_id,
-      campaignId: parsed.data.campaign_id,
+      actorId: auth.userId,
       payerType: parsed.data.payer_type,
       payerName: parsed.data.payer_name,
       payerSponsorId: parsed.data.payer_sponsor_id,
-      expectedAmount: parsed.data.expected_amount,
       paymentRoute: parsed.data.payment_route,
       idempotencyKey: parsed.data.idempotency_key,
     });

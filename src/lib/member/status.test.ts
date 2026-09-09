@@ -15,4 +15,8 @@ describe("memberNextAction", () => {
   it("prioritizes correction instructions", () => {
     expect(memberNextAction({ ...baseline, application_state: "correction_needed" })).toContain("correction");
   });
+
+  it("reports review rejection without implying PRC membership rejection", () => {
+    expect(memberNextAction({ ...baseline, application_review_state: "rejected" })).toContain("application was not approved");
+  });
 });

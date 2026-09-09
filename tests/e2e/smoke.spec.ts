@@ -24,6 +24,10 @@ test.describe('SafeCard public smoke and accessibility', () => {
     const transitionSeconds = await panel.evaluate((element) => Number.parseFloat(getComputedStyle(element).transitionDuration));
     expect(transitionSeconds).toBeGreaterThan(0);
     await expect(page.getByText(/Illustrative only|Halimbawa lamang/i).first()).toBeVisible();
+    const readButton = page.getByRole('button', { name: /Nabasa ko ang halimbawang ito|I have read this example/i });
+    await readButton.click();
+    await expect(page.getByRole('button', { name: /Nabasa ko na|Marked as read/i })).toBeDisabled();
+    await first.focus();
     await page.keyboard.press('Space');
     await expect(first).toHaveAttribute('aria-expanded', 'false');
     await expect(panel).not.toHaveClass(/open/);
@@ -39,11 +43,28 @@ test.describe('SafeCard public smoke and accessibility', () => {
   });
 
   test('public pages have no serious or critical axe violations', async ({ page }) => {
+    // Four full axe scans can exceed the suite's 30-second default in Firefox
+    // when all browser projects share one development server.
+    test.setTimeout(60_000);
     for (const route of ['/', '/benefits', '/privacy', '/admin/login']) {
       await page.goto(route);
       const results = await new AxeBuilder({ page }).analyze();
       const serious = results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''));
       expect(serious, `${route} accessibility violations`).toEqual([]);
     }
+  });
+
+  test('security headers and same-origin mutation policy are enforced', async ({ page, request }) => {
+    const response = await page.goto('/');
+    expect(response?.headers()['x-content-type-options']).toBe('nosniff');
+    expect(response?.headers()['x-frame-options']).toBe('DENY');
+    expect(response?.headers()['content-security-policy']).toContain("frame-ancestors 'none'");
+
+    const denied = await request.post('/api/analytics/storyboard', {
+      headers: { Origin: 'https://attacker.example' },
+      data: { event: 'benefit_opened', benefitId: 'blood', locale: 'fil' },
+    });
+    expect(denied.status()).toBe(403);
+    await expect(denied.json()).resolves.toEqual({ error: 'Cross-origin request denied' });
   });
 });

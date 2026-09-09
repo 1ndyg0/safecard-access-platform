@@ -33,6 +33,12 @@ export type ApplicationState =
   | 'resubmitted'
   | 'withdrawn';
 
+export type ApplicationReviewState =
+  | 'pending'
+  | 'approved'
+  | 'resubmission_requested'
+  | 'rejected';
+
 export type PaymentState =
   | 'not_started'
   | 'official_handoff_opened'
@@ -102,6 +108,7 @@ export type AuditEventType =
   | 'content_publish'
   | 'content_rollback'
   | 'application_submit'
+  | 'application_review'
   | 'consent_granted'
   | 'consent_withdrawn'
   | 'export_created'
@@ -260,6 +267,10 @@ export interface RecipientCase {
   decision_at: string;
   consent_state: ConsentState;
   application_state: ApplicationState;
+  application_review_state: ApplicationReviewState;
+  application_reviewed_at: string | null;
+  application_reviewed_by: string | null;
+  application_review_reason: string | null;
   payment_state: PaymentState;
   prc_handoff_state: PrcHandoffState;
   membership_state: MembershipState;
@@ -394,9 +405,13 @@ export interface PaymentIntent {
   currency: string;
   payment_route: string;
   payment_reference: string | null;
+  payer_declaration: string | null;
+  payer_declared_at: string | null;
   state: PaymentState;
   handoff_opened_at: string | null;
+  handoff_opened_by: string | null;
   payer_marked_paid_at: string | null;
+  payer_marked_paid_by: string | null;
   verification_started_at: string | null;
   verified_at: string | null;
   failed_at: string | null;
@@ -410,6 +425,59 @@ export interface PaymentIntent {
   idempotency_key: string;
   request_hash: string;
   metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PaymentEvidenceState =
+  | 'verification_pending'
+  | 'verified'
+  | 'reupload_requested'
+  | 'superseded'
+  | 'rejected';
+
+export interface PaymentEvidenceVersion {
+  id: string;
+  payment_evidence_id: string;
+  payment_intent_id: string;
+  version_number: number;
+  object_path: string;
+  content_type: 'image/jpeg' | 'image/png' | 'image/webp';
+  file_size_bytes: number;
+  sha256: string;
+  image_width: number | null;
+  image_height: number | null;
+  state: PaymentEvidenceState;
+  uploaded_by: string;
+  uploaded_at: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  retention_review_at: string | null;
+  supersedes_id: string | null;
+  purged_at: string | null;
+  purge_job_id: string | null;
+  metadata: Record<string, unknown>;
+}
+
+export type PaymentUploadSessionState = 'initiated' | 'processing' | 'completed' | 'failed' | 'expired';
+
+export interface PaymentUploadSession {
+  id: string;
+  payment_intent_id: string;
+  case_id: string;
+  campaign_id: string;
+  uploader_user_id: string;
+  idempotency_key: string;
+  request_hash: string;
+  quarantine_object_path: string;
+  claimed_content_type: 'image/jpeg' | 'image/png' | 'image/webp';
+  declared_size_bytes: number;
+  state: PaymentUploadSessionState;
+  expires_at: string;
+  processing_started_at: string | null;
+  evidence_version_id: string | null;
+  failure_code: string | null;
+  quarantine_deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }

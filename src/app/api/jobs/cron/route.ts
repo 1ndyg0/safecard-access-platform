@@ -47,6 +47,18 @@ export async function GET(request: NextRequest) {
       idempotencyKey: `metrics-${today}`,
     });
 
+    await enqueueJob({
+      jobType: 'cleanup_payment_uploads',
+      idempotencyKey: `payment-upload-cleanup-${today}-${now.getUTCHours()}`,
+    });
+
+    // The worker is safe to schedule before policy approval: it is a no-op
+    // unless PAYMENT_EVIDENCE_RETENTION_DAYS has been explicitly configured.
+    await enqueueJob({
+      jobType: 'purge_payment_evidence',
+      idempotencyKey: `payment-evidence-retention-${today}`,
+    });
+
     // Process all pending jobs
     const result = await processJobs(workerId);
 

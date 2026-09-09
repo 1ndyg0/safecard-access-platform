@@ -73,11 +73,29 @@ export const MANUAL_PAYMENT_CONFIG = {
   ],
 } as const;
 
-export type ManualPaymentRoute = (typeof MANUAL_PAYMENT_CONFIG.routes)[number];
+export type ManualPaymentRoute = {
+  id: string;
+  label: string;
+  instructions: string;
+  accountName: string;
+  qrObjectPath?: string;
+  qrImageUrl?: string;
+  bank?: string;
+  accountType?: string;
+  currency?: string;
+  accountNumber?: string;
+  swiftCode?: string;
+  branch?: string;
+};
 
-export function getPaymentRoutes(qrImageUrl?: string) {
-  return MANUAL_PAYMENT_CONFIG.routes.map((route) => {
-    if (route.id !== 'gcash') return route;
-    return { ...route, qrImageUrl: qrImageUrl ?? null };
-  });
+export function getPaymentRoutes(qrImageUrl?: string): ManualPaymentRoute[] {
+  const routes: ManualPaymentRoute[] = [];
+  for (const route of MANUAL_PAYMENT_CONFIG.routes) {
+    if (route.id === 'gcash') {
+      if (qrImageUrl) routes.push({ ...route, qrImageUrl });
+    } else {
+      routes.push(route);
+    }
+  }
+  return routes;
 }

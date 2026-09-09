@@ -36,6 +36,7 @@ export default function RootLayout({ children }: Props) {
   return (
     <html
       lang="fil"
+      data-scroll-behavior="smooth"
       className={`${jakartaSans.variable} ${dmSans.variable} ${ibmMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col" style={{ background: "var(--bg)", color: "var(--text)" }}>

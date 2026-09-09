@@ -26,9 +26,12 @@ export async function POST(request: NextRequest) {
     const auth = await requireAuth();
     const access = await requirePaymentAccess(auth.userId, parsed.payment_intent_id);
     if (!access.allowed) throw new Error('Permission denied: payment access required');
-    assertSyntheticText(parsed.data_mode, parsed.payment_reference);
+    const dataMode = process.env.LAUNCH_GATES_COMPLETE === 'true' && process.env.NEXT_PUBLIC_DATA_MODE === 'live'
+      ? 'live'
+      : 'synthetic';
+    assertSyntheticText(dataMode, parsed.payment_reference);
 
-    await markPaymentPaid(parsed.payment_intent_id, parsed.payment_reference, parsed.payer_declaration);
+    await markPaymentPaid(parsed.payment_intent_id, parsed.payment_reference, auth.userId);
 
     return success({
       marked: true,

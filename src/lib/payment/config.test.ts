@@ -23,4 +23,9 @@ describe('manual payment configuration', () => {
     expect(routes.find((route) => route.id === 'gcash')?.qrImageUrl).toBe('https://signed.example/qr');
     expect(routes.filter((route) => route.id !== 'gcash').every((route) => !('qrImageUrl' in route))).toBe(true);
   });
+
+  it('does not offer GCash when the official QR asset is unavailable', () => {
+    expect(getPaymentRoutes().some((route) => route.id === 'gcash')).toBe(false);
+    expect(getPaymentRoutes()).toHaveLength(4);
+  });
 });
