@@ -92,3 +92,21 @@ export function assertSponsorDataAllowed(
     );
   }
 }
+
+/**
+ * Derive the active data mode on the server.
+ *
+ * Existing intake routes accept `data_mode` in the request body. That is
+ * fine where the caller is the platform's own wizard, but a route that
+ * writes personal data should not be told by its client which safety
+ * regime applies. This reads the deployment's own configuration:
+ * 'live' only when the launch gates are explicitly complete, and
+ * 'synthetic' in every other case, including when the variable is unset
+ * or misspelled.
+ */
+export function resolveDataMode(): DataMode {
+  const gatesComplete = process.env.LAUNCH_GATES_COMPLETE === 'true';
+  const configured = process.env.NEXT_PUBLIC_DATA_MODE;
+  if (gatesComplete && configured === 'live') return 'live';
+  return 'synthetic';
+}

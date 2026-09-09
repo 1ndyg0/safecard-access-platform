@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { PaymentActions } from "@/components/admin/PaymentActions";
 import { AuditTimeline } from "@/components/admin/AuditTimeline";
+import { ReviewPanel } from "@/components/admin/ReviewPanel";
 import { readJson, useAsyncLoad } from "@/components/admin/use-async-load";
 
 type Payment = {
@@ -61,6 +62,7 @@ type Detail = {
 const STATE_KEYS = [
   ["consent_state", "Consent"],
   ["application_state", "Application"],
+  ["application_review_state", "Application review"],
   ["payment_state", "Payment"],
   ["prc_handoff_state", "PRC handoff"],
   ["membership_state", "Membership"],
@@ -166,24 +168,18 @@ export function CaseDetail({ id }: { id: string }) {
           </section>
 
           {data.capabilities.canReviewApplication && (
-            <section className="admin-panel stack">
-              <p className="eyebrow">Application review</p>
-              <p>
-                Current state: <strong>{data.case.application_state?.replaceAll("_", " ")}</strong>
-                {data.submission?.original_submission_id
-                  ? " · this is a resubmission"
-                  : ""}
-              </p>
+            <>
               {data.submission?.correction_reason && (
                 <p className="form-message">
                   Correction requested: {data.submission.correction_reason}
                 </p>
               )}
-              <p className="muted-note">
-                Approve, request resubmission and reject are committed by the application
-                review module and are not available from this screen yet.
-              </p>
-            </section>
+              <ReviewPanel
+                caseId={id}
+                reviewState={data.case.application_review_state ?? "pending"}
+                onDecided={() => setReloadToken((value) => value + 1)}
+              />
+            </>
           )}
 
           {data.capabilities.canViewPayments && (

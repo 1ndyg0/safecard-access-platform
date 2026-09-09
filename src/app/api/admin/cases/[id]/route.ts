@@ -32,7 +32,7 @@ export const dynamic = 'force-dynamic';
  * exactly which columns leave the database.
  */
 const CASE_COLUMNS =
-  'id,campaign_id,application_ref,consent_state,application_state,payment_state,prc_handoff_state,membership_state,created_at,updated_at';
+  'id,campaign_id,application_ref,consent_state,application_state,application_review_state,payment_state,prc_handoff_state,membership_state,created_at,updated_at';
 
 export async function GET(
   _request: Request,
