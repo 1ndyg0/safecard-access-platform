@@ -24,9 +24,12 @@ test.describe('SafeCard public smoke and accessibility', () => {
     const transitionSeconds = await panel.evaluate((element) => Number.parseFloat(getComputedStyle(element).transitionDuration));
     expect(transitionSeconds).toBeGreaterThan(0);
     await expect(page.getByText(/Illustrative only|Halimbawa lamang/i).first()).toBeVisible();
-    const readButton = page.getByRole('button', { name: /Nabasa ko ang halimbawang ito|I have read this example/i });
+    // Keep a selector-stable locator: this button's accessible name changes
+    // after activation, so a name-based locator would stop matching mid-check.
+    const readButton = page.locator('.story-card').first().locator('button.story-complete');
     await readButton.click();
-    await expect(page.getByRole('button', { name: /Nabasa ko na|Marked as read/i })).toBeDisabled();
+    await expect(readButton).toBeDisabled();
+    await expect(readButton).toHaveAccessibleName(/Nabasa ko na|Marked as read/i);
     await first.focus();
     await page.keyboard.press('Space');
     await expect(first).toHaveAttribute('aria-expanded', 'false');
