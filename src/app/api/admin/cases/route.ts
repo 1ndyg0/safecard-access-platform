@@ -1,99 +1,129 @@
 /**
- * GET /api/admin/cases?campaign_id=xxx&state=xxx&page=1&limit=25
+ * GET /api/admin/cases
  *
- * Staff view of all recipient cases with filters.
- * Does NOT expose recipient_profiles PII — only case metadata.
- * Privacy boundary: sponsors and staff see state machines, not personal data.
+ * Submission queue for authorized staff.
+ *
+ * Filters are independent: each targets one column with a value from
+ * that column's own enum type. The previous implementation OR'd a single
+ * value across all five state columns, which raises
+ * `invalid input value for enum` in PostgreSQL for any value that is not
+ * a label of every enum involved — a 500 for most selections.
+ *
+ * Sorting by longest waiting uses review_waiting_since, the moment the
+ * case entered its current review wait. A case that was sent back for
+ * correction and resubmitted has waited since the resubmission, not
+ * since it was created, and must not jump the queue on age alone.
+ *
+ * Response rows carry case metadata only. No profile column is selected
+ * here; the queue never needs a name to show a state.
  */
 
-import { NextRequest } from 'next/server';
-import { requireStaffAuth } from '@/lib/auth/session';
-import { requireAnyRole } from '@/lib/auth/permissions';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/db/client';
-import { success, badRequest, forbidden, handleApiError } from '@/lib/api/response';
-import { z } from 'zod';
+import { assertCampaignAccess, resolveStaffScope } from '@/lib/admin/access';
+import { handleAdminError, PRIVATE_NO_STORE } from '@/lib/admin/respond';
+import { parseQueueQuery, resolveDateRange, reviewBucketStates } from '@/lib/admin/queue';
 
-const stateFilterSchema = z.enum([
-  'not_started', 'reviewing', 'agreed', 'withdrawn', 'expired_due_to_content_change',
-  'draft', 'ready_for_review', 'submitted', 'correction_needed', 'resubmitted',
-  'official_handoff_opened', 'payer_marked_paid', 'verification_pending',
-  'verified_by_official_source', 'failed_or_cancelled', 'refunded_or_reversed',
-  'not_ready', 'ready_for_export', 'exported', 'acknowledged', 'correction_requested',
-  'accepted', 'rejected', 'not_active', 'pending_prc_confirmation',
-  'active_confirmed', 'declined', 'expired', 'renewed',
-]);
-const consentFilterSchema = z.enum(['not_started', 'reviewing', 'agreed', 'withdrawn', 'expired_due_to_content_change']);
-const applicationFilterSchema = z.enum(['draft', 'ready_for_review', 'submitted', 'correction_needed', 'resubmitted', 'withdrawn']);
-const paymentFilterSchema = z.enum(['not_started', 'official_handoff_opened', 'payer_marked_paid', 'verification_pending', 'verified_by_official_source', 'failed_or_cancelled', 'refunded_or_reversed']);
+export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+/**
+ * Explicit column list, written as a literal so the row typing survives
+ * and the disclosed columns are visible at a glance. No profile column
+ * appears here: the queue shows states, never people.
+ */
+const QUEUE_COLUMNS =
+  'id,campaign_id,application_ref,consent_state,application_state,payment_state,prc_handoff_state,membership_state,created_at,updated_at,review_waiting_since,is_resubmission';
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    const auth = await requireStaffAuth();
-
-    const campaignId = request.nextUrl.searchParams.get('campaign_id');
-    if (!campaignId) return badRequest('campaign_id is required');
-    const roleCheck = await requireAnyRole(auth.userId, [
-      'privacy_admin_owner', 'school_admin', 'prc_liaison', 'support_agent', 'finance_export',
-    ], campaignId);
-    if (!roleCheck.allowed) return forbidden(roleCheck.reason);
-
-    const state = stateFilterSchema.optional().parse(request.nextUrl.searchParams.get('state') ?? undefined);
-    const consentState = consentFilterSchema.optional().parse(request.nextUrl.searchParams.get('consent_state') ?? undefined);
-    const applicationState = applicationFilterSchema.optional().parse(request.nextUrl.searchParams.get('application_state') ?? undefined);
-    const paymentState = paymentFilterSchema.optional().parse(request.nextUrl.searchParams.get('payment_state') ?? undefined);
-    const page = z.coerce.number().int().min(1).parse(request.nextUrl.searchParams.get('page') ?? 1);
-    const limit = z.coerce.number().int().min(1).max(100).parse(request.nextUrl.searchParams.get('limit') ?? 25);
-    const search = request.nextUrl.searchParams.get('q')?.trim();
-    const sort = z.enum(['newest', 'oldest', 'longest_waiting']).catch('newest').parse(request.nextUrl.searchParams.get('sort') ?? 'newest');
-    const from = request.nextUrl.searchParams.get('from');
-    const to = request.nextUrl.searchParams.get('to');
-    const offset = (page - 1) * limit;
+    const scope = await resolveStaffScope();
+    const query = parseQueueQuery(request.nextUrl.searchParams);
+    assertCampaignAccess(scope, query.campaign_id);
 
     const admin = getSupabaseAdminClient();
+    let builder = admin
+      .from('admin_case_queue_view')
+      .select(QUEUE_COLUMNS, { count: 'exact' })
+      .eq('campaign_id', query.campaign_id);
 
-    // Select case metadata — NOT recipient_profiles
-    let query = admin
-      .from('recipient_cases')
-      .select(
-        `id, application_ref, campaign_id,
-         consent_state, application_state, payment_state,
-         prc_handoff_state, membership_state,
-         created_at, updated_at`,
-        { count: 'exact' },
-      )
-      .eq('campaign_id', campaignId)
-      .order('created_at', { ascending: sort !== 'newest' })
-      .range(offset, offset + limit - 1);
-
-    if (search) query = query.eq('application_ref', search);
-    if (from) query = query.gte('created_at', from);
-    if (to) query = query.lte('created_at', `${to}T23:59:59.999Z`);
-
-    if (state) {
-      // Generic state filter — search across all state machines
-      query = query.or(
-        `consent_state.eq.${state},application_state.eq.${state},payment_state.eq.${state},prc_handoff_state.eq.${state},membership_state.eq.${state}`,
-      );
+    // Exact reference match only. A prefix search over a unique
+    // identifier is a way to enumerate the register.
+    if (query.application_ref) {
+      builder = builder.eq('application_ref', query.application_ref);
     }
 
-    if (consentState) query = query.eq('consent_state', consentState);
-    if (applicationState) query = query.eq('application_state', applicationState);
-    if (paymentState) query = query.eq('payment_state', paymentState);
+    if (query.consent_state) builder = builder.eq('consent_state', query.consent_state);
+    if (query.application_state) {
+      builder = builder.eq('application_state', query.application_state);
+    }
+    if (query.review_bucket) {
+      builder = builder.in('application_state', [...reviewBucketStates(query.review_bucket)]);
+    }
+    if (query.payment_state) builder = builder.eq('payment_state', query.payment_state);
+    if (query.prc_handoff_state) {
+      builder = builder.eq('prc_handoff_state', query.prc_handoff_state);
+    }
+    if (query.membership_state) {
+      builder = builder.eq('membership_state', query.membership_state);
+    }
 
-    const { data, error, count } = await query;
+    const { fromIso, toIso } = resolveDateRange(query);
+    if (fromIso) builder = builder.gte('created_at', fromIso);
+    if (toIso) builder = builder.lte('created_at', toIso);
 
+    switch (query.sort) {
+      case 'oldest':
+        builder = builder.order('created_at', { ascending: true });
+        break;
+      case 'longest_waiting':
+        // Oldest wait first. Cases not awaiting review carry a null
+        // wait timestamp and sort last rather than to the top.
+        builder = builder.order('review_waiting_since', {
+          ascending: true,
+          nullsFirst: false,
+        });
+        break;
+      case 'newest':
+      default:
+        builder = builder.order('created_at', { ascending: false });
+        break;
+    }
+    // Stable tiebreak so pagination cannot repeat or skip a row.
+    builder = builder.order('id', { ascending: true });
+
+    const offset = (query.page - 1) * query.limit;
+    const { data, error, count } = await builder.range(offset, offset + query.limit - 1);
     if (error) throw new Error(`Failed to list cases: ${error.message}`);
 
-    return success({
-      cases: data ?? [],
-      pagination: {
-        page,
-        limit,
-        total: count ?? 0,
-        totalPages: Math.ceil((count ?? 0) / limit),
+    const total = count ?? 0;
+    return NextResponse.json(
+      {
+        cases: data ?? [],
+        pagination: {
+          page: query.page,
+          limit: query.limit,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / query.limit)),
+        },
+        appliedFilters: {
+          consent_state: query.consent_state ?? null,
+          application_state: query.application_state ?? null,
+          review_bucket: query.review_bucket ?? null,
+          payment_state: query.payment_state ?? null,
+          prc_handoff_state: query.prc_handoff_state ?? null,
+          membership_state: query.membership_state ?? null,
+          application_ref: query.application_ref ?? null,
+          from: query.from ?? null,
+          to: query.to ?? null,
+          sort: query.sort,
+        },
+        // Stated rather than implied: the console labels its date range
+        // so a reviewer knows which day boundary they filtered on.
+        dateRangeTimezone: 'UTC',
       },
-    });
+      { headers: PRIVATE_NO_STORE },
+    );
   } catch (error) {
-    return handleApiError(error, 'Admin case list');
+    return handleAdminError(error, 'Admin case list');
   }
 }

@@ -12,10 +12,14 @@
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test tests/e2e/smoke.spec.ts",
     "test:e2e:happy-path": "playwright test tests/e2e/application-happy-path.spec.ts",
+    "test:e2e:admin": "playwright test --config playwright.admin.config.ts",
     "verify": "npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e && npm run test:performance",
+    "verify:admin": "npm run test:e2e:admin && npm run test:performance:admin",
+    "verify:full": "npm run verify && npm run verify:admin",
     "test:e2e:storyboard": "playwright test tests/e2e/storyboard.spec.ts",
     "test:e2e:install": "playwright install --with-deps",
     "test:performance": "playwright test --config playwright.performance.config.ts",
+    "test:performance:admin": "playwright test --config playwright.admin.performance.config.ts",
     "db:reset": "supabase db reset"
   },
   "dependencies": {
@@ -31,8 +35,8 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.10.2",
-    "@playwright/test": "^1.56.0",
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24.13.3",
     "@types/qrcode": "^1.5.6",
