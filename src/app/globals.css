@@ -510,3 +510,74 @@ button.button-primary, button.button-quiet { border: 0; cursor: pointer; }
   .content-section h2,
   .metric-grid strong { color: var(--text); }
 }
+
+/* ============================================================
+   Benefit storyboard
+   ============================================================ */
+
+.benefit-storyboard { display: grid; gap: 12px; margin: 24px 0; }
+
+.storyboard-provenance { margin: 0; color: var(--text2); font-size: .72rem; }
+.storyboard-provenance[data-provenance="approved"] { color: #0d7c56; }
+.storyboard-progress { margin: 0 0 6px; color: var(--text2); font-size: .74rem; font-weight: 700; }
+
+.story-card { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.story-card.read { border-color: rgba(13,124,86,.45); }
+.story-heading { margin: 0; font: inherit; }
+
+.story-header {
+  width: 100%;
+  /* Comfortably past 44px on a low-cost phone. */
+  min-height: 64px;
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px;
+  border: 0; background: transparent; cursor: pointer; text-align: left;
+}
+.story-number { color: var(--text2); font: 750 .72rem/1 var(--font-ibm-mono); }
+.story-icon { font-size: 1.3rem; }
+.story-title { display: grid; gap: 3px; flex: 1; }
+.story-title strong { color: var(--navy); font: 750 .95rem/1.25 var(--font-jakarta); }
+.story-title small { color: var(--text2); font-size: .74rem; line-height: 1.4; }
+.story-read-tag {
+  padding: 5px 9px; border-radius: 999px; color: #0d7c56;
+  background: rgba(13,124,86,.14); font: 800 .6rem/1 var(--font-jakarta);
+  text-transform: uppercase;
+}
+.story-indicator {
+  width: 11px; height: 11px; flex: none;
+  border-right: 2px solid var(--text2); border-bottom: 2px solid var(--text2);
+  transform: rotate(45deg); transition: transform .18s ease;
+}
+.story-card.open .story-indicator { transform: rotate(225deg); }
+
+.story-panel { padding: 4px 18px 20px; border-top: 1px solid var(--border); }
+.story-panel p { margin: 10px 0; font-size: .85rem; line-height: 1.6; }
+.story-persona { color: var(--navy); font: 750 .95rem/1.3 var(--font-jakarta); }
+.story-disclaimer {
+  padding: 12px 14px; border-radius: 8px;
+  color: var(--text2); background: var(--surface2);
+  font-size: .78rem;
+}
+.story-hotline-note { color: var(--text2); font-size: .78rem; }
+
+.story-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.story-actions .hotline-action,
+.story-actions button {
+  min-height: 48px; display: inline-flex; align-items: center; justify-content: center;
+  padding: 12px 18px; border-radius: 8px; font: 750 .8rem/1 var(--font-jakarta);
+}
+.hotline-action {
+  color: white; background: var(--red); text-decoration: none;
+}
+.story-actions button:disabled { color: var(--text2); cursor: default; }
+
+@media (max-width: 720px) {
+  .story-header { padding: 14px; gap: 10px; }
+  .story-actions .hotline-action, .story-actions button { width: 100%; }
+}
+
+/* Someone who asked for less motion gets none of it. */
+@media (prefers-reduced-motion: reduce) {
+  .story-indicator { transition: none !important; }
+  .story-card, .story-panel { animation: none !important; transition: none !important; }
+}
