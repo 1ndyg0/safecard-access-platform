@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
     const consentState = consentFilterSchema.optional().parse(request.nextUrl.searchParams.get('consent_state') ?? undefined);
     const applicationState = applicationFilterSchema.optional().parse(request.nextUrl.searchParams.get('application_state') ?? undefined);
     const paymentState = paymentFilterSchema.optional().parse(request.nextUrl.searchParams.get('payment_state') ?? undefined);
+    const search = request.nextUrl.searchParams.get('search')?.trim();
     const page = z.coerce.number().int().min(1).parse(request.nextUrl.searchParams.get('page') ?? 1);
     const limit = z.coerce.number().int().min(1).max(100).parse(request.nextUrl.searchParams.get('limit') ?? 25);
     const offset = (page - 1) * limit;
@@ -71,6 +72,7 @@ export async function GET(request: NextRequest) {
     if (consentState) query = query.eq('consent_state', consentState);
     if (applicationState) query = query.eq('application_state', applicationState);
     if (paymentState) query = query.eq('payment_state', paymentState);
+    if (search) query = query.ilike('application_ref', `%${search}%`);
 
     const { data, error, count } = await query;
 
