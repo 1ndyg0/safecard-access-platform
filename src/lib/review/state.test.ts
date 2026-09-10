@@ -116,7 +116,7 @@ describe('a review decision touches nothing else', () => {
     expect(REVIEW_ROUTE).not.toMatch(/prc_handoff_state:\s*['"]/);
     expect(REVIEW_ROUTE).not.toContain('ready_for_export');
     expect(ATOMIC_REVIEW_MIGRATION).toContain(
-      "and payment_state = 'verified_by_official_source'",
+      "and c.payment_state = 'verified_by_official_source'",
     );
     expect(ATOMIC_REVIEW_MIGRATION).toContain(
       "then 'ready_for_export'::public.prc_handoff_state",

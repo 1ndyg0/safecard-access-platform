@@ -13,6 +13,7 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
+import { resetSyntheticDatabase } from './reset';
 
 const PASSWORD = 'e2e-review-corrections-passphrase';
 
@@ -33,7 +34,7 @@ function assertDisposableTarget(url: string): void {
     }
   }
   const isLocal =
-    url.includes('127.0.0.1') || url.includes('localhost') || url.includes('kong:8000');
+    ['127.0.0.1', 'localhost', 'kong'].includes(new URL(url).hostname);
   if (isLocal) return;
   if (process.env.E2E_ALLOW_REMOTE === '1') return;
   throw new Error(
@@ -112,14 +113,9 @@ export interface SeededWorld {
   content: { consentVersionId: string; privacyVersionId: string };
 }
 
-async function clear(admin: SupabaseClient): Promise<void> {
-  for (const table of TABLES_TO_CLEAR) {
-    const { error } = await admin
-      .from(table)
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
-    if (error) throw new Error(`Failed to clear ${table}: ${error.message}`);
-  }
+async function clear(): Promise<void> {
+  await resetSyntheticDatabase(TABLES_TO_CLEAR);
+
 }
 
 async function createStaff(admin: SupabaseClient, email: string, fullName: string) {
@@ -229,13 +225,13 @@ export async function seedWorld(): Promise<SeededWorld> {
   const admin = createSeedClient();
   sequence = 0;
 
-  await clear(admin);
+  await clear();
   await deleteExistingStaff(admin);
 
   const organizationId = randomUUID();
   await admin
     .from('organizations')
-    .insert({ id: organizationId, name: 'E2E School', organization_type: 'school' });
+    .insert({ id: organizationId, name: 'E2E School', slug: `e2e-school-${organizationId}`, org_type: 'school' });
 
   const campaignId = randomUUID();
   await admin.from('pilot_campaigns').insert({

@@ -116,7 +116,7 @@ begin
       'resulting_state', 'pending',
       'superseded_submission_id', v_current.id,
       'fields_submitted', (
-        select pg_catalog.coalesce(pg_catalog.jsonb_agg(key order by key), '[]'::jsonb)
+        select coalesce(pg_catalog.jsonb_agg(key order by key), '[]'::jsonb)
         from pg_catalog.jsonb_object_keys(p_profile_data) as key
       )
     ),
