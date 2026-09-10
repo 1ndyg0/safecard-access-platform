@@ -29,7 +29,9 @@ test('renders the storyboard even when content and analytics never answer', asyn
   await page.goto('/benefits');
   await expect(page.locator('.benefit-storyboard')).toBeVisible();
   await expect(page.locator('#storyboard-header-ambulance')).toBeVisible();
-  expect(Date.now() - start).toBeLessThan(LCP_BUDGET_MS * 2);
+  const elapsed = Date.now() - start;
+  test.info().annotations.push({ type: 'metric', description: `fallback_ready_ms=${elapsed}` });
+  expect(elapsed).toBeLessThan(LCP_BUDGET_MS * 2);
 
   // And still interactive.
   await page.locator('#storyboard-header-ambulance').click();
@@ -55,6 +57,7 @@ test('meets the mobile LCP budget', async ({ page }) => {
       }),
   );
 
+  test.info().annotations.push({ type: 'metric', description: `mobile_lcp_ms=${lcp}` });
   expect(lcp).toBeGreaterThan(0);
   expect(lcp).toBeLessThan(LCP_BUDGET_MS);
 });
@@ -80,6 +83,7 @@ test('stays within the CLS budget while opening a scenario', async ({ page }) =>
   await expect(page.locator('#storyboard-panel-blood')).toBeVisible();
 
   const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
+  test.info().annotations.push({ type: 'metric', description: `storyboard_cls=${cls}` });
   expect(cls).toBeLessThanOrEqual(CLS_BUDGET);
 });
 
@@ -88,6 +92,7 @@ test('the content endpoint answers within its own bound', async ({ page }) => {
   const response = await page.request.get('/api/content/storyboard');
   const elapsed = Date.now() - start;
 
+  test.info().annotations.push({ type: 'metric', description: `content_endpoint_ms=${elapsed}` });
   expect(response.status()).toBe(200);
   // The registry read is bounded at 1.5s; the endpoint must not exceed
   // that by much even when the registry is unreachable.
@@ -111,5 +116,7 @@ test('telemetry does not block interaction', async ({ page }) => {
   await expect(page.locator('#storyboard-panel-blood')).toBeVisible();
 
   // Two interactions, both while a telemetry request is still hanging.
-  expect(Date.now() - start).toBeLessThan(3_000);
+  const elapsed = Date.now() - start;
+  test.info().annotations.push({ type: 'metric', description: `two_interactions_ms=${elapsed}` });
+  expect(elapsed).toBeLessThan(3_000);
 });

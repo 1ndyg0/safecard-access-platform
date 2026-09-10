@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import sharp from 'sharp';
 
 export const PAYMENT_PROOF_MAX_BYTES = 10 * 1024 * 1024;
 export const PAYMENT_PROOF_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
@@ -18,6 +19,8 @@ export interface ValidatedPaymentProof {
   sha256: string;
   width: number | null;
   height: number | null;
+  /** Decoded and re-encoded bytes, with embedded metadata removed. */
+  buffer: Buffer;
 }
 
 function isPng(buffer: Buffer) {
@@ -32,31 +35,36 @@ function isWebp(buffer: Buffer) {
   return buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP';
 }
 
-function dimensions(buffer: Buffer, mimeType: PaymentProofMimeType) {
-  if (mimeType === 'image/png' && isPng(buffer)) return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
-  if (mimeType === 'image/jpeg' && isJpeg(buffer)) {
-    let offset = 2;
-    while (offset + 9 < buffer.length) {
-      if (buffer[offset] !== 0xff) { offset += 1; continue; }
-      const marker = buffer[offset + 1];
-      const length = buffer.readUInt16BE(offset + 2);
-      if (length < 2 || offset + length + 2 > buffer.length) break;
-      if (marker >= 0xc0 && marker <= 0xc3) return { height: buffer.readUInt16BE(offset + 5), width: buffer.readUInt16BE(offset + 7) };
-      offset += length + 2;
-    }
-  }
-  return { width: null, height: null };
-}
-
-export function validatePaymentProof(buffer: Buffer, claimedMimeType: string): ValidatedPaymentProof {
+export async function validatePaymentProof(buffer: Buffer, claimedMimeType: string): Promise<ValidatedPaymentProof> {
   if (!PAYMENT_PROOF_MIME_TYPES.includes(claimedMimeType as PaymentProofMimeType)) throw new PaymentProofValidationError('Only JPEG, PNG, and WebP receipt images are accepted.');
   if (buffer.length === 0 || buffer.length > PAYMENT_PROOF_MAX_BYTES) throw new PaymentProofValidationError('Receipt image must be between 1 byte and 10 MB.');
   const mimeType = claimedMimeType as PaymentProofMimeType;
   const signatureMatches = (mimeType === 'image/png' && isPng(buffer)) || (mimeType === 'image/jpeg' && isJpeg(buffer)) || (mimeType === 'image/webp' && isWebp(buffer));
   if (!signatureMatches) throw new PaymentProofValidationError('The file signature does not match the claimed image type.');
   const extension = mimeType === 'image/jpeg' ? 'jpg' : mimeType === 'image/png' ? 'png' : 'webp';
-  const size = dimensions(buffer, mimeType);
-  return { mimeType, extension, sizeBytes: buffer.length, sha256: createHash('sha256').update(buffer).digest('hex'), width: size.width, height: size.height };
+  const format = mimeType === 'image/jpeg' ? 'jpeg' : extension;
+  try {
+    // A signature or metadata read alone cannot establish that pixels decode.
+    // Bound decompression and reject truncated/corrupt images. Re-encoding also
+    // removes EXIF, comments and appended payloads before private storage.
+    const decoder = sharp(buffer, { failOn: 'warning', limitInputPixels: 20_000_000 });
+    const metadata = await decoder.metadata();
+    if (metadata.format !== format || (metadata.pages ?? 1) !== 1) {
+      throw new Error('Unsupported receipt image');
+    }
+    const { data, info } = await decoder.rotate().toFormat(format).toBuffer({ resolveWithObject: true });
+    if (data.length > PAYMENT_PROOF_MAX_BYTES) {
+      throw new PaymentProofValidationError('Decoded receipt image exceeds 10 MB.');
+    }
+    return {
+      mimeType, extension, sizeBytes: data.length,
+      sha256: createHash('sha256').update(data).digest('hex'),
+      width: info.width, height: info.height, buffer: data,
+    };
+  } catch (error) {
+    if (error instanceof PaymentProofValidationError) throw error;
+    throw new PaymentProofValidationError('The receipt must be a valid, complete image of at most 20 megapixels.');
+  }
 }
 
 export function buildPaymentProofObjectPath(campaignId: string, caseId: string, paymentIntentId: string, evidenceId: string, extension: string) {
