@@ -96,7 +96,7 @@ test('repeated member payment declarations are idempotent and cannot rewind veri
   expect(record.error).toBeNull();
   const login = await page.request.post('/api/member/auth', { data: { referenceNumber: record.data!.application_ref, mobileNumber: '+639000000000' } });
   expect(login.status()).toBe(200);
-  const declaration = { payment_reference: 'TEST-IDEMPOTENT-REFERENCE', confirm: true };
+  const declaration = { payment_reference: 'TEST IDEMPOTENT REFERENCE', confirm: true };
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const response = await page.request.post('/api/member/payment/mark-paid', { data: declaration });
     expect(response.status()).toBe(200);
@@ -107,7 +107,7 @@ test('repeated member payment declarations are idempotent and cannot rewind veri
   const replay = await page.request.post('/api/member/payment/mark-paid', { data: declaration });
   expect(replay.status()).toBe(200);
   expect((await replay.json()).paymentState).toBe('verification_pending');
-  const conflict = await page.request.post('/api/member/payment/mark-paid', { data: { ...declaration, payment_reference: 'TEST-DIFFERENT-REFERENCE' } });
+  const conflict = await page.request.post('/api/member/payment/mark-paid', { data: { ...declaration, payment_reference: 'TEST DIFFERENT REFERENCE' } });
   expect(conflict.status()).toBe(409);
   const audit = await world.admin.from('audit_events').select('id').eq('target_id', world.paymentIntentId).eq('action', 'Payment marked as paid');
   expect(audit.error).toBeNull();

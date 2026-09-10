@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('SafeCard synthetic application happy path', () => {
   test('completes the consent-first walkthrough without creating a real application', async ({ page }) => {
-    await page.goto('/apply');
+    await page.goto('/apply', { waitUntil: 'commit' });
 
     await page.getByRole('button', { name: 'English' }).click();
     await expect(page.getByText('Synthetic walkthrough')).toBeVisible();
@@ -32,7 +32,7 @@ test.describe('SafeCard synthetic application happy path', () => {
   });
 
   test('shows Filipino or natural Taglish copy through the first decision steps', async ({ page }) => {
-    await page.goto('/apply');
+    await page.goto('/apply', { waitUntil: 'commit' });
 
     await expect(page.getByText('Synthetic na walkthrough')).toBeVisible();
     await expect(page.getByText(/Huwag maglagay ng totoong personal na impormasyon/i)).toBeVisible();

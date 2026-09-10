@@ -115,7 +115,7 @@ test.describe('staff role management', () => {
     await signIn(page, world.staff.privacyAdmin);
     await page.goto(`/admin/users?campaign_id=${world.campaignId}`);
     await expect(page.getByRole('heading', { name: 'Staff and roles' })).toBeVisible();
-    await expect(page.getByText('Finance Reviewer')).toBeVisible();
-    await expect(page.getByText('PRC Liaison')).toBeVisible();
+    await expect(page.getByText('Finance Reviewer', { exact: true })).toBeVisible();
+    await expect(page.getByText('PRC Liaison', { exact: true })).toBeVisible();
   });
 });

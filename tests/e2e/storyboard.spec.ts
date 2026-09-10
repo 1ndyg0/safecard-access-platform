@@ -52,7 +52,7 @@ async function settleOpenPanel(page: Page) {
 }
 
 async function openBenefits(page: Page) {
-  await page.goto('/benefits', { waitUntil: 'domcontentloaded' });
+  await page.goto('/benefits', { waitUntil: 'commit' });
   // Readiness is the storyboard being present, not the network settling.
   await expect(page.locator('.benefit-storyboard')).toBeVisible();
 }
@@ -118,10 +118,11 @@ test.describe('benefit storyboard', () => {
     for (let index = 0; index < count; index += 1) {
       await expect(closedControls.nth(index)).toHaveAttribute('tabindex', '-1');
     }
-    const hiddenPanels = await page.locator('.story-panel-shell:not(.open)').evaluateAll((panels) =>
-      panels.every((item) => getComputedStyle(item).visibility === 'hidden'),
-    );
-    expect(hiddenPanels).toBe(true);
+    await expect
+      .poll(() => page.locator('.story-panel-shell:not(.open)').evaluateAll((panels) =>
+        panels.every((item) => getComputedStyle(item).visibility === 'hidden'),
+      ))
+      .toBe(true);
 
     const openAction = panel(page, 'ambulance').getByRole('link', { name: /143/ });
     await openAction.focus();
