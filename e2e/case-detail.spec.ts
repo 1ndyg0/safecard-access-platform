@@ -54,13 +54,13 @@ test.describe('case detail and role scoping', () => {
     expect(response.status()).toBe(403);
   });
 
-  test('shows the five workflow states independently', async ({ page }) => {
+  test('shows the six workflow states independently', async ({ page }) => {
     await signIn(page, world.staff.privacyAdmin);
     await page.goto(`/admin/submissions/${world.cases.verifiedPaymentPendingReview}`);
 
     await expect(page.getByRole('heading', { name: 'SC-2026-AAAA0002' })).toBeVisible();
     const states = page.locator('.state-grid article');
-    await expect(states).toHaveCount(5);
+    await expect(states).toHaveCount(6);
     await expect(page.getByText('verified by official source')).toBeVisible();
     await expect(page.getByText('not active')).toBeVisible();
   });
@@ -244,7 +244,7 @@ test.describe('payment verification', () => {
     expect(change).toBeTruthy();
     expect(change.resultingState).toBe('verified_by_official_source');
     expect(change.actorName).toBe('Finance Reviewer');
-    expect(change.severity).toBe('warning');
+    expect(change.severity).toBe('info');
   });
 
   test('no path through the console activates membership', async ({ page }) => {

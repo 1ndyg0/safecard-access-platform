@@ -5,7 +5,7 @@ import { signInMember } from './fixtures/review-auth';
 
 let world: SeededWorld;
 
-test.beforeAll(async () => {
+test.beforeEach(async () => {
   world = await seedWorld();
 });
 

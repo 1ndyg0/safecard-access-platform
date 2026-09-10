@@ -88,3 +88,30 @@ test('school application reviewers cannot obtain private receipt URLs', async ({
   expect(response.status()).toBe(403);
   expect(await response.text()).not.toContain('signedUrl');
 });
+
+test('repeated member payment declarations are idempotent and cannot rewind verification', async ({ page }) => {
+  const prepared = await world.admin.from('payment_intents').update({ state: 'official_handoff_opened', payer_marked_paid_at: null, payer_declared_at: null, payment_reference: null, payer_declaration: null }).eq('id', world.paymentIntentId);
+  expect(prepared.error).toBeNull();
+  const record = await world.admin.from('recipient_cases').select('application_ref').eq('id', world.cases.approvedUnverifiedPayment).single();
+  expect(record.error).toBeNull();
+  const login = await page.request.post('/api/member/auth', { data: { referenceNumber: record.data!.application_ref, mobileNumber: '+639000000000' } });
+  expect(login.status()).toBe(200);
+  const declaration = { payment_reference: 'TEST-IDEMPOTENT-REFERENCE', confirm: true };
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const response = await page.request.post('/api/member/payment/mark-paid', { data: declaration });
+    expect(response.status()).toBe(200);
+    expect(await response.json()).toMatchObject({ marked: true, paymentState: 'payer_marked_paid', membershipChanged: false });
+  }
+  const progressed = await world.admin.from('payment_intents').update({ state: 'verification_pending' }).eq('id', world.paymentIntentId);
+  expect(progressed.error).toBeNull();
+  const replay = await page.request.post('/api/member/payment/mark-paid', { data: declaration });
+  expect(replay.status()).toBe(200);
+  expect((await replay.json()).paymentState).toBe('verification_pending');
+  const conflict = await page.request.post('/api/member/payment/mark-paid', { data: { ...declaration, payment_reference: 'TEST-DIFFERENT-REFERENCE' } });
+  expect(conflict.status()).toBe(409);
+  const audit = await world.admin.from('audit_events').select('id').eq('target_id', world.paymentIntentId).eq('action', 'Payment marked as paid');
+  expect(audit.error).toBeNull();
+  expect(audit.data).toHaveLength(1);
+  const membership = await world.admin.from('recipient_cases').select('membership_state').eq('id', world.cases.approvedUnverifiedPayment).single();
+  expect(membership.data?.membership_state).toBe('not_active');
+});

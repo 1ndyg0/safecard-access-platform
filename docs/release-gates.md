@@ -1,21 +1,26 @@
-# Release gates and blockers
+# SafeCard R1 release gates
 
-## Passed in this workspace
+The authoritative integration branch is `codex/safecard-r1-integration`, reviewed from `36585cc4554859165455e1ef764761e094915e1f`. Historical smoke-only results and existing Vercel deployments do not verify this release.
 
-- Required commit ancestry verified from `3642ea2ac3ada6a1f09b934d5f2be7454f0c5806`.
-- ESLint (warnings only), TypeScript, Vitest (17 tests), and Next production build pass locally.
-- Playwright smoke/accessibility: 20/20 passed across Chromium, Firefox, WebKit, Mobile Chrome, and Mobile Safari.
-- Vercel preview build completed successfully and is READY.
+## Current release boundary
 
-## Blocked or awaiting approval
+**BLOCKED — NOT SAFE TO DEPLOY.** Use the exact-commit results in [draft PR #6](https://github.com/1ndyg0/safecard-access-platform/pull/6). Do not promote from a successful build or from an earlier commit's tests.
 
-- Supabase `db diff` cannot run because Docker Desktop is unavailable.
-- Linked Supabase project has remote migrations `202609050001` and `202609050002` absent from this checkout. `supabase db push --include-all` stopped safely; no migration was applied. Do not repair history without reviewing those migrations and receiving database-password/owner direction.
-- Private `payment-proofs` bucket and migration 00010 are not claimed as deployed.
-- The supplied QR/account details require written PRC/owner verification before payment handoff activation. The UI remains controlled-pilot gated.
-- The Vercel preview is protected by Deployment Protection, so unauthenticated browser smoke against its public URL is blocked. An authenticated CLI HEAD check returned HTTP 200. Production was not promoted.
+- GitHub Actions runs the full public browser and performance suites and a disposable PostgreSQL/Supabase stack for migration, SQL lint, admin E2E, and admin performance checks. All release runs explicitly use zero retries.
+- The shared Supabase project `ajyhlkzbocjeepglkhrl` contains legacy migrations `202609050001` and `202609050002`. Their sponsorship schema is not equivalent to repository migrations 00001–00017. No history repair, hosted migration, seed, or reset was performed.
+- No approved isolated hosted staging target has been identified. The existing project remains excluded from synthetic fixture resets. Obtain the target identifier and approved account access before configuring a Preview.
+- Migrations 00014–00016 contain repairs to previously unapplied functions. Migration 00018 closes direct Data API access and protects submission and evidence snapshots. Migration 00019 makes payment declarations idempotent without rewinding payment or membership state. Apply the full history to an empty isolated target; migration success in CI is not a hosted rollout.
+- The official QR asset and PRC payment details still need owner verification. Do not fabricate a QR or activate payment handoff.
+- A Preview using the approved staging database must pass post-deployment Playwright and log review. External invitation-email delivery requires a controlled mailbox test; it is not yet verified.
 
-## Explicit boundaries
+## Production authorization
 
-- No SMS OTP, paid GCash/payment-provider API, settlement, or external notification integration was introduced.
-- Payment verification never changes membership to active; only a separate recorded PRC confirmation can do that.
+Keep `NEXT_PUBLIC_DATA_MODE=synthetic`, `LAUNCH_GATES_COMPLETE=false`, and `ENABLE_OFFICIAL_PAYMENT_HANDOFF=false`. SMS and phone MFA remain disabled; sensitive export requires authenticator AAL2.
+
+Production requires explicit approval of the exact SHA, payment details and QR, campaign routes, real-data mode, handoff, production database and domain, redirects, staff administrators, and retention/privacy settings. A current recoverable backup and reviewed migration history are mandatory before that rollout.
+
+Payment declaration, payment verification, application approval, and PRC export must never activate membership. Only an accepted PRC response with recorded confirmation evidence may do so.
+
+## Recovery
+
+Leave gates disabled when verification fails. For a future approved rollout, preserve the database backup and deployment identifiers before changes. Roll back application code to the last verified compatible Vercel deployment; restore a database backup only under an approved recovery procedure. Do not delete evidence/audit history, reverse immutable records, run synthetic seeds on shared data, or use migration-history repair to hide a schema mismatch. Prefer a reviewed forward correction when new database writes exist.

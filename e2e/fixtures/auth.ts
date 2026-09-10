@@ -9,10 +9,12 @@ import type { SeededStaff } from './seed';
  * not a fixture that assumes a role.
  */
 export async function signIn(page: Page, staff: SeededStaff): Promise<void> {
-  await page.goto('/admin/login');
+  await page.goto('/admin/login', { waitUntil: 'domcontentloaded' });
   await page.getByLabel('Email').fill(staff.email);
   await page.getByLabel('Password').fill(staff.password);
+  const tokenResponse = page.waitForResponse((response) => response.url().includes('/auth/v1/token') && response.request().method() === 'POST', { timeout: 15_000 });
   await page.getByRole('button', { name: /sign in securely/i }).click();
+  expect((await tokenResponse).status(), 'Supabase Auth must issue the staff session').toBe(200);
   await page.waitForURL(/\/admin(\?.*)?$/);
 }
 

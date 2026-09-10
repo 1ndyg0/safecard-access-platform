@@ -49,3 +49,6 @@ private-reference-assets/
 # Playwright failure artifacts are local/CI outputs, never source.
 test-results/
 playwright-report/
+
+# Keep per-suite CI summaries outside Playwright output cleanup.
+verification-results/

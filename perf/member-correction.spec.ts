@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { seedWorld, type SeededWorld } from '../e2e/fixtures/review-seed';
-import { signInMember } from '../e2e/fixtures/review-auth';
+import { signInMember, signInStaff } from '../e2e/fixtures/review-auth';
 
 /**
  * The member journey runs on a low-cost phone over an unreliable
@@ -20,7 +20,9 @@ test.beforeAll(async () => {
 async function timed<T>(work: () => Promise<T>) {
   const start = Date.now();
   const result = await work();
-  return { result, ms: Date.now() - start };
+  const ms = Date.now() - start;
+  test.info().annotations.push({ type: 'measurement', description: `request_ms=${ms}` });
+  return { result, ms };
 }
 
 test('status answers within budget and stays small', async ({ page }) => {
@@ -51,12 +53,19 @@ test('the status screen becomes readable quickly on a phone', async ({ page }) =
   expect(Date.now() - start).toBeLessThan(BUDGET_MS * 2);
 });
 
-test('a decision does not slow down as the ledger grows', async ({ page }) => {
-  await signInMember(page, world.cases.correctionRequested);
-  const first = await timed(() => page.request.get('/api/member/status'));
-  const second = await timed(() => page.request.get('/api/member/status'));
-  expect(second.result.ok()).toBe(true);
-  // The status read fetches the latest decision with a limit, so repeat
-  // reads should not drift upward.
-  expect(second.ms).toBeLessThan(Math.max(first.ms * 4, BUDGET_MS));
+test('a review decision stays within budget with a populated audit ledger', async ({ page }) => {
+  const rows = Array.from({ length: 1_000 }, () => ({
+    event_type: 'staff_access', actor_id: world.reviewer.userId, actor_type: 'user',
+    action: 'Synthetic performance fixture', case_id: world.cases.pendingReview.id,
+    campaign_id: world.campaignId, details: {},
+  }));
+  const inserted = await world.admin.from('audit_events').insert(rows);
+  expect(inserted.error).toBeNull();
+  await signInStaff(page, world.reviewer);
+  const { result, ms } = await timed(() => page.request.post(`/api/admin/cases/${world.cases.pendingReview.id}/review`, {
+    data: { decision: 'approved', confirm: true, expected_review_state: 'pending', idempotency_key: 'synthetic-ledger-performance' },
+  }));
+  expect(result.status()).toBe(200);
+  expect((await result.json()).reviewState).toBe('approved');
+  expect(ms).toBeLessThan(BUDGET_MS);
 });

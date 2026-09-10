@@ -37,19 +37,20 @@ jobs:
       - run: npm test
       - run: npm run build
         id: build
+      - run: node scripts/check-client-secrets.mjs
       - run: npx playwright install --with-deps chromium firefox webkit
-      - run: npm run test:e2e -- --retries=0 --reporter=list,json
+      - run: npm run test:e2e -- --retries=0 --reporter=list,json,github
         env:
-          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/public.json
-      - run: npm run test:performance -- --retries=0 --reporter=list,json
+          PLAYWRIGHT_JSON_OUTPUT_FILE: verification-results/public.json
+      - run: npm run test:performance -- --retries=0 --reporter=list,json,github
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         env:
-          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/public-performance.json
+          PLAYWRIGHT_JSON_OUTPUT_FILE: verification-results/public-performance.json
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: public-verification
-          path: test-results/*.json
+          path: verification-results/*.json
           retention-days: 7
 
   database:
@@ -79,19 +80,20 @@ jobs:
           rm "$RUNNER_TEMP/safecard-supabase.env"
       - run: npm run build
         id: build
+      - run: node scripts/check-client-secrets.mjs
       - run: npx playwright install --with-deps chromium firefox webkit
-      - run: npm run test:e2e:admin -- --retries=0 --reporter=list,json
+      - run: npm run test:e2e:admin -- --retries=0 --reporter=list,json,github
         env:
-          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/admin.json
-      - run: npm run test:performance:admin -- --retries=0 --reporter=list,json
+          PLAYWRIGHT_JSON_OUTPUT_FILE: verification-results/admin.json
+      - run: npm run test:performance:admin -- --retries=0 --reporter=list,json,github
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         env:
-          PLAYWRIGHT_JSON_OUTPUT_FILE: test-results/admin-performance.json
+          PLAYWRIGHT_JSON_OUTPUT_FILE: verification-results/admin-performance.json
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: database-verification
-          path: test-results/*.json
+          path: verification-results/*.json
           retention-days: 7
       - run: npx supabase stop --no-backup
         if: ${{ always() }}
