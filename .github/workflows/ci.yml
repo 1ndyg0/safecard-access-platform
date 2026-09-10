@@ -5,6 +5,10 @@ on:
   push:
     branches: [main, 'codex/**']
 
+concurrency:
+  group: safecard-verification-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 

@@ -18,7 +18,7 @@ test.describe('dashboard cohorts and suppression', () => {
     await signIn(page, world.staff.privacyAdmin);
     const empty = await world.admin
       .from('recipient_cases')
-      .delete()
+      .update({ is_active: false })
       .eq('campaign_id', world.campaignId);
     expect(empty.error).toBeNull();
 
@@ -49,8 +49,10 @@ test.describe('dashboard cohorts and suppression', () => {
   test('suppresses a cohort of four and discloses at five', async ({ page }) => {
     await signIn(page, world.staff.privacyAdmin);
 
-    // Start from a clean campaign so the cohort size is exact.
-    await world.admin.from('recipient_cases').delete().eq('campaign_id', world.campaignId);
+    // Retain immutable histories, excluding the old fixtures from this cohort.
+    const cleared = await world.admin.from('recipient_cases').update({ is_active: false }).eq('campaign_id', world.campaignId);
+    expect(cleared.error).toBeNull();
+    await addSubmittedCases(world.admin, world.campaignId, 5, false);
 
     await addSubmittedCases(world.admin, world.campaignId, 4);
     const atFour = await (
@@ -66,14 +68,15 @@ test.describe('dashboard cohorts and suppression', () => {
       await page.request.get(`/api/admin/analytics?campaign_id=${world.campaignId}`)
     ).json();
     expect(atFive.analytics.funnel.started_to_submitted.available).toBe(true);
-    expect(atFive.analytics.funnel.started_to_submitted.cohort_size).toBe(5);
+    expect(atFive.analytics.funnel.started_to_submitted.cohort_size).toBe(10);
   });
 
   test('suppresses the complement so a small cell cannot be subtracted out', async ({
     page,
   }) => {
     await signIn(page, world.staff.privacyAdmin);
-    await world.admin.from('recipient_cases').delete().eq('campaign_id', world.campaignId);
+    const cleared = await world.admin.from('recipient_cases').update({ is_active: false }).eq('campaign_id', world.campaignId);
+    expect(cleared.error).toBeNull();
 
     // Twenty submitted, of which all twenty are payment-verified: the
     // complement is zero, so the rate must be withheld even though the

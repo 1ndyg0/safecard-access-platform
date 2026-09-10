@@ -53,15 +53,16 @@ async function latestPublished(
   contentType: string,
   locale: 'tl' | 'en',
 ) {
-  const { data } = await admin
+  const { data, error } = await admin
     .from('content_versions')
     .select('id,version,is_material_change,change_summary,locale,published_at')
     .eq('content_type', contentType)
-    .eq('approval_status', 'published')
+    .eq('approval_status', 'approved')
     .eq('is_published', true)
     .order('published_at', { ascending: false })
     .limit(20);
 
+  if (error) throw new Error('Consent content could not be verified.');
   const rows = data ?? [];
   return rows.find((row) => row.locale === locale) ?? rows[0] ?? null;
 }

@@ -353,7 +353,10 @@ export async function publishMaterialConsentChange(
   createdBy: string,
 ): Promise<string> {
   const id = randomUUID();
-  await admin.from('content_versions').insert({
+  const retired = await admin.from('content_versions').update({ is_published: false })
+    .eq('content_type', 'consent_text').eq('locale', 'tl').eq('is_published', true);
+  if (retired.error) throw new Error('Could not retire the synthetic consent version.');
+  const published = await admin.from('content_versions').insert({
     id,
     content_type: 'consent_text',
     locale: 'tl',
@@ -367,5 +370,6 @@ export async function publishMaterialConsentChange(
     change_summary: 'The data retention period changed.',
     published_at: new Date().toISOString(),
   });
+  if (published.error) throw new Error('Could not publish the synthetic consent revision.');
   return id;
 }

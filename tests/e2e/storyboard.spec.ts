@@ -52,7 +52,7 @@ async function settleOpenPanel(page: Page) {
 }
 
 async function openBenefits(page: Page) {
-  await page.goto('/benefits');
+  await page.goto('/benefits', { waitUntil: 'domcontentloaded' });
   // Readiness is the storyboard being present, not the network settling.
   await expect(page.locator('.benefit-storyboard')).toBeVisible();
 }
@@ -153,6 +153,7 @@ test.describe('benefit storyboard', () => {
     await expect(page.locator('.storyboard-progress')).toContainText('0/4');
 
     await header(page, 'ambulance').click();
+    await settleOpenPanel(page);
     await panel(page, 'ambulance').getByRole('button', { name: /mark as read/i }).click();
     await expect(page.locator('.storyboard-progress')).toContainText('1/4');
     await expect(page.locator('.story-card.read')).toHaveCount(1);
@@ -190,13 +191,6 @@ test.describe('benefit storyboard', () => {
       await header(page, 'ambulance').click();
       await settleOpenPanel(page);
 
-      // Scoped to the storyboard, which is what this module owns. The
-      // surrounding /benefits page carries pre-existing contrast
-      // failures from the shared --text3 token (#8892A8 on white is
-      // 3.12:1, under the 4.5:1 AA floor). Fixing that token changes
-      // every page in the product, so it is reported in the PR rather
-      // than silently altered from here — but this suite must not pass
-      // by ignoring it either, hence the audit test below.
       const results = await new AxeBuilder({ page })
         .include('.benefit-storyboard')
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -208,31 +202,14 @@ test.describe('benefit storyboard', () => {
     });
   }
 
-  test('records page-level violations this module did not introduce', async ({ page }) => {
+  test('has no serious or critical page-level accessibility violations', async ({ page }) => {
     await openBenefits(page);
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();
-    const serious = results.violations.filter(
+    expect(results.violations.filter(
       (violation) => violation.impact === 'serious' || violation.impact === 'critical',
-    );
-
-    // Every remaining serious finding on /benefits must be outside the
-    // storyboard. If one ever lands inside it, this fails and names it.
-    const insideStoryboard = serious.flatMap((violation) =>
-      violation.nodes.filter((node) =>
-        node.target.some((selector) => String(selector).includes('benefit-storyboard')),
-      ),
-    );
-    expect(insideStoryboard).toEqual([]);
-
-    if (serious.length > 0) {
-      // Visible in the report without failing another module's work.
-      console.warn(
-        `[a11y] /benefits carries ${serious.length} pre-existing serious violation(s): ` +
-          serious.map((violation) => violation.id).join(', '),
-      );
-    }
+    )).toEqual([]);
   });
 
   test('respects reduced motion', async ({ page }) => {
