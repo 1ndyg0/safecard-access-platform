@@ -53,8 +53,17 @@ async function settleOpenPanel(page: Page) {
 
 async function openBenefits(page: Page) {
   await page.goto('/benefits', { waitUntil: 'commit' });
-  // Readiness is the storyboard being present, not the network settling.
+  // A committed document can become visible before WebKit has applied the
+  // stylesheet. Wait for the design token, fonts, and two paint frames so axe
+  // measures the settled UI instead of a partially styled first paint.
   await expect(page.locator('.benefit-storyboard')).toBeVisible();
+  await page.waitForFunction(
+    () => getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() !== '',
+  );
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  });
 }
 
 test.describe('benefit storyboard', () => {
