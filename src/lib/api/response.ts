@@ -65,9 +65,6 @@ export function serverError(message = 'Internal server error') {
  * Maps known error types to appropriate HTTP responses.
  */
 export function handleApiError(error: unknown, context: string): NextResponse {
-  const errorName = error instanceof Error ? error.name : 'UnknownError';
-  console.error(`[API] ${context}: ${errorName}`);
-
   if (error instanceof ZodError) {
     return validationError(error);
   }
@@ -115,5 +112,10 @@ export function handleApiError(error: unknown, context: string): NextResponse {
     }
   }
 
+  // Expected client, authorization, state, and launch-gate responses above
+  // are handled outcomes. Logging them as server errors pollutes production
+  // monitoring and can conceal an actual 5xx failure in routine 4xx traffic.
+  const errorName = error instanceof Error ? error.name : 'UnknownError';
+  console.error(`[API] ${context}: ${errorName}`);
   return serverError('An unexpected error occurred. Please try again.');
 }
