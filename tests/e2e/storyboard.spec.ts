@@ -56,7 +56,9 @@ async function openBenefits(page: Page) {
   // A committed document can become visible before WebKit has applied the
   // stylesheet. Wait for the design token, fonts, and two paint frames so axe
   // measures the settled UI instead of a partially styled first paint.
-  await expect(page.locator('.benefit-storyboard')).toBeVisible();
+  const storyboard = page.locator('.benefit-storyboard');
+  await expect(storyboard).toBeVisible();
+  await expect(storyboard).toHaveAttribute('data-hydrated', 'true');
   await page.waitForFunction(
     () => getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() !== '',
   );
