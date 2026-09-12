@@ -11,6 +11,10 @@ function pngFixture() {
   return buffer;
 }
 
+function pdfFixture(extra = '') {
+  return Buffer.from(`%PDF-1.4\n1 0 obj<</Type /Catalog /Pages 2 0 R>>endobj\n2 0 obj<</Type /Pages /Kids[3 0 R] /Count 1>>endobj\n3 0 obj<</Type /Page /Parent 2 0 R>>endobj\n${extra}\nstartxref\n0\n%%EOF`);
+}
+
 describe('payment proof validation', () => {
   it.each([
     ['image/png', pngFixture()],
@@ -33,6 +37,19 @@ describe('payment proof validation', () => {
   it('rejects a renamed executable or mismatched claimed MIME type', async () => {
     await expect(validatePaymentProof(Buffer.from('#!/bin/sh\necho unsafe'), 'image/png')).rejects.toThrow(PaymentProofValidationError);
     await expect(validatePaymentProof(pngFixture(), 'application/pdf')).rejects.toThrow(PaymentProofValidationError);
+  });
+
+  it('accepts a bounded, non-interactive PDF and records its checksum', async () => {
+    const bytes = pdfFixture();
+    const result = await validatePaymentProof(bytes, 'application/pdf');
+    expect(result.extension).toBe('pdf');
+    expect(result.width).toBeNull();
+    expect(result.height).toBeNull();
+    expect(result.sha256).toBe(createHash('sha256').update(bytes).digest('hex'));
+  });
+
+  it.each(['/JavaScript', '/Launch', '/EmbeddedFile', '/Encrypt'])('rejects suspicious PDF capability %s', async (token) => {
+    await expect(validatePaymentProof(pdfFixture(token), 'application/pdf')).rejects.toThrow(/not accepted/);
   });
 
   it('rejects files over the documented 10 MB limit', async () => {

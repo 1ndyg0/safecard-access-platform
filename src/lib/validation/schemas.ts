@@ -189,6 +189,8 @@ export const markPaymentPaidSchema = z.object({
     .min(1, 'Payment reference is required')
     .max(100),
   payer_declaration: z.string().trim().min(10).max(500),
+  paid_at: z.string().date(),
+  amount_paid: z.coerce.number().positive().max(1_000_000),
   data_mode: dataModeSchema,
 });
 

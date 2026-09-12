@@ -9,7 +9,7 @@ import { ManualPaymentPanel } from "@/components/application/ManualPaymentPanel"
 
 type Step = "learn" | "check" | "decide" | "consent" | "profile" | "review" | "payment" | "complete" | "declined";
 type PilotConfig = {
-  mode: "synthetic" | "live";
+  mode: "synthetic" | "live" | "unavailable";
   campaign: { id: string; membership_fee: number } | null;
   content?: Array<{ id: string; content_type: string; locale: "tl" | "en"; title: string; body: string }>;
   payment: { available: boolean; reason: string | null };
@@ -45,11 +45,73 @@ export function ApplicationWizard() {
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [localStateReady, setLocalStateReady] = useState(false);
 
   useEffect(() => {
-    fetch("/api/pilot/config", { cache: "no-store" }).then((r) => r.json()).then((next: PilotConfig) => {
+    fetch("/api/pilot/config", { cache: "no-store" }).then(async (response) => {
+      const next = await response.json() as PilotConfig;
+      if (!response.ok) throw new Error(next.configurationError || "Pilot configuration is unavailable.");
       setConfig(next); setProfile(next.mode === "live" ? emptyProfile : syntheticProfile);
-    }).catch(() => setConfig({ mode: "synthetic", campaign: null, payment: { available: false, reason: "Unavailable" }, externalNotifications: { available: false, reason: "Parked" } }));
+    }).catch((caught) => setConfig({ mode: "unavailable", campaign: null, payment: { available: false, reason: "Unavailable" }, externalNotifications: { available: false, reason: "Parked" }, configurationError: caught instanceof Error ? caught.message : "Pilot configuration is unavailable." }));
+  }, []);
+
+  useEffect(() => {
+    if (config?.mode !== "live" || caseId) return;
+    const storedCaseId = window.sessionStorage.getItem("safecard-case-id");
+    if (!storedCaseId) return;
+    void (async () => {
+      try {
+        const statusResponse = await fetch(`/api/intake/status?case_id=${encodeURIComponent(storedCaseId)}`, { cache: "no-store" });
+        const statusBody = await statusResponse.json();
+        if (!statusResponse.ok) throw new Error(statusBody.error || "Unable to restore the application.");
+        setCaseId(storedCaseId);
+        setConsentRecordId(statusBody.consentRecordId ?? undefined);
+        if (["submitted", "resubmitted"].includes(statusBody.states.application)) {
+          setReference(statusBody.applicationRef ?? "");
+          setStep("payment");
+          return;
+        }
+        if (statusBody.states.consent === "agreed") {
+          const profileResponse = await fetch(`/api/intake/profile?case_id=${encodeURIComponent(storedCaseId)}`, { cache: "no-store" });
+          if (profileResponse.ok) {
+            const profileBody = await profileResponse.json();
+            setProfile((current) => ({ ...current, ...profileBody.profile }));
+          }
+          setStep("profile");
+          return;
+        }
+        setStep("consent");
+      } catch (caught) {
+        window.sessionStorage.removeItem("safecard-case-id");
+        setError(caught instanceof Error ? caught.message : "Unable to restore the application.");
+      }
+    })();
+  }, [caseId, config]);
+
+  useEffect(() => {
+    if (!localStateReady || caseId || !["learn", "check", "decide"].includes(step)) return;
+    window.sessionStorage.setItem("safecard-wizard-state", JSON.stringify({ step, answers }));
+  }, [answers, caseId, localStateReady, step]);
+
+  useEffect(() => {
+    if (caseId) return;
+    const restore = () => {
+      try {
+        const saved = JSON.parse(window.sessionStorage.getItem("safecard-wizard-state") ?? "null") as { step?: Step; answers?: typeof answers } | null;
+        if (saved?.step && ["learn", "check", "decide"].includes(saved.step)) setStep(saved.step);
+        if (saved?.answers) setAnswers(saved.answers);
+      } catch {
+        window.sessionStorage.removeItem("safecard-wizard-state");
+      } finally {
+        setLocalStateReady(true);
+      }
+    };
+    // Restore after the first client paint. This avoids a hydration mismatch
+    // while keeping state writes outside the synchronous effect body.
+    const frame = window.requestAnimationFrame(restore);
+    return () => window.cancelAnimationFrame(frame);
+    // Restore once for this tab. PII is never stored here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -94,6 +156,7 @@ export function ApplicationWizard() {
 
   async function decide(decision: "accept" | "ask" | "decline") {
     setError("");
+    if (config?.mode === "unavailable") { setError(config.configurationError || (isFil ? "Hindi available ang pilot." : "The pilot is unavailable.")); return; }
     if (decision === "ask") { setError(isFil ? "Tumawag sa Philippine Red Cross Hotline 143 bago magpasya." : "Call Philippine Red Cross Hotline 143 to ask before deciding."); return; }
     if (decision === "decline") { setStep("declined"); return; }
     if (!isLive) { setStep("consent"); return; }
@@ -151,7 +214,7 @@ export function ApplicationWizard() {
 
   async function clearSharedDevice() {
     if (isLive) await fetch("/api/intake/clear-session", { method: "POST" }).catch(() => undefined);
-    window.sessionStorage.clear(); setProfile(isLive ? emptyProfile : syntheticProfile); router.push("/");
+    window.sessionStorage.removeItem("safecard-case-id"); window.sessionStorage.removeItem("safecard-wizard-state"); setProfile(isLive ? emptyProfile : syntheticProfile); router.push("/");
   }
 
   const labels = isFil ? ["Matuto", "Suriin", "Magpasya", "Pahintulot", "Form", "Suriin", "Bayad"] : ["Learn", "Check", "Decide", "Consent", "Form", "Review", "Payment"];
@@ -159,9 +222,10 @@ export function ApplicationWizard() {
 
   return <main className="wizard-page">
     <header className="wizard-nav"><Link href="/"><BrandMark /></Link><button className="locale-toggle" onClick={() => setLocale(locale === "fil" ? "en" : "fil")}>{locale === "fil" ? "English" : "Filipino"}</button></header>
-    <div className="wizard-banner"><strong>{isLive ? ui.bannerLive : ui.bannerSynthetic}</strong><span>{isLive ? ui.bannerLiveBody : ui.bannerSyntheticBody}</span></div>
+    <div className="wizard-banner"><strong>{config?.mode === "unavailable" ? (isFil ? "Hindi available ang pilot" : "Pilot unavailable") : isLive ? ui.bannerLive : ui.bannerSynthetic}</strong><span>{config?.mode === "unavailable" ? config.configurationError : isLive ? ui.bannerLiveBody : ui.bannerSyntheticBody}</span></div>
     {step !== "complete" && step !== "declined" && <ol className="wizard-progress" aria-label="Application progress">{labels.map((label, index) => <li key={`${index}-${label}`} className={index === progress ? "current" : index < progress ? "done" : ""}><span>{index < progress ? "✓" : index + 1}</span>{label}</li>)}</ol>}
     <section className="wizard-card">
+      {config?.mode === "unavailable" && <div className="parked-panel" role="alert"><strong>{isFil ? "Hindi maaaring magsimula ng application." : "Applications cannot start."}</strong><p>{config.configurationError}</p></div>}
       {step === "learn" && <><p className="eyebrow">{ui.learnEyebrow}</p><h1>{ui.learnTitle}</h1><p className="wizard-lede">{ui.learnBody}</p><div className="boundary-grid"><article><strong>{ui.paymentBoundary}</strong><p>{ui.paymentBoundaryBody}</p></article><article><strong>{ui.submissionBoundary}</strong><p>{ui.submissionBoundaryBody}</p></article><article><strong>{ui.claimsBoundary}</strong><p>{ui.claimsBoundaryBody}</p></article></div><div className="wizard-actions"><button className="button-primary" onClick={() => setStep("check")}>{isFil ? "Suriin ang pagkaunawa" : "Check my understanding"} →</button><Link className="button-quiet" href="/benefits">{ui.fullGuide}</Link></div></>}
       {step === "check" && <><p className="eyebrow">{ui.checkEyebrow}</p><h1>{ui.checkTitle}</h1><Quiz label={ui.feeQuestion} name="cost" value={answers.cost} onChange={(value) => setAnswers({ ...answers, cost: value })} options={[["1200", ui.feeCorrect], ["100", ui.feeWrong]]} /><Quiz label={ui.activationQuestion} name="activation" value={answers.activation} onChange={(value) => setAnswers({ ...answers, activation: value })} options={[["prc", ui.activationCorrect], ["sponsor", ui.activationWrong]]} /><Quiz label={ui.choiceQuestion} name="choice" value={answers.choice} onChange={(value) => setAnswers({ ...answers, choice: value })} options={[["recipient", ui.choiceCorrect], ["payer", ui.choiceWrong]]} /><Quiz label={ui.hotlineQuestion} name="emergency" value={answers.emergency} onChange={(value) => setAnswers({ ...answers, emergency: value })} options={[["143", "Hotline 143"], ["sponsor", ui.activationWrong]]} />{error && <p className="form-message error">{error}</p>}<div className="wizard-actions"><button className="button-primary" onClick={() => quizPassed ? setStep("decide") : setError(isFil ? "Balikan ang guide at sagutin nang tama ang apat." : "Review the guide and answer all four correctly.")}>{ui.continue}</button><button className="button-quiet" onClick={() => setStep("learn")}>{ui.reviewGuide}</button></div></>}
       {step === "decide" && <><p className="eyebrow">{ui.decideEyebrow}</p><h1>{ui.decideTitle}</h1><p className="wizard-lede">{ui.decideBody}</p><div className="decision-list"><button onClick={() => decide("accept")}><span>✓</span><div><strong>{ui.accept}</strong><p>{ui.acceptBody}</p></div></button><button onClick={() => decide("ask")}><span>?</span><div><strong>{ui.ask}</strong><p>{ui.askBody}</p></div></button><button onClick={() => decide("decline")}><span>×</span><div><strong>{ui.decline}</strong><p>{ui.declineBody}</p></div></button></div>{error && <p className="form-message error">{error}</p>}{busy && <p className="form-message">{ui.busy}</p>}</>}

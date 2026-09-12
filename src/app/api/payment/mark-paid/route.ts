@@ -32,6 +32,8 @@ export async function POST(request: NextRequest) {
       parsed.payment_intent_id,
       parsed.payment_reference,
       parsed.payer_declaration,
+      parsed.paid_at,
+      parsed.amount_paid,
       auth.userId,
     );
 

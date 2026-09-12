@@ -46,6 +46,8 @@ export function MemberStatus() {
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
   const [paymentReference, setPaymentReference] = useState("");
+  const [paidDate, setPaidDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [amountPaid, setAmountPaid] = useState("1200");
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [paymentBusy, setPaymentBusy] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState("");
@@ -82,6 +84,8 @@ export function MemberStatus() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           payment_reference: paymentReference.trim(),
+          paid_at: paidDate,
+          amount_paid: Number(amountPaid),
           confirm: paymentConfirmed,
         }),
       });
@@ -234,8 +238,8 @@ export function MemberStatus() {
                   <span>{t("paymentReplacementIntro", lang)}</span>
                   {status.payment.reason && <span>{status.payment.reason}</span>}
                   <label className="field-block">
-                    <span>{lang === "fil" ? "Bagong proof (JPEG, PNG, o WebP; max 10 MB)" : "New proof (JPEG, PNG, or WebP; max 10 MB)"}</span>
-                    <input type="file" accept="image/jpeg,image/png,image/webp" required onChange={(event) => setReplacementFile(event.target.files?.[0] ?? null)} />
+                    <span>{lang === "fil" ? "Bagong proof (JPEG, PNG, WebP, o PDF; max 10 MB)" : "New proof (JPEG, PNG, WebP, or PDF; max 10 MB)"}</span>
+                    <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required onChange={(event) => setReplacementFile(event.target.files?.[0] ?? null)} />
                   </label>
                   <label className="confirmation-check">
                     <input type="checkbox" checked={replacementConfirmed} required onChange={(event) => setReplacementConfirmed(event.target.checked)} />
@@ -273,6 +277,10 @@ export function MemberStatus() {
                       required
                     />
                   </label>
+                  <div className="form-grid">
+                    <label className="field-block"><span>{lang === "fil" ? "Petsa ng bayad" : "Date paid"}</span><input type="date" value={paidDate} max={new Date().toISOString().slice(0, 10)} onChange={(event) => setPaidDate(event.target.value)} required /></label>
+                    <label className="field-block"><span>{lang === "fil" ? "Halagang binayaran (PHP)" : "Amount paid (PHP)"}</span><input type="number" min="0.01" step="0.01" inputMode="decimal" value={amountPaid} onChange={(event) => setAmountPaid(event.target.value)} required /></label>
+                  </div>
                   <label className="confirmation-check">
                     <input
                       type="checkbox"
@@ -289,7 +297,7 @@ export function MemberStatus() {
                   <button
                     type="submit"
                     className="button-primary"
-                    disabled={paymentBusy || !paymentConfirmed || !paymentReference.trim()}
+                    disabled={paymentBusy || !paymentConfirmed || !paymentReference.trim() || !paidDate || Number(amountPaid) <= 0}
                   >
                     {paymentBusy
                       ? (lang === "fil" ? "Itinatala…" : "Saving…")

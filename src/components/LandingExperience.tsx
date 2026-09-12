@@ -7,10 +7,11 @@ import { BrandMark } from "@/components/BrandMark";
 import { copy, CURRENT_WORKING_ELIGIBILITY, CURRENT_WORKING_FEE } from "@/lib/public-content";
 import { useLocale } from "@/components/LocaleProvider";
 import { BenefitStoryboard } from "@/components/BenefitStoryboard";
+import type { BenefitCard } from "@/lib/storyboard/schema";
 
 type ReferralState = { valid: boolean; sponsorDisplayName?: string; reason?: string } | null;
 
-export function LandingExperience() {
+export function LandingExperience({ cards, provenance }: { cards: BenefitCard[] | null; provenance: "approved" | "provisional" }) {
   const { locale, setLocale } = useLocale();
   const t = copy[locale];
   const params = useSearchParams();
@@ -65,7 +66,7 @@ export function LandingExperience() {
 
       <section className="benefit-section" id="benefits">
         <div className="section-heading"><p>{t.benefitsEyebrow}</p><h2>{t.benefitsTitle}</h2><span>{locale === "fil" ? "Ang working information ay hindi kapalit ng opisyal na terms." : "Working information never replaces official terms."}</span></div>
-        <BenefitStoryboard locale={locale} compact />
+        {cards ? <BenefitStoryboard cards={cards} locale={locale} provenance={provenance} compact /> : <div className="parked-panel" role="alert"><strong>{locale === "fil" ? "Pansamantalang hindi available ang benefit guide." : "The governed benefit guide is temporarily unavailable."}</strong><p>{locale === "fil" ? "Hindi magbubukas ang live application hangga't hindi maibabalik ang published content." : "The live application will remain unavailable until published content is restored."}</p></div>}
       </section>
 
       <section className="process-section" id="process">

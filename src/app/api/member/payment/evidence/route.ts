@@ -25,7 +25,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
     const file = form.get('file');
     if (!(file instanceof File)) {
-      return NextResponse.json({ error: 'A replacement receipt image is required.' }, { status: 400 });
+      return NextResponse.json({ error: 'A replacement receipt image or PDF is required.' }, { status: 400 });
     }
 
     const dataMode = resolveDataMode();

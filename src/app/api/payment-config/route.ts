@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSupabaseAdminClient } from "@/lib/db/client";
 import { getApprovedPaymentRoutes, MANUAL_PAYMENT_CONFIG } from "@/lib/payment/config";
+import { resolveDataMode } from "@/lib/safety/data-mode";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,19 @@ async function getQrImageUrl() {
 }
 
 export async function GET(request: Request) {
-  if (process.env.LAUNCH_GATES_COMPLETE !== "true" || process.env.ENABLE_OFFICIAL_PAYMENT_HANDOFF !== "true") {
+  let mode: "synthetic" | "live";
+  try {
+    mode = resolveDataMode();
+  } catch (error) {
+    return NextResponse.json({
+      available: false,
+      reason: error instanceof Error ? error.message : "The production payment configuration is invalid.",
+      amount: null,
+      currency: "PHP",
+      routes: [],
+    }, { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
+  if (mode === "synthetic") {
     return NextResponse.json({
       available: false,
       reason: "Official payment handoff is parked until PRC approval and launch-gate sign-off.",
@@ -34,6 +47,12 @@ export async function GET(request: Request) {
       return NextResponse.json(
         { available: false, reason: "A valid campaign is required.", amount: null, currency: "PHP", routes: [] },
         { status: 400, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+    if (campaignId !== process.env.APPROVED_CAMPAIGN_ID) {
+      return NextResponse.json(
+        { available: false, reason: "This campaign is not the approved production campaign.", amount: null, currency: "PHP", routes: [] },
+        { status: 404, headers: { "Cache-Control": "no-store" } },
       );
     }
     const admin = getSupabaseAdminClient();
@@ -54,6 +73,12 @@ export async function GET(request: Request) {
         .map((route) => route.type as string),
     );
     const qrImageUrl = await getQrImageUrl();
+    if (approvedTypes.has("gcash") && !qrImageUrl) {
+      return NextResponse.json(
+        { available: false, reason: "The approved official GCash QR is unavailable.", amount: null, currency: "PHP", routes: [] },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      );
+    }
     const routes = getApprovedPaymentRoutes(approvedTypes, qrImageUrl ?? undefined);
     if (routes.length === 0) {
       return NextResponse.json(
@@ -69,7 +94,7 @@ export async function GET(request: Request) {
       currency: MANUAL_PAYMENT_CONFIG.currency,
       accountName: MANUAL_PAYMENT_CONFIG.accountName,
       routes,
-      controlledPilotWarning: "Verify the QR and account details with the payment owner and PRC before production activation.",
+      controlledPilotWarning: "Use only the displayed official route. SafeCard does not hold or settle funds.",
     }, {
       headers: { "Cache-Control": "private, no-store" },
     });

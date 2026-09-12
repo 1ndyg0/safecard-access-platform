@@ -46,8 +46,8 @@ const COPY = {
     en: "Provisional content. The approved PRC content registry is the source of truth before the live pilot.",
   },
   approved: {
-    fil: "Approved na nilalaman mula sa PRC content registry.",
-    en: "Approved content from the PRC content registry.",
+    fil: "Published na controlled-pilot content. Hindi ito final PRC policy; tingnan ang source status bago umasa rito.",
+    en: "Published controlled-pilot content. This is not final PRC policy; check its source status before relying on it.",
   },
 } as const;
 
