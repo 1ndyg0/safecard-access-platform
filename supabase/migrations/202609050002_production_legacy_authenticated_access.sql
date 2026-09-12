@@ -1,0 +1,6 @@
+-- Production history compatibility marker.
+--
+-- Version 202609050002 granted authenticated access to the original legacy
+-- public.sponsorships table. The production record is preserved. This no-op
+-- file prevents destructive history repair and does not introduce the legacy
+-- grant into staging, CI, or new installations.

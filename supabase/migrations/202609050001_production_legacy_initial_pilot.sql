@@ -1,0 +1,8 @@
+-- Production history compatibility marker.
+--
+-- Version 202609050001 was applied to the original production pilot before
+-- the canonical R1 migration sequence existed. It created the legacy
+-- public.sponsorships model. R1 uses a separate schema and deliberately
+-- leaves those legacy objects untouched. This no-op file lets the Supabase
+-- CLI recognize the preserved production migration history without creating
+-- legacy pilot objects in staging, CI, or new installations.
