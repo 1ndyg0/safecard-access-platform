@@ -30,7 +30,7 @@ export const MANUAL_PAYMENT_CONFIG = {
       bank: 'BPI',
       accountType: 'Savings',
       currency: 'PHP',
-      accountNumber: '002963007828',
+      accountNumber: '002963000782B',
       swiftCode: 'BOPIPHMM',
       branch: 'Chinese Gen., Blumentritt Branch',
     },
