@@ -338,7 +338,13 @@ export async function seedWorld(): Promise<SeededWorld> {
   consentByCase.clear();
 
   await clear(admin);
-  await deleteExistingStaff(admin);
+  // deleteExistingStaff is intentionally not called here. It issues GoTrue
+  // deleteUser() calls which soft-delete auth users: the user disappears from
+  // listUsers() but the auth identity record survives, causing an immediate
+  // createUser() to fail with "already registered" while we can no longer find
+  // the user to updateUserById. createStaff() handles this via a lookup-first
+  // pattern (listUsers before createUser), which only works if the user has not
+  // been soft-deleted. Skipping deletion keeps users in a stable, visible state.
 
   const organizationId = randomUUID();
   const otherOrganizationId = randomUUID();

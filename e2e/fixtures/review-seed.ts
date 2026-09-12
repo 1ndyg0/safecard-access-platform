@@ -247,7 +247,9 @@ export async function seedWorld(): Promise<SeededWorld> {
   sequence = 0;
 
   await clear(admin);
-  await deleteExistingStaff(admin);
+  // deleteExistingStaff is intentionally not called here — see seed.ts for the
+  // full explanation. Skipping deletion keeps auth users in a stable, visible
+  // state so createStaff()'s lookup-first pattern can find and reuse them.
 
   const organizationId = randomUUID();
   await admin

@@ -52,7 +52,9 @@ async function settleOpenPanel(page: Page) {
 }
 
 async function openBenefits(page: Page) {
-  await page.goto('/benefits');
+  // Use domcontentloaded so Firefox does not stall waiting for a slow resource.
+  // The element visibility check below is the real readiness gate.
+  await page.goto('/benefits', { waitUntil: 'domcontentloaded' });
   // Readiness is the storyboard being present, not the network settling.
   await expect(page.locator('.benefit-storyboard')).toBeVisible();
 }
