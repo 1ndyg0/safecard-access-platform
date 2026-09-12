@@ -10,5 +10,5 @@ export function contentSecurityPolicy(supabaseUrl: string | undefined): string {
   } catch {
     // Missing or invalid configuration grants no external access.
   }
-  return "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:" + source + "; connect-src 'self'" + source;
+  return "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; frame-src 'self' blob:" + source + "; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:" + source + "; connect-src 'self'" + source;
 }

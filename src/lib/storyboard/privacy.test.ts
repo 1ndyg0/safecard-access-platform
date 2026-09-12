@@ -106,7 +106,7 @@ describe('collection is rate limited and never blocks the page', () => {
 
 describe('governed content degrades safely', () => {
   it('loads only approved and published content', () => {
-    expect(GOVERNED).toContain("eq('approval_status', 'published')");
+    expect(GOVERNED).toContain("eq('approval_status', 'approved')");
     expect(GOVERNED).toContain("eq('is_published', true)");
   });
 
@@ -116,13 +116,13 @@ describe('governed content degrades safely', () => {
   });
 
   it('treats a malformed approved payload like an absent one', () => {
-    expect(GOVERNED).toContain("fallbackReason: 'malformed'");
+    expect(GOVERNED).toContain("unavailable('malformed')");
   });
 
-  it('never returns 500 when fallback content exists', () => {
+  it('keeps fallback available for synthetic mode and fails closed in live mode', () => {
     expect(CONTENT_ROUTE).toContain('status: 200');
-    expect(CONTENT_ROUTE).not.toContain('serverError');
-    expect(CONTENT_ROUTE).not.toContain('status: 500');
+    expect(CONTENT_ROUTE).toContain('status: 503');
+    expect(GOVERNED).toContain("mode === 'live'");
   });
 
   it('assembles the provenance envelope on the server', () => {

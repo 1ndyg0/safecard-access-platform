@@ -11,22 +11,29 @@
  */
 
 import { NextResponse } from 'next/server';
-import { loadStoryboard } from '@/lib/storyboard/governed';
+import { GovernedContentUnavailableError, loadStoryboard } from '@/lib/storyboard/governed';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(): Promise<NextResponse> {
-  const { content, source, fallbackReason } = await loadStoryboard();
+  try {
+    const { content, source, fallbackReason } = await loadStoryboard();
 
-  return NextResponse.json(
-    { content, source, fallbackReason: fallbackReason ?? null },
-    {
-      status: 200,
-      headers: {
-        // Public, non-personal content. A short cache keeps a slow
-        // registry from being hit on every page view.
-        'Cache-Control': 'public, max-age=60, stale-while-revalidate=600',
+    return NextResponse.json(
+      { content, source, fallbackReason: fallbackReason ?? null },
+      {
+        status: 200,
+        headers: {
+          // Public, non-personal content. A short cache keeps a slow
+          // registry from being hit on every page view.
+          'Cache-Control': 'public, max-age=60, stale-while-revalidate=600',
+        },
       },
-    },
-  );
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof GovernedContentUnavailableError ? error.message : 'Governed benefit content is unavailable.' },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
 }

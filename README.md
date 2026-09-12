@@ -4,11 +4,11 @@ SafeCard is a mobile-first, bilingual intake and education layer for the Philipp
 
 ## R1 safety boundary
 
-- No real personal data is accepted until `LAUNCH_GATES_COMPLETE=true`. Before sign-off, API callers must use `data_mode: "synthetic"` and the intentionally strict synthetic-data profile.
+- Production accepts real personal data only when strict live configuration is complete: `NEXT_PUBLIC_DATA_MODE=live`, `LAUNCH_GATES_COMPLETE=true`, payment handoff enabled, all server secrets present, and reviewed campaign/content IDs pinned. A production configuration error fails closed and never falls back to synthetic data.
 - Consent is captured before a recipient profile can be saved.
 - Recipient, sponsor, guardian, and payer relationships are separate. Sponsors receive aggregate stage counts, never recipient profiles or application references.
 - The browser has no direct table access. Route Handlers authenticate and authorize each request, project minimal response DTOs, and use a server-only service-role client.
-- Direct GCash API/webhook processing is not part of R1. The payment module records an official external handoff and later staff reconciliation only.
+- Direct GCash API/webhook processing is not part of R1. The payment module records an official external handoff, payer-reported date/amount/reference, private image or constrained-PDF evidence, and later staff reconciliation only.
 - A verified payment makes a case eligible for PRC export; it never activates membership.
 - Exports require a campaign-scoped role plus an actual AAL2 session. Export rows are immutable snapshots with a deterministic checksum and spreadsheet-formula protection.
 - Small campaign cohorts are suppressed in aggregate metrics.
@@ -25,7 +25,7 @@ npx supabase db reset
 npm run dev
 ```
 
-Generate independent secrets for `AUDIT_HASH_SALT`, `RATE_LIMIT_HASH_SALT`, and `CRON_SECRET`. Do not reuse a Supabase key. The checked-in seed is synthetic and its test credentials must never be used outside a local/preview environment.
+Generate independent secrets for `AUDIT_HASH_SALT`, `RATE_LIMIT_HASH_SALT`, `MEMBER_SESSION_SECRET`, and `CRON_SECRET`. Do not reuse a Supabase key. The checked-in seed is synthetic and its test credentials must never be used outside a local/preview environment.
 
 ## Verification
 
@@ -59,8 +59,8 @@ The database lint/reset checks require the local Supabase stack to be running. A
 
 Member access deliberately uses application reference plus registered mobile number without SMS OTP. Successful matching creates a signed, HTTP-only, 30-minute session; no bearer token or personal data is stored in browser storage. Staff and ambassador access uses Supabase email/password. Cost-bearing SMS, email delivery, payment providers, and direct PRC integrations are parked.
 
-See [`docs/implementation-status.md`](docs/implementation-status.md) for the requirements-to-build coverage and the exact items that still require governance, an external provider, or additional implementation.
+See [`docs/implementation-status.md`](docs/implementation-status.md) for current coverage and [`docs/controlled-production-pilot.md`](docs/controlled-production-pilot.md) for the reviewed bootstrap, activation, test, and rollback sequence.
 
 ## Deployment gates
 
-Keep `LAUNCH_GATES_COMPLETE=false` until product scope, PRC content, privacy/legal review, security review, support ownership, staff training, operational handoff, monitoring, backup/restore, UAT, and production readiness have documented approval. Configuration is an enforcement switch, not evidence that those approvals occurred.
+Keep the campaign inactive and `LAUNCH_GATES_COMPLETE=false` until the controlled-pilot checks have documented approval. Configuration is an enforcement switch, not evidence that approval or UAT occurred. The owner-approved MVP backup waiver is recorded in GitHub issue #7; backup remains mandatory before R2 or a destructive migration.

@@ -8,5 +8,9 @@ export async function GET(request: NextRequest) {
 
   const supabase = await getSessionClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
-  return NextResponse.redirect(new URL(error ? '/?auth=failed' : '/', origin));
+  const requestedNext = request.nextUrl.searchParams.get('next');
+  // Keep redirects on this application. The invitation flow needs only the
+  // password setup destination; all other callbacks land on the home page.
+  const next = requestedNext === '/admin/setup' ? requestedNext : '/';
+  return NextResponse.redirect(new URL(error ? '/?auth=failed' : next, origin));
 }

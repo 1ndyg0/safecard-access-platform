@@ -92,6 +92,7 @@ const APPLICATION_REF_PATTERN = /^SC-\d{4}-[A-Z0-9]{8}$/;
 
 export const queueQuerySchema = z.object({
   campaign_id: z.string().uuid(),
+  search: z.string().trim().min(3).max(120).optional(),
   application_ref: z
     .string()
     .trim()

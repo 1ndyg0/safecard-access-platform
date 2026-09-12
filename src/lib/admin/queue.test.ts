@@ -84,6 +84,11 @@ describe('queue filters', () => {
     expect(() => query({ limit: '500' })).toThrow();
   });
 
+  it('requires a meaningful search term and trims it', () => {
+    expect(query({ search: '  Reyes  ' }).search).toBe('Reyes');
+    expect(() => query({ search: 'ab' })).toThrow();
+  });
+
   it('maps review buckets onto application states', () => {
     expect(reviewBucketStates('awaiting')).toEqual([
       'ready_for_review',
@@ -117,6 +122,7 @@ describe('URL persistence', () => {
   it('round-trips filters through a query string', () => {
     const original = query({
       payment_state: 'verification_pending',
+      search: 'SC-2026-AB12CD34',
       sort: 'longest_waiting',
       page: '3',
     });
@@ -124,6 +130,7 @@ describe('URL persistence', () => {
     const reparsed = parseQueueQuery(new URLSearchParams(serialized));
 
     expect(reparsed.payment_state).toBe('verification_pending');
+    expect(reparsed.search).toBe('SC-2026-AB12CD34');
     expect(reparsed.sort).toBe('longest_waiting');
     expect(reparsed.page).toBe(3);
   });
