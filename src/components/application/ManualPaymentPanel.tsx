@@ -44,9 +44,39 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onBack, onComplet
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState("");
 
+  // Synthetic config — shown when live=false so testers can walk through the full payment UI
+  // without needing env vars or Supabase auth.
+  const syntheticConfig: PaymentConfig = useMemo(() => ({
+    available: true,
+    reason: null,
+    amount: 1200,
+    monthlyEquivalent: 100,
+    currency: "PHP",
+    accountName: "PHILIPPINE RED CROSS",
+    routes: [
+      {
+        id: "gcash-prc",
+        label: "GCash",
+        instructions: "Send to the official PRC GCash number",
+        accountName: "PHILIPPINE RED CROSS",
+        accountNumber: "0917-000-0143",
+      },
+      {
+        id: "bank-bpi",
+        label: "Bank Transfer (BPI)",
+        instructions: "Transfer via BPI online banking or branch",
+        accountName: "PHILIPPINE RED CROSS",
+        bank: "Bank of the Philippine Islands",
+        accountNumber: "3210-0123-45",
+        branch: "Mandaluyong Branch",
+      },
+    ],
+  }), []);
+
   useEffect(() => {
+    if (!live) { setConfig(syntheticConfig); return; }
     fetch(`/api/payment-config?campaign_id=${encodeURIComponent(campaignId)}`, { cache: "no-store" }).then((response) => response.json()).then((data: PaymentConfig) => setConfig(data)).catch(() => setConfig({ available: false, reason: "Payment configuration is unavailable.", amount: null, currency: "PHP", routes: [] }));
-  }, [campaignId]);
+  }, [campaignId, live, syntheticConfig]);
 
   useEffect(() => {
     if (!file) {
@@ -75,13 +105,20 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onBack, onComplet
     if (!reference.trim() || !file || !declaration) { setError(ui.required); return; }
     setBusy(true);
     try {
-      const handoffPayload = { case_id: caseId, campaign_id: campaignId, payer_type: "other", expected_amount: config.amount, payment_route: selectedPaymentRoute, idempotency_key: key("payment"), data_mode: live ? "live" : "synthetic", ...(live ? {} : { payer_name: "Synthetic payer" }) };
+      // In synthetic mode, skip all backend API calls and directly complete with the entered data.
+      if (!live) {
+        await new Promise((resolve) => window.setTimeout(resolve, 600)); // brief pause for realism
+        setNotice(ui.received);
+        onComplete({ routeLabel: selectedRoute.label, reference: reference.trim() });
+        return;
+      }
+      const handoffPayload = { case_id: caseId, campaign_id: campaignId, payer_type: "other", expected_amount: config.amount, payment_route: selectedPaymentRoute, idempotency_key: key("payment"), data_mode: "live" };
       const handoff = await fetch("/api/payment/handoff", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(handoffPayload) });
       const handoffBody = await handoff.json(); if (!handoff.ok) throw new Error(handoffBody.error ?? ui.handoffError);
       const intentId = handoffBody.paymentIntentId as string; setPaymentIntentId(intentId);
-      const marked = await fetch("/api/payment/mark-paid", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payment_intent_id: intentId, payment_reference: reference.trim(), payer_declaration: "I completed this transfer outside SafeCard and understand it does not activate membership.", data_mode: live ? "live" : "synthetic" }) });
+      const marked = await fetch("/api/payment/mark-paid", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payment_intent_id: intentId, payment_reference: reference.trim(), payer_declaration: "I completed this transfer outside SafeCard and understand it does not activate membership.", data_mode: "live" }) });
       const markedBody = await marked.json(); if (!marked.ok) throw new Error(markedBody.error ?? ui.referenceError);
-      const form = new FormData(); form.set("payment_intent_id", intentId); form.set("case_id", caseId); form.set("campaign_id", campaignId); form.set("amount", String(config.amount)); form.set("reference_number", reference.trim()); form.set("payer_declaration", "I completed this transfer outside SafeCard and understand it does not activate membership."); form.set("data_mode", live ? "live" : "synthetic"); form.set("file", file);
+      const form = new FormData(); form.set("payment_intent_id", intentId); form.set("case_id", caseId); form.set("campaign_id", campaignId); form.set("amount", String(config.amount)); form.set("reference_number", reference.trim()); form.set("payer_declaration", "I completed this transfer outside SafeCard and understand it does not activate membership."); form.set("data_mode", "live"); form.set("file", file);
       const uploaded = await fetch("/api/payment/evidence/upload", { method: "POST", body: form });
       const uploadBody = await uploaded.json(); if (!uploaded.ok) throw new Error(uploadBody.error ?? ui.uploadError);
       setNotice(ui.received); onComplete({ routeLabel: selectedRoute?.label ?? '', reference: reference.trim() });

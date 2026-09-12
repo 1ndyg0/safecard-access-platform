@@ -364,29 +364,29 @@ export function ApplicationWizard() {
         {step === "profile" && (
           <>
             <p className="eyebrow">{ui.profileEyebrow}</p>
-            <h1>{isLive ? ui.profileLiveTitle : ui.profileSyntheticTitle}</h1>
-            <p className="wizard-lede">{isLive ? ui.profileLiveBody : ui.profileSyntheticBody}</p>
+            <h1>{ui.profileLiveTitle}</h1>
+            <p className="wizard-lede">{ui.profileLiveBody}</p>
             <div className="form-grid">
-              <Field label={ui.firstName} value={profile.first_name} disabled={!isLive} onChange={(v) => setProfile({ ...profile, first_name: v })} />
-              <Field label={ui.lastName} value={profile.last_name} disabled={!isLive} onChange={(v) => setProfile({ ...profile, last_name: v })} />
-              <Field label={ui.dob} type="date" value={profile.date_of_birth} disabled={!isLive} onChange={(v) => setProfile({ ...profile, date_of_birth: v })} />
+              <Field label={ui.firstName} value={profile.first_name} onChange={(v) => setProfile({ ...profile, first_name: v })} />
+              <Field label={ui.lastName} value={profile.last_name} onChange={(v) => setProfile({ ...profile, last_name: v })} />
+              <Field label={ui.dob} type="date" value={profile.date_of_birth} onChange={(v) => setProfile({ ...profile, date_of_birth: v })} />
               <label className="field-block">
                 <span>{ui.sex}</span>
-                <select value={profile.sex} disabled={!isLive} onChange={(e) => setProfile({ ...profile, sex: e.target.value as "male" | "female" })}>
+                <select value={profile.sex} onChange={(e) => setProfile({ ...profile, sex: e.target.value as "male" | "female" })}>
                   <option value="female">{ui.female}</option>
                   <option value="male">{ui.male}</option>
                 </select>
               </label>
-              <Field label={ui.mobile} value={profile.mobile_number} disabled={!isLive} onChange={(v) => setProfile({ ...profile, mobile_number: v })} />
-              <Field label={ui.email} value={profile.email || ""} disabled={!isLive} onChange={(v) => setProfile({ ...profile, email: v })} />
-              <div className="full"><Field label={ui.address} value={profile.address_line1} disabled={!isLive} onChange={(v) => setProfile({ ...profile, address_line1: v })} /></div>
-              <Field label={ui.city} value={profile.city} disabled={!isLive} onChange={(v) => setProfile({ ...profile, city: v })} />
-              <Field label={ui.province} value={profile.province} disabled={!isLive} onChange={(v) => setProfile({ ...profile, province: v })} />
-              <Field label={ui.zip} value={profile.zip_code} disabled={!isLive} onChange={(v) => setProfile({ ...profile, zip_code: v })} />
+              <Field label={ui.mobile} value={profile.mobile_number} onChange={(v) => setProfile({ ...profile, mobile_number: v })} />
+              <Field label={ui.email} value={profile.email || ""} onChange={(v) => setProfile({ ...profile, email: v })} />
+              <div className="full"><Field label={ui.address} value={profile.address_line1} onChange={(v) => setProfile({ ...profile, address_line1: v })} /></div>
+              <Field label={ui.city} value={profile.city} onChange={(v) => setProfile({ ...profile, city: v })} />
+              <Field label={ui.province} value={profile.province} onChange={(v) => setProfile({ ...profile, province: v })} />
+              <Field label={ui.zip} value={profile.zip_code} onChange={(v) => setProfile({ ...profile, zip_code: v })} />
             </div>
             {error && <p className="form-message error">{error}</p>}
             <div className="wizard-actions">
-              <button className="button-primary" disabled={isLive && !profileValid()} onClick={() => profileValid() ? setStep("payment") : setError(isFil ? "Kumpletuhin ang lahat ng required fields." : "Complete every required field.")}>{ui.reviewBtn}</button>
+              <button className="button-primary" disabled={!profileValid()} onClick={() => profileValid() ? setStep("payment") : setError(isFil ? "Kumpletuhin ang lahat ng required fields." : "Complete every required field.")}>{ui.reviewBtn}</button>
               <button className="button-quiet" onClick={goBack}>{ui.backLabel}</button>
               <button className="button-quiet wizard-cancel" onClick={clearSharedDevice}>{ui.clearDevice}</button>
             </div>
@@ -395,33 +395,15 @@ export function ApplicationWizard() {
 
         {/* ── STEP 6: PAYMENT ── */}
         {step === "payment" && (
-          isLive && caseId && config?.campaign
-            ? <ManualPaymentPanel
-                caseId={caseId}
-                campaignId={config.campaign.id}
+          isLive && !caseId
+            ? <p className="form-message error">{isFil ? "Hindi kumpleto ang secure session mo. Magsimula ulit." : "Your secure payment session is incomplete. Start again."}</p>
+            : <ManualPaymentPanel
+                caseId={caseId ?? "SYNTHETIC-CASE"}
+                campaignId={config?.campaign?.id ?? "00000000-0000-0000-0000-000000000010"}
                 live={isLive}
                 onBack={goBack}
                 onComplete={(summary) => { setPaymentSummary(summary); setStep("review"); }}
               />
-            : isLive
-              ? <p className="form-message error">{isFil ? "Hindi kumpleto ang secure session mo. Magsimula ulit." : "Your secure payment session is incomplete. Start again."}</p>
-              : (
-                // Synthetic demo placeholder
-                <div className="payment-panel">
-                  <p className="eyebrow">{ui.paymentDemoEyebrow}</p>
-                  <h1>{ui.paymentDemoTitle}</h1>
-                  <p className="wizard-lede">{ui.paymentDemoBody}</p>
-                  <div className="notice-panel amber">
-                    <strong>{isFil ? "Demo mode" : "Demo mode"}</strong>
-                    <span>{isFil ? "Ang payment step ay demonstration lamang. Walang nililipat na pera." : "This payment step is a demonstration only. No money is transferred."}</span>
-                  </div>
-                  <div className="wizard-actions">
-                    <button className="button-primary" onClick={() => { setPaymentSummary({ routeLabel: "Demo", reference: "DEMO-REF" }); setStep("review"); }}>{ui.paymentDemoContinue}</button>
-                    <button className="button-quiet" onClick={goBack}>{ui.backLabel}</button>
-                    <button className="button-quiet wizard-cancel" onClick={cancelWizard}>{ui.cancelLabel}</button>
-                  </div>
-                </div>
-              )
         )}
 
         {/* ── STEP 7: REVIEW ── */}
@@ -439,12 +421,8 @@ export function ApplicationWizard() {
               <div className="payment-summary-panel">
                 <strong>{ui.paymentSummaryTitle}</strong>
                 <div className="payment-summary-rows">
-                  {paymentSummary.routeLabel !== "Demo" && (
-                    <>
-                      <div className="payment-summary-row"><span>{ui.paymentSummaryRoute}</span><span>{paymentSummary.routeLabel}</span></div>
-                      <div className="payment-summary-row"><span>{ui.paymentSummaryReference}</span><span>{paymentSummary.reference}</span></div>
-                    </>
-                  )}
+                  <div className="payment-summary-row"><span>{ui.paymentSummaryRoute}</span><span>{paymentSummary.routeLabel}</span></div>
+                  <div className="payment-summary-row"><span>{ui.paymentSummaryReference}</span><span>{paymentSummary.reference}</span></div>
                   <div className="payment-summary-row proof-status"><span>{ui.paymentSummaryStatus}</span></div>
                 </div>
               </div>
@@ -523,11 +501,21 @@ function Quiz({ label, name, value, onChange, options, correctValue, explanation
   const isCorrect = isAnswered && value === correctValue;
   const isWrong = isAnswered && value !== correctValue;
 
+  // Shuffle options once on mount so the correct answer is not always first.
+  const [displayOptions] = useState<string[][]>(() => {
+    const shuffled = [...options];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  });
+
   return (
     <fieldset className="quiz-block">
       <legend className="quiz-question">{label}</legend>
       <div className="quiz-options">
-        {options.map(([optionValue, text]) => {
+        {displayOptions.map(([optionValue, text]) => {
           const isSelected = value === optionValue;
           const isThisCorrect = optionValue === correctValue;
           return (
