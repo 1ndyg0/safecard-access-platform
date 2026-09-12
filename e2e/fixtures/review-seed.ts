@@ -123,11 +123,18 @@ async function clear(admin: SupabaseClient): Promise<void> {
 }
 
 async function createStaff(admin: SupabaseClient, email: string, fullName: string) {
-  const { data, error } = await admin.auth.admin.createUser({
+  let { data, error } = await admin.auth.admin.createUser({
     email,
     password: PASSWORD,
     email_confirm: true,
   });
+  // Guard: if a previous run left the user behind, delete and recreate rather than failing.
+  if (error?.message?.includes('already been registered')) {
+    const { data: list } = await admin.auth.admin.listUsers({ perPage: 200 });
+    const leftover = list?.users.find((u) => u.email === email);
+    if (leftover) await admin.auth.admin.deleteUser(leftover.id);
+    ({ data, error } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true }));
+  }
   if (error || !data.user) throw new Error(`Failed to create ${email}: ${error?.message}`);
   await admin.from('users').upsert({ id: data.user.id, email, full_name: fullName }, { onConflict: 'id' });
   return { email, password: PASSWORD, userId: data.user.id };
