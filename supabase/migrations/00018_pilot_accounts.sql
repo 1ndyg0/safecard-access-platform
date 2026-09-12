@@ -122,53 +122,69 @@ ON CONFLICT (id) DO UPDATE SET
 -- school_admin / support_agent / finance_export / content_approver
 -- / privacy_admin_owner → org: Sample Academy Manila (000...002)
 -- prc_liaison → org: Philippine Red Cross (000...001)
+--
+-- Guarded by a DO block so the insert is silently skipped in CI /
+-- fresh local databases where the seed organisations and campaign
+-- have not been created yet (migrations run before seed.sql).
+-- In production the rows already exist and the insert runs normally.
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO public.role_assignments (user_id, role, organization_id, campaign_id, granted_by)
-VALUES
-  -- Ian Vince
-  ('00000000-0000-0000-0000-000000001001', 'school_admin',        '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
-  ('00000000-0000-0000-0000-000000001001', 'prc_liaison',         '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000010', NULL),
-  ('00000000-0000-0000-0000-000000001001', 'support_agent',       '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
-  ('00000000-0000-0000-0000-000000001001', 'finance_export',      '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
-  ('00000000-0000-0000-0000-000000001001', 'content_approver',    '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
-  ('00000000-0000-0000-0000-000000001001', 'privacy_admin_owner', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
-  -- Indy
-  ('00000000-0000-0000-0000-000000001002', 'school_admin',        '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
-  ('00000000-0000-0000-0000-000000001002', 'prc_liaison',         '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000010', NULL),
-  ('00000000-0000-0000-0000-000000001002', 'support_agent',       '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
-  ('00000000-0000-0000-0000-000000001002', 'finance_export',      '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
-  ('00000000-0000-0000-0000-000000001002', 'content_approver',    '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
-  ('00000000-0000-0000-0000-000000001002', 'privacy_admin_owner', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL)
-ON CONFLICT DO NOTHING;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.organizations WHERE id = '00000000-0000-0000-0000-000000000001')
+     AND EXISTS (SELECT 1 FROM public.organizations WHERE id = '00000000-0000-0000-0000-000000000002')
+     AND EXISTS (SELECT 1 FROM public.pilot_campaigns WHERE id = '00000000-0000-0000-0000-000000000010')
+  THEN
+    INSERT INTO public.role_assignments (user_id, role, organization_id, campaign_id, granted_by)
+    VALUES
+      -- Ian Vince
+      ('00000000-0000-0000-0000-000000001001', 'school_admin',        '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
+      ('00000000-0000-0000-0000-000000001001', 'prc_liaison',         '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000010', NULL),
+      ('00000000-0000-0000-0000-000000001001', 'support_agent',       '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
+      ('00000000-0000-0000-0000-000000001001', 'finance_export',      '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
+      ('00000000-0000-0000-0000-000000001001', 'content_approver',    '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
+      ('00000000-0000-0000-0000-000000001001', 'privacy_admin_owner', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
+      -- Indy
+      ('00000000-0000-0000-0000-000000001002', 'school_admin',        '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
+      ('00000000-0000-0000-0000-000000001002', 'prc_liaison',         '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000010', NULL),
+      ('00000000-0000-0000-0000-000000001002', 'support_agent',       '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
+      ('00000000-0000-0000-0000-000000001002', 'finance_export',      '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
+      ('00000000-0000-0000-0000-000000001002', 'content_approver',    '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL),
+      ('00000000-0000-0000-0000-000000001002', 'privacy_admin_owner', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', NULL)
+    ON CONFLICT DO NOTHING;
+  END IF;
+END $$;
 
 -- ─────────────────────────────────────────────────────────────
 -- 5. Sponsors (ambassador accounts)
 -- Requires a sponsors row with auth_user_id pointing to the
 -- Supabase auth user so /api/sponsors/me can resolve them.
+-- Same guard: skipped in CI where pilot_campaigns doesn't have
+-- seed data yet; runs normally in production.
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO public.sponsors (
-  id, campaign_id, display_name, auth_user_id, is_minor, guardian_name, guardian_approved
-)
-VALUES
-  (
-    '00000000-0000-0000-0000-000000002001',
-    '00000000-0000-0000-0000-000000000010',
-    'Ian Vince',
-    '00000000-0000-0000-0000-000000001001',
-    false,
-    NULL,
-    true
-  ),
-  (
-    '00000000-0000-0000-0000-000000002002',
-    '00000000-0000-0000-0000-000000000010',
-    'Indy',
-    '00000000-0000-0000-0000-000000001002',
-    false,
-    NULL,
-    true
-  )
-ON CONFLICT (id) DO UPDATE SET
-  display_name  = EXCLUDED.display_name,
-  auth_user_id  = EXCLUDED.auth_user_id,
-  campaign_id   = EXCLUDED.campaign_id;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.pilot_campaigns WHERE id = '00000000-0000-0000-0000-000000000010') THEN
+    INSERT INTO public.sponsors (
+      id, campaign_id, display_name, auth_user_id, is_minor, guardian_name, guardian_approved
+    )
+    VALUES
+      (
+        '00000000-0000-0000-0000-000000002001',
+        '00000000-0000-0000-0000-000000000010',
+        'Ian Vince',
+        '00000000-0000-0000-0000-000000001001',
+        false, NULL, true
+      ),
+      (
+        '00000000-0000-0000-0000-000000002002',
+        '00000000-0000-0000-0000-000000000010',
+        'Indy',
+        '00000000-0000-0000-0000-000000001002',
+        false, NULL, true
+      )
+    ON CONFLICT (id) DO UPDATE SET
+      display_name = EXCLUDED.display_name,
+      auth_user_id = EXCLUDED.auth_user_id,
+      campaign_id  = EXCLUDED.campaign_id;
+  END IF;
+END $$;
