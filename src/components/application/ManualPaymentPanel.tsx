@@ -22,7 +22,9 @@ type PaymentConfig = { available: boolean; reason: string | null; amount: number
 
 function key(prefix: string) { return `${prefix}-${crypto.randomUUID()}`; }
 
-export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { caseId: string; campaignId: string; live: boolean; onComplete: () => void }) {
+type PaymentSummary = { routeLabel: string; reference: string };
+
+export function ManualPaymentPanel({ caseId, campaignId, live, onBack, onComplete }: { caseId: string; campaignId: string; live: boolean; onBack?: () => void; onComplete: (summary: PaymentSummary) => void }) {
   const { locale } = useLocale();
   const isFil = locale === "fil";
   const ui = isFil ? {
@@ -82,7 +84,7 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
       const form = new FormData(); form.set("payment_intent_id", intentId); form.set("case_id", caseId); form.set("campaign_id", campaignId); form.set("amount", String(config.amount)); form.set("reference_number", reference.trim()); form.set("payer_declaration", "I completed this transfer outside SafeCard and understand it does not activate membership."); form.set("data_mode", live ? "live" : "synthetic"); form.set("file", file);
       const uploaded = await fetch("/api/payment/evidence/upload", { method: "POST", body: form });
       const uploadBody = await uploaded.json(); if (!uploaded.ok) throw new Error(uploadBody.error ?? ui.uploadError);
-      setNotice(ui.received); onComplete();
+      setNotice(ui.received); onComplete({ routeLabel: selectedRoute?.label ?? '', reference: reference.trim() });
     } catch (caught) { setError(caught instanceof Error ? caught.message : ui.completeError); }
     finally { setBusy(false); }
   }
@@ -101,7 +103,10 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
       <label className="upload-field"><span>{ui.proof}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />{previewUrl && <Image src={previewUrl} alt={ui.preview} className="receipt-preview" width={720} height={960} unoptimized />}</label>
       <label className="consent-row"><input type="checkbox" checked={declaration} onChange={(event) => setDeclaration(event.target.checked)} /><span>{ui.declaration}</span></label>
       {error && <p className="form-message error" role="alert">{error}</p>}{notice && <p className="form-message" role="status">{notice}</p>}
-      <button className="button-primary" type="button" disabled={busy} onClick={submitPayment}>{busy ? ui.uploading : ui.submit}</button>
+      <div className="wizard-actions">
+        <button className="button-primary" type="button" disabled={busy} onClick={submitPayment}>{busy ? ui.uploading : ui.submit}</button>
+        {onBack && <button className="button-quiet" type="button" onClick={onBack}>{isFil ? "← Bumalik" : "← Back"}</button>}
+      </div>
     </>}
     {copied && <p className="form-message" role="status">{ui.copied} {copied}.</p>}
     {paymentIntentId && <p className="content-footnote">{ui.recorded}</p>}
