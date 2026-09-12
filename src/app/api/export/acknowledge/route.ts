@@ -16,18 +16,30 @@ import { acknowledgePrcItem } from '@/lib/export';
 import { acknowledgePrcItemSchema } from '@/lib/validation/schemas';
 import { requireStaffAuth } from '@/lib/auth/session';
 import { requireRole } from '@/lib/auth/permissions';
+import { getSupabaseAdminClient } from '@/lib/db/client';
 import { success, forbidden, handleApiError } from '@/lib/api/response';
 
 export async function POST(request: NextRequest) {
   try {
     const auth = await requireStaffAuth();
 
-    // Only PRC liaison can acknowledge
-    const roleCheck = await requireRole(auth.userId, 'prc_liaison');
-    if (!roleCheck.allowed) return forbidden('Only PRC liaison can acknowledge export items');
-
     const body = await request.json();
     const parsed = acknowledgePrcItemSchema.parse(body);
+
+    const admin = getSupabaseAdminClient();
+    const { data: item, error } = await admin
+      .from('prc_export_items')
+      .select('id,prc_export_batches!inner(campaign_id)')
+      .eq('id', parsed.export_item_id)
+      .maybeSingle();
+    if (error || !item) return forbidden('Export item is not available in your campaign scope');
+    const batch = Array.isArray(item.prc_export_batches)
+      ? item.prc_export_batches[0]
+      : item.prc_export_batches;
+    const roleCheck = await requireRole(auth.userId, 'prc_liaison', batch.campaign_id);
+    if (!roleCheck.allowed) {
+      return forbidden('Only this campaign’s PRC liaison can acknowledge export items');
+    }
 
     await acknowledgePrcItem({
       exportItemId: parsed.export_item_id,

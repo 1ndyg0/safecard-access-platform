@@ -20,14 +20,22 @@ export async function GET(request: NextRequest) {
     if (!roleCheck.allowed) return forbidden(roleCheck.reason);
 
     const admin = getSupabaseAdminClient();
+    const { data: campaign } = await admin
+      .from('pilot_campaigns')
+      .select('organization_id')
+      .eq('id', campaignId)
+      .maybeSingle();
+    if (!campaign) return badRequest('Campaign not found');
 
     const { data, error } = await admin
       .from('role_assignments')
       .select(`
         id, role, is_active, granted_at, revoked_at, reason,
-        users!inner (id, email, full_name, mfa_enabled)
+        users!role_assignments_user_id_fkey!inner (id, email, full_name, mfa_enabled)
       `)
-      .eq('campaign_id', campaignId)
+      .or(
+        `campaign_id.eq.${campaignId},and(campaign_id.is.null,organization_id.eq.${campaign.organization_id})`,
+      )
       .order('granted_at', { ascending: false });
 
     if (error) throw new Error(`Failed to list roles: ${error.message}`);

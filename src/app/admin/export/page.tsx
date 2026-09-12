@@ -1,5 +1,5 @@
-import { AdminShell } from "@/components/admin/AdminShell";
+import { ExportConsole } from "@/components/admin/ExportConsole";
 
 export default function ExportPage() {
-  return <AdminShell><header className="admin-heading"><div><p className="eyebrow">Dual-control handoff</p><h1>PRC export</h1></div><span className="status-pill">Restricted</span></header><section className="admin-panel stack"><h2>Export is implemented at the backend and intentionally gated.</h2><p>Only eligible, payment-verified records can enter an immutable export batch. Creation requires the finance-export or PRC-liaison role plus authenticator assurance level 2. Download is short-lived, auditable, and checksum-protected.</p><div className="notice-panel"><strong>Not an SMS OTP</strong><span>The high-risk export gate uses a staff authenticator assurance level. Ordinary staff and member login does not request an OTP in this release.</span></div><p className="portal-footnote">The production export button remains parked until PRC approves the schema, named recipients, transfer channel, retention, and acknowledgement procedure.</p></section></AdminShell>;
+  return <ExportConsole />;
 }

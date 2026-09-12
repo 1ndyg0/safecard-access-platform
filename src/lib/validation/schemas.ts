@@ -188,6 +188,7 @@ export const markPaymentPaidSchema = z.object({
     .string()
     .min(1, 'Payment reference is required')
     .max(100),
+  payer_declaration: z.string().trim().min(10).max(500),
   data_mode: dataModeSchema,
 });
 
@@ -195,7 +196,7 @@ export const markPaymentPaidSchema = z.object({
 // PRC export
 // ============================================================
 
-export const createExportBatchSchema = z.object({
+export const createExportBatchSchema = z.strictObject({
   campaign_id: uuidSchema,
   creation_reason: z
     .string()
@@ -205,7 +206,7 @@ export const createExportBatchSchema = z.object({
   format: z.enum(['csv', 'json']).default('csv'),
 });
 
-export const acknowledgePrcItemSchema = z.object({
+export const acknowledgePrcItemSchema = z.strictObject({
   export_item_id: uuidSchema,
   prc_status: z.enum([
     'acknowledged',
@@ -213,8 +214,8 @@ export const acknowledgePrcItemSchema = z.object({
     'accepted',
     'rejected',
   ]),
-  prc_notes: z.string().max(1000).optional(),
-  correction_reason: z.string().max(500).optional(),
+  prc_notes: z.string().trim().max(1000).optional(),
+  correction_reason: z.string().trim().min(10).max(500).optional(),
   correction_fields: z.record(z.string(), z.unknown()).optional(),
   prc_membership_id: z.string().max(50).optional(),
   prc_effective_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -312,7 +313,7 @@ export const publishContentSchema = z.object({
 // Role assignment (admin)
 // ============================================================
 
-export const assignRoleSchema = z.object({
+export const assignRoleSchema = z.strictObject({
   user_id: uuidSchema,
   role: z.enum([
     'school_admin',
@@ -324,13 +325,13 @@ export const assignRoleSchema = z.object({
   ]),
   organization_id: uuidSchema.optional(),
   campaign_id: uuidSchema.optional(),
-  reason: z.string().max(500).optional(),
-}).refine((value) => value.organization_id || value.campaign_id, {
-  message: 'organization_id or campaign_id is required',
+  reason: z.string().trim().min(10, 'A clear audit reason is required').max(500),
+}).refine((value) => Boolean(value.organization_id) !== Boolean(value.campaign_id), {
+  message: 'Exactly one of organization_id or campaign_id is required',
   path: ['organization_id'],
 });
 
-export const revokeRoleSchema = z.object({
+export const revokeRoleSchema = z.strictObject({
   role_assignment_id: uuidSchema,
-  reason: z.string().min(1).max(500),
+  reason: z.string().trim().min(10, 'A clear audit reason is required').max(500),
 });

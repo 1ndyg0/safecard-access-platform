@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
-import { benefits, copy, CURRENT_WORKING_ELIGIBILITY, CURRENT_WORKING_FEE } from "@/lib/public-content";
+import { copy, CURRENT_WORKING_ELIGIBILITY, CURRENT_WORKING_FEE } from "@/lib/public-content";
 import { useLocale } from "@/components/LocaleProvider";
+import { BenefitStoryboard } from "@/components/BenefitStoryboard";
 
 type ReferralState = { valid: boolean; sponsorDisplayName?: string; reason?: string } | null;
 
@@ -15,6 +16,7 @@ export function LandingExperience() {
   const params = useSearchParams();
   const referral = params.get("ref");
   const [referralState, setReferralState] = useState<ReferralState>(null);
+  const isFil = locale === "fil";
 
   useEffect(() => {
     if (!referral) return;
@@ -54,7 +56,7 @@ export function LandingExperience() {
 
         <div className="hero-card-stack reveal delay-1" aria-label="SafeCard working program summary">
           <article className="programme-card">
-            <div className="card-kicker"><span>01</span>Working baseline</div><strong>{CURRENT_WORKING_FEE}</strong><p>{CURRENT_WORKING_ELIGIBILITY}</p><div className="card-rule" />
+            <div className="card-kicker"><span>01</span>{isFil ? "Batayang impormasyon" : "Working baseline"}</div><strong>{isFil ? "₱1,200 / taon" : CURRENT_WORKING_FEE}</strong><p>{isFil ? "Edad 3–85" : CURRENT_WORKING_ELIGIBILITY}</p><div className="card-rule" />
             <small>{locale === "fil" ? "Kinakailangan pa ang pinal na pag-apruba ng PRC bago gamitin sa live pilot." : "Final PRC approval is required before live pilot use."}</small>
           </article>
           <article className="control-card"><span className="control-index">02</span><div><strong>{locale === "fil" ? "Ikaw ang may kontrol" : "You stay in control"}</strong><p>{locale === "fil" ? "Walang personal na datos bago ang iyong pasya at pahintulot." : "No personal data before your decision and consent."}</p></div></article>
@@ -63,17 +65,17 @@ export function LandingExperience() {
 
       <section className="benefit-section" id="benefits">
         <div className="section-heading"><p>{t.benefitsEyebrow}</p><h2>{t.benefitsTitle}</h2><span>{locale === "fil" ? "Ang working information ay hindi kapalit ng opisyal na terms." : "Working information never replaces official terms."}</span></div>
-        <div className="benefit-list">{benefits.map((benefit, index) => <article key={benefit.en} className="benefit-row"><span className="benefit-number">0{index + 1}</span><div><h3>{locale === "fil" ? benefit.fil : benefit.en}</h3><p>{locale === "fil" ? benefit.detailFil : benefit.detailEn}</p></div><span className="benefit-limit">{benefit.amount}</span></article>)}</div>
+        <BenefitStoryboard locale={locale} compact />
       </section>
 
       <section className="process-section" id="process">
         <div className="section-heading inverse"><p>{locale === "fil" ? "Mula imbitasyon hanggang PRC" : "From invitation to PRC"}</p><h2>{t.processTitle}</h2></div>
         <ol className="process-grid">{[
-          ["Learn", "Matuto", "Review the working benefits, limits, and source status."],
-          ["Decide", "Magpasya", "Accept, ask a question, or privately decline."],
-          ["Apply", "Mag-apply", "Provide approved information only after consent."],
-          ["Confirm", "Kumpirmahin", "Track submission, payment review, and PRC confirmation separately."],
-        ].map(([en, fil, detail], index) => <li key={en}><span>{index + 1}</span><h3>{locale === "fil" ? fil : en}</h3><p>{detail}</p></li>)}</ol>
+          ["Learn", "Matuto", "Review the working benefits, limits, and source status.", "Suriin ang working benefits, limits, at source status."],
+          ["Decide", "Magpasya", "Accept, ask a question, or privately decline.", "Tanggapin, magtanong, o pribadong tumanggi."],
+          ["Apply", "Mag-apply", "Provide approved information only after consent.", "Ibigay lamang ang approved information pagkatapos ng consent."],
+          ["Confirm", "Kumpirmahin", "Track submission, payment review, and PRC confirmation separately.", "Subaybayan nang hiwalay ang submission, payment review, at PRC confirmation."],
+        ].map(([en, fil, detailEn, detailFil], index) => <li key={en}><div className="process-step-heading"><span>{index + 1}</span><h3>{locale === "fil" ? fil : en}</h3></div><p>{locale === "fil" ? detailFil : detailEn}</p></li>)}</ol>
       </section>
 
       <footer className="public-footer"><BrandMark /><p>{t.footerNote}</p><a href="tel:143">Emergency: 143</a></footer>

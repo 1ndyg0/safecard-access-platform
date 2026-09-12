@@ -9,7 +9,6 @@
 import { NextRequest } from 'next/server';
 import { requireStaffAuth } from '@/lib/auth/session';
 import { requireAnyRole } from '@/lib/auth/permissions';
-import { writeAuditEvent } from '@/lib/audit';
 import { getSupabaseAdminClient } from '@/lib/db/client';
 import { assignRoleSchema } from '@/lib/validation/schemas';
 import { created, forbidden, handleApiError } from '@/lib/api/response';
@@ -40,17 +39,6 @@ export async function POST(request: NextRequest) {
 
     const admin = getSupabaseAdminClient();
 
-    if (parsed.campaign_id && parsed.organization_id) {
-      const { data: campaign } = await admin
-        .from('pilot_campaigns')
-        .select('organization_id')
-        .eq('id', parsed.campaign_id)
-        .maybeSingle();
-      if (!campaign || campaign.organization_id !== parsed.organization_id) {
-        return forbidden('Campaign does not belong to the requested organization scope');
-      }
-    }
-
     const { data: targetUser } = await admin
       .from('users')
       .select('id')
@@ -59,58 +47,24 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     if (!targetUser) return forbidden('Target staff user is not active');
 
-    // Check if role already exists and is active
-    const { data: existing } = await admin
-      .from('role_assignments')
-      .select('id')
-      .eq('user_id', parsed.user_id)
-      .eq('role', parsed.role)
-      .eq('is_active', true)
-      .is('revoked_at', null)
-      .eq(parsed.campaign_id ? 'campaign_id' : 'organization_id', parsed.campaign_id ?? parsed.organization_id!)
-      .maybeSingle();
-
-    if (existing) {
-      return created({
-        roleAssignmentId: existing.id,
-        status: 'already_assigned',
-        message: 'User already has this role',
-      });
-    }
-
-    const { data, error } = await admin
-      .from('role_assignments')
-      .insert({
-        user_id: parsed.user_id,
-        role: parsed.role,
-        organization_id: parsed.organization_id ?? null,
-        campaign_id: parsed.campaign_id ?? null,
-        granted_by: auth.userId,
-        reason: parsed.reason ?? null,
-      })
-      .select('id')
-      .single();
-
-    if (error) throw new Error(`Failed to assign role: ${error.message}`);
-
-    await writeAuditEvent({
-      event_type: 'role_change',
-      actor_id: auth.userId,
-      actor_type: 'user',
-      action: `Assigned role ${parsed.role} to user ${parsed.user_id}`,
-      target_type: 'role_assignment',
-      target_id: data.id,
-      details: {
-        role: parsed.role,
-        target_user_id: parsed.user_id,
-        reason: parsed.reason,
-      },
+    const { data, error } = await admin.rpc('assign_staff_role_atomic', {
+      p_actor_id: auth.userId,
+      p_user_id: parsed.user_id,
+      p_role: parsed.role,
+      p_organization_id: parsed.organization_id ?? null,
+      p_campaign_id: parsed.campaign_id ?? null,
+      p_reason: parsed.reason,
     });
+    if (error) throw new Error(`Failed to assign role: ${error.message}`);
+    const result = Array.isArray(data) ? data[0] : data;
+    if (!result) throw new Error('Failed to assign role: no result returned');
 
     return created({
-      roleAssignmentId: data.id,
-      status: 'assigned',
-      message: `Role ${parsed.role} assigned successfully`,
+      roleAssignmentId: result.role_assignment_id,
+      status: result.status,
+      message: result.status === 'already_assigned'
+        ? 'User already has this role'
+        : `Role ${parsed.role} assigned successfully`,
     });
   } catch (error) {
     return handleApiError(error, 'Role assignment');

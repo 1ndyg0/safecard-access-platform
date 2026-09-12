@@ -1,0 +1,99 @@
+name: SafeCard verification
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'codex/**']
+
+concurrency:
+  group: safecard-verification-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://synthetic.supabase.invalid
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: synthetic-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: synthetic-service-role-key
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3102
+      NEXT_PUBLIC_DATA_MODE: synthetic
+      LAUNCH_GATES_COMPLETE: 'false'
+      ENABLE_OFFICIAL_PAYMENT_HANDOFF: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/ci-secrets.mjs
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+        id: build
+      - run: node scripts/check-client-secrets.mjs
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e -- --retries=0 --reporter=list,json,github
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: verification-results/public.json
+      - run: npm run test:performance -- --retries=0 --reporter=list,json,github
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: verification-results/public-performance.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: public-verification
+          path: verification-results/*.json
+          retention-days: 7
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NEXT_PUBLIC_DATA_MODE: synthetic
+      LAUNCH_GATES_COMPLETE: 'false'
+      ENABLE_OFFICIAL_PAYMENT_HANDOFF: 'false'
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/ci-secrets.mjs
+      # No hosted account, link, remote key, or migration repair is used.
+      - run: npx supabase start
+      - run: npx supabase migration list --local
+      - run: npx supabase db lint --local --level error
+      - name: Configure disposable database credentials
+        run: |
+          npx supabase status -o env > "$RUNNER_TEMP/safecard-supabase.env"
+          node scripts/ci-supabase-env.mjs "$RUNNER_TEMP/safecard-supabase.env"
+          rm "$RUNNER_TEMP/safecard-supabase.env"
+      - run: npm run build
+        id: build
+      - run: node scripts/check-client-secrets.mjs
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e:admin -- --retries=0 --reporter=list,json,github
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: verification-results/admin.json
+      - run: npm run test:performance:admin -- --retries=0 --reporter=list,json,github
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_FILE: verification-results/admin-performance.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: database-verification
+          path: verification-results/*.json
+          retention-days: 7
+      - run: npx supabase stop --no-backup
+        if: ${{ always() }}

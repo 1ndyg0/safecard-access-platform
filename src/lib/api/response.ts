@@ -12,6 +12,7 @@ import { AuthError } from '@/lib/auth/session';
 import { InvalidTransitionError } from '@/lib/state-machines';
 import { RateLimitError } from '@/lib/api/rate-limit';
 import { LaunchGateError } from '@/lib/safety/data-mode';
+import { PaymentProofValidationError } from '@/lib/payment/evidence-validation';
 
 export function success<T>(data: T, status = 200) {
   return NextResponse.json(data, { status });
@@ -64,9 +65,6 @@ export function serverError(message = 'Internal server error') {
  * Maps known error types to appropriate HTTP responses.
  */
 export function handleApiError(error: unknown, context: string): NextResponse {
-  const errorName = error instanceof Error ? error.name : 'UnknownError';
-  console.error(`[API] ${context}: ${errorName}`);
-
   if (error instanceof ZodError) {
     return validationError(error);
   }
@@ -90,6 +88,10 @@ export function handleApiError(error: unknown, context: string): NextResponse {
     return forbidden(error.message);
   }
 
+  if (error instanceof PaymentProofValidationError) {
+    return validationError(new ZodError([{ code: 'custom', path: ['file'], message: error.message }]));
+  }
+
   if (error instanceof Error) {
     const msg = error.message;
 
@@ -102,7 +104,7 @@ export function handleApiError(error: unknown, context: string): NextResponse {
     if (msg.includes('consent must be') || msg.includes('application must be')) {
       return conflict(msg);
     }
-    if (msg.includes('already exists') || msg.includes('duplicate') || msg.includes('Idempotency key')) {
+    if (msg.includes('already exists') || msg.includes('duplicate') || msg.includes('Idempotency key') || msg.includes('last privacy administrator')) {
       return conflict(msg);
     }
     if (msg.startsWith('Cannot ') || msg.includes(' requires ') || msg.includes(' does not match ') || msg.includes(' is not linked ')) {
@@ -110,5 +112,10 @@ export function handleApiError(error: unknown, context: string): NextResponse {
     }
   }
 
+  // Expected client, authorization, state, and launch-gate responses above
+  // are handled outcomes. Logging them as server errors pollutes production
+  // monitoring and can conceal an actual 5xx failure in routine 4xx traffic.
+  const errorName = error instanceof Error ? error.name : 'UnknownError';
+  console.error(`[API] ${context}: ${errorName}`);
   return serverError('An unexpected error occurred. Please try again.');
 }

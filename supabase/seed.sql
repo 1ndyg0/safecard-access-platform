@@ -45,7 +45,7 @@ insert into public.pilot_campaigns (
   50,
   30,
   '["first_name","middle_name","last_name","date_of_birth","sex","civil_status","address_line1","address_line2","city","province","zip_code","mobile_number","email"]',
-  '[{"type":"gcash","details":{"merchant_name":"PRC Safe Card"},"is_active":true},{"type":"manual_prc","details":{"instructions":"Visit nearest PRC chapter"},"is_active":true}]',
+  '[{"type":"gcash","details":{"merchant_name":"PHILIPPINE RED CROSS"},"is_active":true},{"type":"bank_transfer","details":{"account_name":"PHILIPPINE RED CROSS"},"is_active":true},{"type":"manual_prc","details":{"instructions":"Visit nearest PRC chapter"},"is_active":true}]',
   '[{"type":"max_applications","threshold":50,"description":"Pause intake when 50 applications reached"},{"type":"privacy_incident","threshold":1,"description":"Stop immediately on any privacy incident"}]',
   true,
   1200

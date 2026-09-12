@@ -13,8 +13,6 @@
  */
 
 import { getSupabaseAdminClient } from '@/lib/db/client';
-import { writeAuditEvent } from '@/lib/audit';
-import { validatePaymentTransition } from '@/lib/state-machines';
 import type { PaymentState } from '@/types/database';
 import { v4 as uuidv4 } from 'uuid';
 import { createHash } from 'node:crypto';
@@ -33,6 +31,7 @@ export interface CreatePaymentIntentInput {
   expectedAmount: number;
   paymentRoute: string;
   idempotencyKey: string;
+  actorId: string;
 }
 
 export interface PaymentIntentResult {
@@ -130,60 +129,38 @@ export async function createPaymentIntent(
   const approvedRoutes = Array.isArray(campaign.approved_payment_routes)
     ? campaign.approved_payment_routes
     : [];
+  const approvalType = input.paymentRoute.startsWith('bank_transfer_')
+    ? 'bank_transfer'
+    : input.paymentRoute;
   const approvedRoute = approvedRoutes.find((route) => {
     if (!route || typeof route !== 'object') return false;
     const record = route as Record<string, unknown>;
-    return record.type === input.paymentRoute && record.is_active === true;
+    return record.type === approvalType && record.is_active === true;
   });
   if (!approvedRoute) throw new Error('Payment route is not approved for this campaign');
 
   const paymentIntentId = uuidv4();
 
-  const { error } = await admin.from('payment_intents').insert({
-    id: paymentIntentId,
-    case_id: input.caseId,
-    campaign_id: input.campaignId,
-    payer_type: input.payerType,
-    payer_name: input.payerName ?? null,
-    payer_sponsor_id: input.payerSponsorId ?? null,
-    expected_amount: input.expectedAmount,
-    currency: 'PHP',
-    payment_route: input.paymentRoute,
-    state: 'official_handoff_opened',
-    handoff_opened_at: new Date().toISOString(),
-    idempotency_key: input.idempotencyKey,
-    request_hash: requestHash,
+  const { data, error } = await admin.rpc('create_payment_intent_atomic', {
+    p_payment_intent_id: paymentIntentId,
+    p_case_id: input.caseId,
+    p_campaign_id: input.campaignId,
+    p_payer_type: input.payerType,
+    p_payer_name: input.payerName ?? null,
+    p_payer_sponsor_id: input.payerSponsorId ?? null,
+    p_expected_amount: input.expectedAmount,
+    p_payment_route: input.paymentRoute,
+    p_idempotency_key: input.idempotencyKey,
+    p_request_hash: requestHash,
+    p_actor_id: input.actorId,
   });
-
-  if (error) {
-    throw new Error(`Failed to create payment intent: ${error.message}`);
-  }
-
-  // Update case payment state
-  await admin
-    .from('recipient_cases')
-    .update({ payment_state: 'official_handoff_opened' })
-    .eq('id', input.caseId);
-
-  // R1 records only an official handoff. Direct gateway integration is R2 and
-  // intentionally cannot be activated by configuration in this release.
-  await writeAuditEvent({
-    event_type: 'payment_status_change',
-    actor_id: null,
-    actor_type: 'anonymous',
-    action: `Payment handoff opened for case ${input.caseId}`,
-    case_id: input.caseId,
-    target_type: 'payment_intent',
-    target_id: paymentIntentId,
-    details: {
-      payer_type: input.payerType,
-      expected_amount: input.expectedAmount,
-      payment_route: input.paymentRoute,
-      direct_gateway_integration: false,
-    },
-  });
-
-  return { paymentIntentId, status: 'created' };
+  if (error) throw new Error(`Failed to create payment intent: ${error.message}`);
+  const result = Array.isArray(data) ? data[0] : data;
+  if (!result) throw new Error('Failed to create payment intent: no result returned');
+  return {
+    paymentIntentId: result.payment_intent_id as string,
+    status: result.status as 'created' | 'exists',
+  };
 }
 
 // ============================================================
@@ -193,45 +170,20 @@ export async function createPaymentIntent(
 export async function markPaymentPaid(
   paymentIntentId: string,
   paymentReference: string,
-): Promise<void> {
+  payerDeclaration: string,
+  actorId: string | null,
+): Promise<{ paymentState: string }> {
   const admin = getSupabaseAdminClient();
-
-  const { data: intent } = await admin
-    .from('payment_intents')
-    .select('state, case_id')
-    .eq('id', paymentIntentId)
-    .single();
-
-  if (!intent) {
-    throw new Error('Payment intent not found');
-  }
-
-  validatePaymentTransition(intent.state as PaymentState, 'payer_marked_paid');
-
-  await admin
-    .from('payment_intents')
-    .update({
-      state: 'payer_marked_paid',
-      payment_reference: paymentReference,
-      payer_marked_paid_at: new Date().toISOString(),
-    })
-    .eq('id', paymentIntentId);
-
-  await admin
-    .from('recipient_cases')
-    .update({ payment_state: 'payer_marked_paid' })
-    .eq('id', intent.case_id);
-
-  await writeAuditEvent({
-    event_type: 'payment_status_change',
-    actor_id: null,
-    actor_type: 'anonymous',
-    action: `Payment marked as paid for intent ${paymentIntentId}`,
-    case_id: intent.case_id,
-    target_type: 'payment_intent',
-    target_id: paymentIntentId,
-    details: { payment_reference: paymentReference },
+  const { data, error } = await admin.rpc('mark_payment_paid_atomic', {
+    p_payment_intent_id: paymentIntentId,
+    p_payment_reference: paymentReference,
+    p_payer_declaration: payerDeclaration,
+    p_actor_id: actorId,
   });
+  if (error) throw new Error(`Payment could not be marked paid: ${error.message}`);
+  const result = Array.isArray(data) ? data[0] : data;
+  if (!result) throw new Error('Payment declaration returned no state.');
+  return { paymentState: result.payment_state as string };
 }
 
 // ============================================================
@@ -243,6 +195,7 @@ export async function verifyPayment(
   verifiedBy: string,
   verificationSource: string,
   evidence?: Record<string, unknown>,
+  evidenceVersionId?: string,
 ): Promise<void> {
   const admin = getSupabaseAdminClient();
 
@@ -259,49 +212,17 @@ export async function verifyPayment(
   const roleCheck = await requirePaymentVerifierRole(verifiedBy, intent.campaign_id);
   if (!roleCheck) throw new Error('Permission denied: payment verification role required');
 
-  // Can verify from payer_marked_paid or verification_pending
   const currentState = intent.state as PaymentState;
-  if (currentState === 'payer_marked_paid') {
-    validatePaymentTransition(currentState, 'verification_pending');
-    validatePaymentTransition('verification_pending', 'verified_by_official_source');
-  } else {
-    validatePaymentTransition(currentState, 'verified_by_official_source');
-  }
-
-  await admin
-    .from('payment_intents')
-    .update({
-      state: 'verified_by_official_source',
-      verified_at: new Date().toISOString(),
-      verified_by: verifiedBy,
-      verification_source: verificationSource,
-      verification_evidence: evidence ?? null,
-    })
-    .eq('id', paymentIntentId);
-
-  // Update case — payment is verified but membership is NOT active
-  // Membership activation only comes from PRC confirmation
-  await admin
-    .from('recipient_cases')
-    .update({
-      payment_state: 'verified_by_official_source',
-      prc_handoff_state: 'ready_for_export',
-    })
-    .eq('id', intent.case_id);
-
-  await writeAuditEvent({
-    event_type: 'payment_status_change',
-    actor_id: verifiedBy,
-    actor_type: 'user',
-    action: `Payment verified for intent ${paymentIntentId} via ${verificationSource}`,
-    case_id: intent.case_id,
-    target_type: 'payment_intent',
-    target_id: paymentIntentId,
-    details: {
-      verification_source: verificationSource,
-    },
-    severity: 'info',
+  if (!evidenceVersionId) throw new Error('Payment evidence version is required for verification');
+  const { error } = await admin.rpc('verify_payment_evidence_atomic', {
+    p_payment_intent_id: paymentIntentId,
+    p_evidence_version_id: evidenceVersionId,
+    p_verified_by: verifiedBy,
+    p_verification_source: verificationSource,
+    p_expected_state: currentState,
+    p_verification_evidence: evidence ?? null,
   });
+  if (error) throw new Error(`Payment verification failed: ${error.message}`);
 }
 
 async function requirePaymentVerifierRole(userId: string, campaignId: string): Promise<boolean> {
