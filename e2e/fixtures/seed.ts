@@ -148,26 +148,31 @@ async function createStaff(
   email: string,
   fullName: string,
 ): Promise<SeededStaff> {
-  let { data, error } = await admin.auth.admin.createUser({
+  // Look up any leftover from a previous run BEFORE calling createUser. This avoids relying on
+  // deleteExistingStaff having fully propagated through GoTrue: if a FK constraint from
+  // public.users blocked the auth deletion, or GoTrue hasn't yet reflected it, we would get a
+  // false "already registered" error on createUser and then fail to find the user in a
+  // post-error listUsers call (because GoTrue may have soft-deleted or tombstoned it). By
+  // checking first we always have a stable view of whether the user exists.
+  const { data: list } = await admin.auth.admin.listUsers({ perPage: 200 });
+  const existing = list?.users.find((u) => u.email === email);
+
+  if (existing) {
+    // User left over from a previous run — reset password in-place and sync profile row.
+    await admin.auth.admin.updateUserById(existing.id, { password: PASSWORD });
+    const { error: profileError } = await admin
+      .from('users')
+      .upsert({ id: existing.id, email, full_name: fullName }, { onConflict: 'id' });
+    if (profileError) throw new Error(`Failed to upsert user row: ${profileError.message}`);
+    return { email, password: PASSWORD, userId: existing.id };
+  }
+
+  // No existing user — create fresh.
+  const { data, error } = await admin.auth.admin.createUser({
     email,
     password: PASSWORD,
     email_confirm: true,
   });
-  // Guard: if a previous run left the user behind, update their password in place rather than
-  // delete-then-recreate. Deletion has a GoTrue propagation delay that causes the immediate
-  // retry createUser to also fail with "already registered".
-  if (error?.message?.includes('already been registered')) {
-    const { data: list } = await admin.auth.admin.listUsers({ perPage: 200 });
-    const leftover = list?.users.find((u) => u.email === email);
-    if (leftover) {
-      await admin.auth.admin.updateUserById(leftover.id, { password: PASSWORD });
-      const { error: profileError } = await admin
-        .from('users')
-        .upsert({ id: leftover.id, email, full_name: fullName }, { onConflict: 'id' });
-      if (profileError) throw new Error(`Failed to upsert user row: ${profileError.message}`);
-      return { email, password: PASSWORD, userId: leftover.id };
-    }
-  }
   if (error || !data.user) throw new Error(`Failed to create ${email}: ${error?.message}`);
 
   const { error: profileError } = await admin
