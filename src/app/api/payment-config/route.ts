@@ -18,16 +18,6 @@ async function getQrImageUrl() {
 }
 
 export async function GET(request: Request) {
-  if (process.env.LAUNCH_GATES_COMPLETE !== "true" || process.env.ENABLE_OFFICIAL_PAYMENT_HANDOFF !== "true") {
-    return NextResponse.json({
-      available: false,
-      reason: "Official payment handoff is parked until PRC approval and launch-gate sign-off.",
-      amount: null,
-      currency: "PHP",
-      routes: [],
-    }, { headers: { "Cache-Control": "no-store" } });
-  }
-
   try {
     const campaignId = new URL(request.url).searchParams.get("campaign_id");
     if (!campaignId || !z.string().uuid().safeParse(campaignId).success) {
