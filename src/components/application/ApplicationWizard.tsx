@@ -309,7 +309,7 @@ export function ApplicationWizard() {
             />
             <div className="wizard-actions">
               <button className="button-primary" onClick={() => { setError(""); setStep("decide"); }}>{ui.continue}</button>
-              <button className="button-quiet" onClick={() => setStep("learn")}>{ui.reviewGuide}</button>
+              <button className="button-quiet" onClick={goBack}>{ui.backLabel}</button>
               <button className="button-quiet wizard-cancel" onClick={cancelWizard}>{ui.cancelLabel}</button>
             </div>
           </>
