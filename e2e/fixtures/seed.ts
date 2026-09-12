@@ -153,12 +153,20 @@ async function createStaff(
     password: PASSWORD,
     email_confirm: true,
   });
-  // Guard: if a previous run left the user behind, delete and recreate rather than failing.
+  // Guard: if a previous run left the user behind, update their password in place rather than
+  // delete-then-recreate. Deletion has a GoTrue propagation delay that causes the immediate
+  // retry createUser to also fail with "already registered".
   if (error?.message?.includes('already been registered')) {
     const { data: list } = await admin.auth.admin.listUsers({ perPage: 200 });
     const leftover = list?.users.find((u) => u.email === email);
-    if (leftover) await admin.auth.admin.deleteUser(leftover.id);
-    ({ data, error } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true }));
+    if (leftover) {
+      await admin.auth.admin.updateUserById(leftover.id, { password: PASSWORD });
+      const { error: profileError } = await admin
+        .from('users')
+        .upsert({ id: leftover.id, email, full_name: fullName }, { onConflict: 'id' });
+      if (profileError) throw new Error(`Failed to upsert user row: ${profileError.message}`);
+      return { email, password: PASSWORD, userId: leftover.id };
+    }
   }
   if (error || !data.user) throw new Error(`Failed to create ${email}: ${error?.message}`);
 
