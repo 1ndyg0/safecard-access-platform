@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useLocale } from "@/components/LocaleProvider";
 
@@ -24,6 +24,35 @@ function key(prefix: string) { return `${prefix}-${crypto.randomUUID()}`; }
 
 type PaymentSummary = { routeLabel: string; reference: string };
 
+// Shown in synthetic (non-live) mode so testers can walk the full upload UI
+// without needing env vars or a real Supabase session.
+const SYNTHETIC_PAYMENT_CONFIG: PaymentConfig = {
+  available: true,
+  reason: null,
+  amount: 1200,
+  monthlyEquivalent: 100,
+  currency: "PHP",
+  accountName: "PHILIPPINE RED CROSS",
+  routes: [
+    {
+      id: "gcash-prc",
+      label: "GCash",
+      instructions: "Send to the official PRC GCash number",
+      accountName: "PHILIPPINE RED CROSS",
+      accountNumber: "0917-000-0143",
+    },
+    {
+      id: "bank-bpi",
+      label: "Bank Transfer (BPI)",
+      instructions: "Transfer via BPI online banking or branch",
+      accountName: "PHILIPPINE RED CROSS",
+      bank: "Bank of the Philippine Islands",
+      accountNumber: "3210-0123-45",
+      branch: "Mandaluyong Branch",
+    },
+  ],
+};
+
 export function ManualPaymentPanel({ caseId, campaignId, live, onBack, onComplete }: { caseId: string; campaignId: string; live: boolean; onBack?: () => void; onComplete: (summary: PaymentSummary) => void }) {
   const { locale } = useLocale();
   const isFil = locale === "fil";
@@ -32,7 +61,9 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onBack, onComplet
   } : {
     unavailable: "Payment configuration is unavailable.", chooseRoute: "Choose an approved payment route.", required: "Choose a route, add the payment reference, upload proof, and confirm the payer declaration.", handoffError: "Payment handoff could not be opened.", referenceError: "Payment reference could not be recorded.", uploadError: "Proof upload failed.", completeError: "Payment could not be completed.", received: "Proof received. Staff verification is pending; membership is not active.", loading: "Loading approved payment routes…", eyebrow: "06 · Payment and proof", title: "Pay outside SafeCard, then return with proof.", fee: "Membership fee:", monthly: "The monthly equivalent is only explanatory and is not an installment offer.", separateTitle: "Payment is a separate state", separateBody: "Payment does not equal consent, application submission, approval, PRC handoff, or membership activation. Only PRC confirmation can activate membership.", warning: "Controlled pilot warning", parked: "Official payment handoff is not yet enabled.", routeLegend: "Choose a payment route", accountName: "Account name", bank: "Bank", accountNumber: "Account number", swift: "SWIFT", branch: "Branch", transferHelp: "Complete the transfer in your bank or GCash app. SafeCard does not hold, move, or settle funds.", reference: "Payment reference or transaction number", referencePlaceholder: "Enter the reference shown by your bank or GCash", proof: "Proof of payment (JPEG, PNG, or WebP; max 10 MB)", preview: "Selected payment proof preview", declaration: "I confirm this transfer was completed outside SafeCard and understand that verification does not activate membership.", uploading: "Uploading securely…", submit: "Submit proof for review →", copied: "Copied", recorded: "Payment reference recorded. Staff will review the proof; your membership remains inactive until PRC confirms it.", qrAlt: "Official GCash QR code"
   };
-  const [config, setConfig] = useState<PaymentConfig | null>(null);
+  // Initialise from the module-level constant when in synthetic mode so we never
+  // call setConfig() synchronously inside a useEffect body.
+  const [config, setConfig] = useState<PaymentConfig | null>(!live ? SYNTHETIC_PAYMENT_CONFIG : null);
   const [routeId, setRouteId] = useState("");
   const [paymentIntentId, setPaymentIntentId] = useState("");
   const [reference, setReference] = useState("");
@@ -44,39 +75,10 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onBack, onComplet
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState("");
 
-  // Synthetic config — shown when live=false so testers can walk through the full payment UI
-  // without needing env vars or Supabase auth.
-  const syntheticConfig: PaymentConfig = useMemo(() => ({
-    available: true,
-    reason: null,
-    amount: 1200,
-    monthlyEquivalent: 100,
-    currency: "PHP",
-    accountName: "PHILIPPINE RED CROSS",
-    routes: [
-      {
-        id: "gcash-prc",
-        label: "GCash",
-        instructions: "Send to the official PRC GCash number",
-        accountName: "PHILIPPINE RED CROSS",
-        accountNumber: "0917-000-0143",
-      },
-      {
-        id: "bank-bpi",
-        label: "Bank Transfer (BPI)",
-        instructions: "Transfer via BPI online banking or branch",
-        accountName: "PHILIPPINE RED CROSS",
-        bank: "Bank of the Philippine Islands",
-        accountNumber: "3210-0123-45",
-        branch: "Mandaluyong Branch",
-      },
-    ],
-  }), []);
-
   useEffect(() => {
-    if (!live) { setConfig(syntheticConfig); return; }
+    if (!live) return; // synthetic config already set as initial state
     fetch(`/api/payment-config?campaign_id=${encodeURIComponent(campaignId)}`, { cache: "no-store" }).then((response) => response.json()).then((data: PaymentConfig) => setConfig(data)).catch(() => setConfig({ available: false, reason: "Payment configuration is unavailable.", amount: null, currency: "PHP", routes: [] }));
-  }, [campaignId, live, syntheticConfig]);
+  }, [campaignId, live]);
 
   useEffect(() => {
     if (!file) {
@@ -89,7 +91,7 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onBack, onComplet
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const selectedRoute = useMemo(() => config?.routes.find((route) => route.id === routeId), [config, routeId]);
+  const selectedRoute = config?.routes.find((route) => route.id === routeId);
   const selectedPaymentRoute = selectedRoute?.bank
     ? `bank_transfer_${selectedRoute.id.replaceAll("-", "_")}`
     : selectedRoute?.id ?? "";
