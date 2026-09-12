@@ -469,8 +469,7 @@ export function ApplicationWizard() {
               <span>{isLive ? ui.applicationRef : ui.demoRef}</span>
               <strong>{reference}</strong>
             </div>
-            {isLive && (
-              <div className="next-steps-panel">
+            <div className="next-steps-panel">
                 <strong>{ui.completeNextStepsTitle}</strong>
                 <ol className="next-steps-list">
                   <li>{ui.completeStep1}</li>
@@ -480,7 +479,6 @@ export function ApplicationWizard() {
                 </ol>
                 <p className="hotline-note">{ui.completeHotlineNote} <strong>143</strong>. {isFil ? "Hindi nagdedesisyon ang SafeCard ng claims o membership activation." : "SafeCard never decides claims or membership activation."}</p>
               </div>
-            )}
             <div className="wizard-actions" style={{ justifyContent: "center", marginTop: "28px" }}>
               <Link className="button-primary" href={isLive ? "/member" : "/"}>{isLive ? ui.checkStatus : ui.returnHome}</Link>
               <button className="button-quiet" onClick={() => window.print()}>{ui.print}</button>
