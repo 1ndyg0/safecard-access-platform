@@ -22,8 +22,27 @@ test.describe('SafeCard synthetic application happy path', () => {
     await page.getByRole('checkbox').nth(2).check();
     await page.getByRole('button', { name: /Continue privately/i }).click();
 
-    await expect(page.getByRole('heading', { name: 'Synthetic form demonstration' })).toBeVisible();
-    await page.getByRole('button', { name: 'Review →' }).click();
+    // Profile step — fields are always editable; synthetic values are pre-filled
+    await expect(page.getByRole('heading', { name: 'Your application details' })).toBeVisible();
+    await page.getByRole('button', { name: 'Next: Payment →' }).click();
+
+    // Payment step — synthetic mode shows real upload UI with hardcoded routes
+    await expect(page.getByRole('heading', { name: /Pay outside SafeCard/i })).toBeVisible();
+    await page.getByRole('radio', { name: /GCash/i }).check();
+    await page.getByPlaceholder(/Enter the reference/i).fill('TEST-REF-2026');
+    // Upload a minimal PNG as proof of payment
+    const pngBuffer = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQAABjE+ibYAAAAASUVORK5CYII=',
+      'base64',
+    );
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'test-receipt.png',
+      mimeType: 'image/png',
+      buffer: pngBuffer,
+    });
+    await page.getByRole('checkbox', { name: /I confirm this transfer/i }).check();
+    await page.getByRole('button', { name: /Submit proof for review/i }).click();
+
     await expect(page.getByRole('heading', { name: 'Review before submitting.' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Complete demo →' }).click();
