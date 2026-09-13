@@ -145,12 +145,11 @@ async function createStaff(
   email: string,
   fullName: string,
 ): Promise<SeededStaff> {
-  // Look up any leftover from a previous run BEFORE calling createUser. This avoids relying on
-  // deleteExistingStaff having fully propagated through GoTrue: if a FK constraint from
-  // public.users blocked the auth deletion, or GoTrue hasn't yet reflected it, we would get a
-  // false "already registered" error on createUser and then fail to find the user in a
-  // post-error listUsers call (because GoTrue may have soft-deleted or tombstoned it). By
-  // checking first we always have a stable view of whether the user exists.
+  // resetSyntheticDatabase() (called from clear()) hard-deletes @e2e.safecard.test rows from
+  // auth.users and auth.identities via SQL, so on a well-formed reset there is no leftover.
+  // The lookup-first branch is a safety net for any environment that reused this fixture
+  // without our reset — it treats an existing auth user as a password reset rather than an
+  // "already registered" error.
   const { data: list } = await admin.auth.admin.listUsers({ perPage: 200 });
   const existing = list?.users.find((u) => u.email === email);
 
@@ -178,15 +177,6 @@ async function createStaff(
   if (profileError) throw new Error(`Failed to upsert user row: ${profileError.message}`);
 
   return { email, password: PASSWORD, userId: data.user.id };
-}
-
-async function deleteExistingStaff(admin: SupabaseClient): Promise<void> {
-  const { data } = await admin.auth.admin.listUsers({ perPage: 200 });
-  for (const user of data?.users ?? []) {
-    if (user.email?.endsWith('@e2e.safecard.test')) {
-      await admin.auth.admin.deleteUser(user.id);
-    }
-  }
 }
 
 /**
@@ -334,14 +324,12 @@ export async function seedWorld(): Promise<SeededWorld> {
   contentCreatedBy = null;
   consentByCase.clear();
 
+  // clear() also hard-deletes any @e2e.safecard.test rows from auth.users and auth.identities
+  // via SQL (see resetSyntheticDatabase). We deliberately do not call GoTrue's admin
+  // deleteUser() here because it soft-deletes: the user disappears from listUsers() but the
+  // identity mapping survives, so a subsequent createUser() would fail with "already registered"
+  // with no recovery path.
   await clear();
-  // deleteExistingStaff is intentionally not called here. It issues GoTrue
-  // deleteUser() calls which soft-delete auth users: the user disappears from
-  // listUsers() but the auth identity record survives, causing an immediate
-  // createUser() to fail with "already registered" while we can no longer find
-  // the user to updateUserById. createStaff() handles this via a lookup-first
-  // pattern (listUsers before createUser), which only works if the user has not
-  // been soft-deleted. Skipping deletion keeps users in a stable, visible state.
 
   const organizationId = randomUUID();
   const otherOrganizationId = randomUUID();
