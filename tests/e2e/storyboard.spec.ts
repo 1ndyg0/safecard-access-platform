@@ -151,6 +151,12 @@ test.describe('benefit storyboard', () => {
     for (const id of BENEFITS) {
       await header(page, id).click();
       const open = panel(page, id);
+      // Wait for the accordion transition to settle before asserting visibility.
+      // WebKit is fast enough to register the click and slow enough to still be
+      // running the previous panel's fade-out — expecting toBeVisible() during
+      // that overlap flakes on webkit / mobile-safari.
+      await expect(open).toHaveClass(/open/);
+      await settleOpenPanel(page);
       await expect(open).toBeVisible();
       await expect(open.locator('.story-persona')).not.toBeEmpty();
       await expect(open).toContainText('Situation');
@@ -194,6 +200,11 @@ test.describe('benefit storyboard', () => {
       await openBenefits(page);
       for (const id of BENEFITS) {
         await header(page, id).click();
+        // See the note above the sibling loop: on webkit a rapid click can
+        // race the previous panel's closing transition; waiting for the .open
+        // class before the visibility assertion removes the flake.
+        await expect(panel(page, id)).toHaveClass(/open/);
+        await settleOpenPanel(page);
         await expect(panel(page, id)).toBeVisible();
         await expect(panel(page, id).locator('.story-disclaimer')).not.toBeEmpty();
       }
