@@ -31,7 +31,8 @@ test.describe('SafeCard public smoke and accessibility', () => {
   });
 
   test('admin login is a dedicated email/password surface', async ({ page }) => {
-    await page.goto('/admin/login');
+    // Use domcontentloaded so Firefox does not stall waiting for a slow resource.
+    await page.goto('/admin/login', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: /admin|staff/i })).toBeVisible();
     await expect(page.locator('input[type="email"]')).toHaveCount(1);
     await expect(page.locator('input[type="password"]')).toHaveCount(1);

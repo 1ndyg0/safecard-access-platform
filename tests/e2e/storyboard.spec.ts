@@ -52,7 +52,9 @@ async function settleOpenPanel(page: Page) {
 }
 
 async function openBenefits(page: Page) {
-  await page.goto('/benefits', { waitUntil: 'commit' });
+  // Use domcontentloaded so Firefox does not stall waiting for a slow resource.
+  // The hydration gate and CSS-variable wait below are the real readiness signals.
+  await page.goto('/benefits', { waitUntil: 'domcontentloaded' });
   // A committed document can become visible before WebKit has applied the
   // stylesheet. Wait for the design token, fonts, and two paint frames so axe
   // measures the settled UI instead of a partially styled first paint.

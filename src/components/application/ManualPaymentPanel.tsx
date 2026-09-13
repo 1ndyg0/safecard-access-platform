@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useLocale } from "@/components/LocaleProvider";
 
@@ -22,7 +22,38 @@ type PaymentConfig = { available: boolean; reason: string | null; amount: number
 
 function key(prefix: string) { return `${prefix}-${crypto.randomUUID()}`; }
 
-export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { caseId: string; campaignId: string; live: boolean; onComplete: () => void }) {
+type PaymentSummary = { routeLabel: string; reference: string };
+
+// Shown in synthetic (non-live) mode so testers can walk the full upload UI
+// without needing env vars or a real Supabase session.
+const SYNTHETIC_PAYMENT_CONFIG: PaymentConfig = {
+  available: true,
+  reason: null,
+  amount: 1200,
+  monthlyEquivalent: 100,
+  currency: "PHP",
+  accountName: "PHILIPPINE RED CROSS",
+  routes: [
+    {
+      id: "gcash-prc",
+      label: "GCash",
+      instructions: "Send to the official PRC GCash number",
+      accountName: "PHILIPPINE RED CROSS",
+      accountNumber: "0917-000-0143",
+    },
+    {
+      id: "bank-bpi",
+      label: "Bank Transfer (BPI)",
+      instructions: "Transfer via BPI online banking or branch",
+      accountName: "PHILIPPINE RED CROSS",
+      bank: "Bank of the Philippine Islands",
+      accountNumber: "3210-0123-45",
+      branch: "Mandaluyong Branch",
+    },
+  ],
+};
+
+export function ManualPaymentPanel({ caseId, campaignId, live, onBack, onComplete }: { caseId: string; campaignId: string; live: boolean; onBack?: () => void; onComplete: (summary: PaymentSummary) => void }) {
   const { locale } = useLocale();
   const isFil = locale === "fil";
   const ui = isFil ? {
@@ -30,7 +61,9 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
   } : {
     unavailable: "Payment configuration is unavailable.", chooseRoute: "Choose an approved payment route.", required: "Choose a route, add the payment reference, upload proof, and confirm the payer declaration.", handoffError: "Payment handoff could not be opened.", referenceError: "Payment reference could not be recorded.", uploadError: "Proof upload failed.", completeError: "Payment could not be completed.", received: "Proof received. Staff verification is pending; membership is not active.", loading: "Loading approved payment routes…", eyebrow: "06 · Payment and proof", title: "Pay outside SafeCard, then return with proof.", fee: "Membership fee:", monthly: "The monthly equivalent is only explanatory and is not an installment offer.", separateTitle: "Payment is a separate state", separateBody: "Payment does not equal consent, application submission, approval, PRC handoff, or membership activation. Only PRC confirmation can activate membership.", warning: "Controlled pilot warning", parked: "Official payment handoff is not yet enabled.", routeLegend: "Choose a payment route", accountName: "Account name", bank: "Bank", accountNumber: "Account number", swift: "SWIFT", branch: "Branch", transferHelp: "Complete the transfer in your bank or GCash app. SafeCard does not hold, move, or settle funds.", reference: "Payment reference or transaction number", referencePlaceholder: "Enter the reference shown by your bank or GCash", proof: "Proof of payment (JPEG, PNG, or WebP; max 10 MB)", preview: "Selected payment proof preview", declaration: "I confirm this transfer was completed outside SafeCard and understand that verification does not activate membership.", uploading: "Uploading securely…", submit: "Submit proof for review →", copied: "Copied", recorded: "Payment reference recorded. Staff will review the proof; your membership remains inactive until PRC confirms it.", qrAlt: "Official GCash QR code"
   };
-  const [config, setConfig] = useState<PaymentConfig | null>(null);
+  // Initialise from the module-level constant when in synthetic mode so we never
+  // call setConfig() synchronously inside a useEffect body.
+  const [config, setConfig] = useState<PaymentConfig | null>(!live ? SYNTHETIC_PAYMENT_CONFIG : null);
   const [routeId, setRouteId] = useState("");
   const [paymentIntentId, setPaymentIntentId] = useState("");
   const [reference, setReference] = useState("");
@@ -43,8 +76,9 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
   const [copied, setCopied] = useState("");
 
   useEffect(() => {
+    if (!live) return; // synthetic config already set as initial state
     fetch(`/api/payment-config?campaign_id=${encodeURIComponent(campaignId)}`, { cache: "no-store" }).then((response) => response.json()).then((data: PaymentConfig) => setConfig(data)).catch(() => setConfig({ available: false, reason: "Payment configuration is unavailable.", amount: null, currency: "PHP", routes: [] }));
-  }, [campaignId]);
+  }, [campaignId, live]);
 
   useEffect(() => {
     if (!file) {
@@ -57,7 +91,7 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const selectedRoute = useMemo(() => config?.routes.find((route) => route.id === routeId), [config, routeId]);
+  const selectedRoute = config?.routes.find((route) => route.id === routeId);
   const selectedPaymentRoute = selectedRoute?.bank
     ? `bank_transfer_${selectedRoute.id.replaceAll("-", "_")}`
     : selectedRoute?.id ?? "";
@@ -73,16 +107,23 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
     if (!reference.trim() || !file || !declaration) { setError(ui.required); return; }
     setBusy(true);
     try {
-      const handoffPayload = { case_id: caseId, campaign_id: campaignId, payer_type: "other", expected_amount: config.amount, payment_route: selectedPaymentRoute, idempotency_key: key("payment"), data_mode: live ? "live" : "synthetic", ...(live ? {} : { payer_name: "Synthetic payer" }) };
+      // In synthetic mode, skip all backend API calls and directly complete with the entered data.
+      if (!live) {
+        await new Promise((resolve) => window.setTimeout(resolve, 600)); // brief pause for realism
+        setNotice(ui.received);
+        onComplete({ routeLabel: selectedRoute.label, reference: reference.trim() });
+        return;
+      }
+      const handoffPayload = { case_id: caseId, campaign_id: campaignId, payer_type: "other", expected_amount: config.amount, payment_route: selectedPaymentRoute, idempotency_key: key("payment"), data_mode: "live" };
       const handoff = await fetch("/api/payment/handoff", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(handoffPayload) });
       const handoffBody = await handoff.json(); if (!handoff.ok) throw new Error(handoffBody.error ?? ui.handoffError);
       const intentId = handoffBody.paymentIntentId as string; setPaymentIntentId(intentId);
-      const marked = await fetch("/api/payment/mark-paid", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payment_intent_id: intentId, payment_reference: reference.trim(), payer_declaration: "I completed this transfer outside SafeCard and understand it does not activate membership.", data_mode: live ? "live" : "synthetic" }) });
+      const marked = await fetch("/api/payment/mark-paid", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payment_intent_id: intentId, payment_reference: reference.trim(), payer_declaration: "I completed this transfer outside SafeCard and understand it does not activate membership.", data_mode: "live" }) });
       const markedBody = await marked.json(); if (!marked.ok) throw new Error(markedBody.error ?? ui.referenceError);
-      const form = new FormData(); form.set("payment_intent_id", intentId); form.set("case_id", caseId); form.set("campaign_id", campaignId); form.set("amount", String(config.amount)); form.set("reference_number", reference.trim()); form.set("payer_declaration", "I completed this transfer outside SafeCard and understand it does not activate membership."); form.set("data_mode", live ? "live" : "synthetic"); form.set("file", file);
+      const form = new FormData(); form.set("payment_intent_id", intentId); form.set("case_id", caseId); form.set("campaign_id", campaignId); form.set("amount", String(config.amount)); form.set("reference_number", reference.trim()); form.set("payer_declaration", "I completed this transfer outside SafeCard and understand it does not activate membership."); form.set("data_mode", "live"); form.set("file", file);
       const uploaded = await fetch("/api/payment/evidence/upload", { method: "POST", body: form });
       const uploadBody = await uploaded.json(); if (!uploaded.ok) throw new Error(uploadBody.error ?? ui.uploadError);
-      setNotice(ui.received); onComplete();
+      setNotice(ui.received); onComplete({ routeLabel: selectedRoute?.label ?? '', reference: reference.trim() });
     } catch (caught) { setError(caught instanceof Error ? caught.message : ui.completeError); }
     finally { setBusy(false); }
   }
@@ -101,7 +142,10 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onComplete }: { c
       <label className="upload-field"><span>{ui.proof}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />{previewUrl && <Image src={previewUrl} alt={ui.preview} className="receipt-preview" width={720} height={960} unoptimized />}</label>
       <label className="consent-row"><input type="checkbox" checked={declaration} onChange={(event) => setDeclaration(event.target.checked)} /><span>{ui.declaration}</span></label>
       {error && <p className="form-message error" role="alert">{error}</p>}{notice && <p className="form-message" role="status">{notice}</p>}
-      <button className="button-primary" type="button" disabled={busy} onClick={submitPayment}>{busy ? ui.uploading : ui.submit}</button>
+      <div className="wizard-actions">
+        <button className="button-primary" type="button" disabled={busy} onClick={submitPayment}>{busy ? ui.uploading : ui.submit}</button>
+        {onBack && <button className="button-quiet" type="button" onClick={onBack}>{isFil ? "← Bumalik" : "← Back"}</button>}
+      </div>
     </>}
     {copied && <p className="form-message" role="status">{ui.copied} {copied}.</p>}
     {paymentIntentId && <p className="content-footnote">{ui.recorded}</p>}

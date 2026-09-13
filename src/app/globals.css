@@ -356,7 +356,7 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .wizard-nav a, .content-nav a, .portal-header a { color: var(--navy); text-decoration: none; }
 .wizard-banner { width: min(1080px, calc(100% - 40px)); margin: 6px auto 26px; display: flex; gap: 12px; padding: 12px 16px; background: var(--amber-dim); border-left: 3px solid var(--amber); color: var(--text2); font-size: .78rem; }
 .wizard-banner strong { color: var(--amber); white-space: nowrap; }
-.wizard-progress { width: min(860px, calc(100% - 40px)); list-style: none; padding: 0; margin: 0 auto 22px; display: grid; grid-template-columns: repeat(6, 1fr); }
+.wizard-progress { width: min(920px, calc(100% - 40px)); list-style: none; padding: 0; margin: 0 auto 22px; display: grid; grid-template-columns: repeat(7, 1fr); }
 .wizard-progress li { position: relative; display: grid; justify-items: center; gap: 7px; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; font: 700 .6rem/1 var(--font-jakarta); }
 .wizard-progress li::before { content: ""; position: absolute; z-index: 0; left: -50%; right: 50%; top: 12px; height: 1px; background: var(--border); }
 .wizard-progress li:first-child::before { display: none; }
@@ -378,8 +378,25 @@ a, button { -webkit-tap-highlight-color: transparent; }
 button.button-primary, button.button-quiet { border: 0; cursor: pointer; }
 .button-primary:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 .quiz-block { padding: 18px 0; border: 0; border-bottom: 1px solid var(--border); }
-.quiz-block legend { margin-bottom: 12px; color: var(--navy); font: 750 .88rem/1.3 var(--font-jakarta); }
-.quiz-block label { display: inline-flex; align-items: center; gap: 8px; margin: 0 18px 8px 0; color: var(--text2); font-size: .84rem; }
+/* Accessibility: white text, larger font so visually impaired users can read easily */
+.quiz-block legend, .quiz-question { display: block; margin-bottom: 14px; color: #E4EAF4; font: 750 1rem/1.4 var(--font-jakarta); }
+.quiz-options { display: grid; gap: 8px; }
+.quiz-option { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; color: #E4EAF4; font-size: .92rem; transition: border-color .15s, background .15s; }
+.quiz-option:hover { border-color: var(--red); background: var(--red-dim); }
+.quiz-option input[type="radio"] { flex-shrink: 0; width: 18px; height: 18px; accent-color: var(--red); }
+.quiz-option-text { flex: 1; }
+.quiz-option-correct { border-color: var(--green); background: color-mix(in srgb, var(--green) 12%, transparent); }
+.quiz-option-wrong { border-color: var(--red); background: var(--red-dim); }
+.quiz-mark { font-weight: 800; }
+.quiz-mark-correct { color: var(--green); }
+.quiz-mark-wrong { color: var(--red); }
+.quiz-feedback { margin-top: 12px; padding: 14px 16px; border-radius: 10px; font-size: .88rem; line-height: 1.6; }
+.quiz-feedback-correct { color: var(--green); background: color-mix(in srgb, var(--green) 12%, transparent); border: 1px solid var(--green); font-weight: 700; }
+.quiz-feedback-wrong { color: var(--text); background: var(--red-dim); border: 1px solid var(--red); }
+.quiz-feedback-wrong strong { display: block; color: var(--red); font-weight: 700; margin-bottom: 6px; }
+.quiz-feedback-wrong p { margin: 0; color: var(--text2); }
+/* Legacy label style (kept for any remaining inline radio labels) */
+.quiz-block label { display: inline-flex; align-items: center; gap: 8px; margin: 0 18px 8px 0; color: var(--text); font-size: .92rem; }
 .decision-list { display: grid; gap: 10px; margin-top: 28px; }
 .decision-list button { display: flex; gap: 18px; align-items: center; width: 100%; padding: 20px; text-align: left; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); cursor: pointer; }
 .decision-list button:hover { border-color: var(--red); background: var(--red-dim); }
@@ -408,6 +425,23 @@ button.button-primary, button.button-quiet { border: 0; cursor: pointer; }
 .reference-box { display: grid; gap: 5px; margin: 26px 0; padding: 18px; border: 1px dashed var(--red); background: var(--red-dim); }
 .reference-box span { color: var(--text3); font-size: .7rem; text-transform: uppercase; }
 .reference-box strong { color: var(--red); font: 600 1rem/1.3 var(--font-ibm-mono); }
+/* Payment summary panel shown in Review step */
+.payment-summary-panel { margin: 24px 0; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface2); }
+.payment-summary-panel > strong { display: block; margin-bottom: 14px; color: var(--text); font: 700 .95rem/1.3 var(--font-jakarta); }
+.payment-summary-rows { display: grid; gap: 0; }
+.payment-summary-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); color: var(--text2); font-size: .85rem; }
+.payment-summary-row:last-child { border-bottom: 0; }
+.payment-summary-row span:last-child { font-weight: 700; color: var(--text); }
+.payment-summary-row.proof-status span { color: var(--green); font-weight: 700; }
+/* Next-steps panel on completion screen */
+.next-steps-panel { text-align: left; margin: 28px auto 0; padding: 22px 24px; max-width: 560px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface2); }
+.next-steps-panel > strong { display: block; margin-bottom: 14px; color: var(--text); font: 700 .95rem/1.3 var(--font-jakarta); }
+.next-steps-list { margin: 0; padding-left: 22px; display: grid; gap: 10px; color: var(--text2); font-size: .88rem; line-height: 1.6; }
+.next-steps-list li { padding-left: 4px; }
+.hotline-note { margin: 16px 0 0; color: var(--text2); font-size: .82rem; line-height: 1.6; }
+.hotline-note strong { color: var(--red); }
+/* Cancel button styling */
+.wizard-cancel { color: var(--text3) !important; font-size: .8rem; }
 .content-nav > a:last-child { color: var(--red); font-weight: 700; }
 .content-section { margin-top: 44px; padding-top: 34px; border-top: 1px solid var(--border); }
 .content-section h2 { color: var(--navy); font: 750 1.6rem/1.15 var(--font-jakarta); }

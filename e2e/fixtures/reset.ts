@@ -15,7 +15,17 @@ export async function resetSyntheticDatabase(tables: readonly string[]): Promise
     throw new Error('Automatic fixture reset requires the isolated loopback Supabase stack.');
   }
   if (tables.some((table) => !/^[a-z_]+$/.test(table))) throw new Error('Invalid fixture table name.');
-  const sql = `TRUNCATE ${[...tables, 'users'].map((table) => `public.${table}`).join(', ')} CASCADE;`;
+  // Also purge any @e2e.safecard.test users from auth.users. GoTrue's admin.deleteUser()
+  // performs a soft-delete that leaves the identity mapping in place, which then causes
+  // createUser() to return "already registered" while listUsers() no longer sees the user,
+  // trapping createStaff() with no recovery path. Deleting the auth rows via SQL right after
+  // truncating public.users (which drops the FK that would otherwise block the delete) gives
+  // every seedWorld() a fully clean auth state, matching what public tables already have.
+  const sql = [
+    `TRUNCATE ${[...tables, 'users'].map((table) => `public.${table}`).join(', ')} CASCADE;`,
+    `DELETE FROM auth.identities WHERE user_id IN (SELECT id FROM auth.users WHERE email LIKE '%@e2e.safecard.test');`,
+    `DELETE FROM auth.users WHERE email LIKE '%@e2e.safecard.test';`,
+  ].join('\n');
   try {
     execFileSync('psql', ['--no-psqlrc', '--set', 'ON_ERROR_STOP=1'], {
       input: sql,
