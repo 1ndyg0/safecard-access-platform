@@ -88,23 +88,23 @@ begin
     p_idempotency_key
   );
 
-  update public.recipient_cases
+  update public.recipient_cases as c
   set
     application_review_state = p_decision,
     application_state = case
       when p_decision = 'resubmission_requested'
         then 'correction_needed'::public.application_state
-      else application_state
+      else c.application_state
     end,
     prc_handoff_state = case
       when p_decision = 'approved'
-        and payment_state = 'verified_by_official_source'
-        and prc_handoff_state in ('not_ready', 'correction_requested')
+        and c.payment_state = 'verified_by_official_source'
+        and c.prc_handoff_state in ('not_ready', 'correction_requested')
         then 'ready_for_export'::public.prc_handoff_state
       when p_decision in ('pending', 'resubmission_requested', 'rejected')
-        and prc_handoff_state = 'ready_for_export'
+        and c.prc_handoff_state = 'ready_for_export'
         then 'not_ready'::public.prc_handoff_state
-      else prc_handoff_state
+      else c.prc_handoff_state
     end
   where id = p_case_id;
 
@@ -270,12 +270,12 @@ begin
   where id = v_intent.case_id
   for update;
 
-  update public.recipient_cases
+  update public.recipient_cases as c
   set payment_state = 'verified_by_official_source',
       prc_handoff_state = case
-        when application_review_state = 'approved' and prc_handoff_state = 'not_ready'
+        when c.application_review_state = 'approved' and c.prc_handoff_state = 'not_ready'
           then 'ready_for_export'::public.prc_handoff_state
-        else prc_handoff_state
+        else c.prc_handoff_state
       end
   where id = v_intent.case_id;
 

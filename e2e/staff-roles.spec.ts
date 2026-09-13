@@ -9,6 +9,26 @@ test.beforeEach(async () => {
 });
 
 test.describe('staff role management', () => {
+  test('campaign metadata cannot authorize sibling-campaign receipt access', async ({ page }) => {
+    const { data: campaign, error } = await world.admin.from('pilot_campaigns')
+      .select('organization_id').eq('id', world.campaignId).single();
+    expect(error).toBeNull();
+    const sibling = await world.admin.from('pilot_campaigns')
+      .update({ organization_id: campaign!.organization_id }).eq('id', world.otherCampaignId);
+    expect(sibling.error).toBeNull();
+    const assignment = await world.admin.from('role_assignments')
+      .update({ organization_id: campaign!.organization_id }).eq('user_id', world.staff.outsider.userId);
+    expect(assignment.error).toBeNull();
+    await signIn(page, world.staff.outsider);
+    const response = await page.request.post('/api/payment/evidence/request-reupload', {
+      data: { evidence_version_id: world.paymentEvidenceId, reason: 'Synthetic cross-campaign access attempt.' },
+    });
+    expect(response.status()).toBe(403);
+    const { data: unchanged } = await world.admin.from('payment_evidence_versions')
+      .select('state').eq('id', world.paymentEvidenceId).single();
+    expect(unchanged?.state).toBe('verification_pending');
+  });
+
   test('assigns and revokes one campaign role with an audit trail', async ({ page }) => {
     await signIn(page, world.staff.privacyAdmin);
     const reason = 'Temporary applicant support coverage for the current pilot.';
@@ -95,7 +115,7 @@ test.describe('staff role management', () => {
     await signIn(page, world.staff.privacyAdmin);
     await page.goto(`/admin/users?campaign_id=${world.campaignId}`);
     await expect(page.getByRole('heading', { name: 'Staff and roles' })).toBeVisible();
-    await expect(page.getByText('Finance Reviewer')).toBeVisible();
-    await expect(page.getByText('PRC Liaison')).toBeVisible();
+    await expect(page.getByText('Finance Reviewer', { exact: true })).toBeVisible();
+    await expect(page.getByText('PRC Liaison', { exact: true })).toBeVisible();
   });
 });

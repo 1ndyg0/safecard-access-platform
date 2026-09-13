@@ -31,7 +31,9 @@ test.beforeAll(async () => {
 async function timed<T>(work: () => Promise<T>): Promise<{ result: T; ms: number }> {
   const start = Date.now();
   const result = await work();
-  return { result, ms: Date.now() - start };
+  const ms = Date.now() - start;
+  test.info().annotations.push({ type: 'measurement', description: `request_ms=${ms}` });
+  return { result, ms };
 }
 
 test.describe('scale', () => {
@@ -52,7 +54,7 @@ test.describe('scale', () => {
     // The response carries eleven numbers regardless of campaign size.
     // If a case row ever appears here, the aggregation moved out of SQL.
     const raw = JSON.stringify(body);
-    expect(raw).not.toContain('SC-2026-COHORT');
+    expect(raw).not.toContain('SC-2026-');
     expect(raw.length).toBeLessThan(8_000);
   });
 
@@ -66,7 +68,7 @@ test.describe('scale', () => {
 
     const raw = await result.text();
     expect(raw.length).toBeLessThan(4_000);
-    expect(raw).not.toContain('SC-2026-COHORT');
+    expect(raw).not.toContain('SC-2026-');
   });
 
   test('the queue returns one page, not the whole campaign', async ({ page }) => {

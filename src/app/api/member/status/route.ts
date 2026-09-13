@@ -15,6 +15,7 @@ import { NextResponse } from 'next/server';
 import { requireMemberSession } from '@/lib/auth/member-session';
 import { getSupabaseAdminClient } from '@/lib/db/client';
 import { memberNextAction } from '@/lib/member/status';
+import { handleApiError } from '@/lib/api/response';
 
 export const dynamic = 'force-dynamic';
 
@@ -106,7 +107,7 @@ export async function GET() {
       },
       { headers: { 'Cache-Control': 'private, no-store' } },
     );
-  } catch {
-    return NextResponse.json({ error: 'Member authentication required.' }, { status: 401 });
+  } catch (error) {
+    return handleApiError(error, 'Member status');
   }
 }

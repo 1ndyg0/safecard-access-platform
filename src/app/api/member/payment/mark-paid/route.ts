@@ -45,7 +45,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       .from('payment_intents')
       .select('id,state')
       .eq('case_id', caseId)
-      .eq('state', 'official_handoff_opened')
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return conflict('No payment is currently waiting for a transaction reference.');
     }
 
-    await markPaymentPaid(
+    const marked = await markPaymentPaid(
       intent.id as string,
       parsed.data.payment_reference,
       PAYER_DECLARATION,
@@ -64,7 +63,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       {
         marked: true,
-        paymentState: 'payer_marked_paid',
+        paymentState: marked.paymentState,
         membershipChanged: false,
         message: 'Transaction reference saved. Official verification is still required.',
       },

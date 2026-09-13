@@ -172,15 +172,18 @@ export async function markPaymentPaid(
   paymentReference: string,
   payerDeclaration: string,
   actorId: string | null,
-): Promise<void> {
+): Promise<{ paymentState: string }> {
   const admin = getSupabaseAdminClient();
-  const { error } = await admin.rpc('mark_payment_paid_atomic', {
+  const { data, error } = await admin.rpc('mark_payment_paid_atomic', {
     p_payment_intent_id: paymentIntentId,
     p_payment_reference: paymentReference,
     p_payer_declaration: payerDeclaration,
     p_actor_id: actorId,
   });
   if (error) throw new Error(`Payment could not be marked paid: ${error.message}`);
+  const result = Array.isArray(data) ? data[0] : data;
+  if (!result) throw new Error('Payment declaration returned no state.');
+  return { paymentState: result.payment_state as string };
 }
 
 // ============================================================

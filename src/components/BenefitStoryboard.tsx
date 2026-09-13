@@ -90,6 +90,7 @@ export function BenefitStoryboard({
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [completed, setCompleted] = useState<string[]>([]);
+  const storyboardRoot = useRef<HTMLDivElement>(null);
   const visitId = useRef<string>("");
   const openedAt = useRef<number>(0);
 
@@ -126,6 +127,11 @@ export function BenefitStoryboard({
   // Generated after mount so the first paint owes nothing to crypto.
   useEffect(() => {
     if (!visitId.current) visitId.current = newVisitId();
+    // The server-rendered controls can be visible briefly before React has
+    // attached their handlers on a network deployment. Expose the actual
+    // interaction-ready boundary so automation and assistive QA never click
+    // a control during that hydration gap.
+    storyboardRoot.current?.setAttribute("data-hydrated", "true");
   }, []);
 
   function toggle(benefitId: string) {
@@ -156,7 +162,9 @@ export function BenefitStoryboard({
 
   return (
     <div
+      ref={storyboardRoot}
       className={`benefit-storyboard ${compact ? "compact" : ""}`}
+      data-hydrated="false"
       aria-label={locale === "fil" ? "Mga benepisyo at halimbawa" : "Benefits and examples"}
     >
       <p className="storyboard-progress" aria-live="polite">

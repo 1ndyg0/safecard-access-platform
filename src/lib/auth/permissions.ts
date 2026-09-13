@@ -35,35 +35,7 @@ export async function requireRole(
   role: StaffRole,
   campaignId?: string,
 ): Promise<PermissionCheckResult> {
-  const admin = getSupabaseAdminClient();
-
-  let query = admin
-    .from('role_assignments')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('role', role)
-    .eq('is_active', true)
-    .is('revoked_at', null);
-
-  if (campaignId) {
-    const { data: campaign } = await admin
-      .from('pilot_campaigns')
-      .select('organization_id')
-      .eq('id', campaignId)
-      .single();
-    if (!campaign) return { allowed: false, reason: 'Campaign not found' };
-    query = query.or(
-      `campaign_id.eq.${campaignId},organization_id.eq.${campaign.organization_id}`,
-    );
-  }
-
-  const { data, error } = await query.limit(1);
-
-  if (error || !data || data.length === 0) {
-    return { allowed: false, reason: `User does not have role: ${role}` };
-  }
-
-  return { allowed: true };
+  return requireAnyRole(userId, [role], campaignId);
 }
 
 /**
@@ -99,39 +71,39 @@ export async function requireAnyRole(
   organizationId?: string,
 ): Promise<PermissionCheckResult> {
   const admin = getSupabaseAdminClient();
+  let scopeOrganizationId = organizationId;
+  if (campaignId) {
+    const { data: campaign, error } = await admin
+      .from('pilot_campaigns')
+      .select('organization_id')
+      .eq('id', campaignId)
+      .single();
+    if (error || !campaign) return { allowed: false, reason: 'Campaign not found' };
+    scopeOrganizationId = campaign.organization_id;
+  }
 
-  let query = admin
+  const { data, error } = await admin
     .from('role_assignments')
-    .select('id, role')
+    .select('id,role,campaign_id,organization_id')
     .eq('user_id', userId)
     .in('role', roles)
     .eq('is_active', true)
     .is('revoked_at', null);
 
-  if (campaignId) {
-    const { data: campaign } = await admin
-      .from('pilot_campaigns')
-      .select('organization_id')
-      .eq('id', campaignId)
-      .single();
-    if (!campaign) return { allowed: false, reason: 'Campaign not found' };
-    query = query.or(
-      `campaign_id.eq.${campaignId},organization_id.eq.${campaign.organization_id}`,
-    );
-  } else if (organizationId) {
-    query = query.eq('organization_id', organizationId);
-  }
+  const allowed = !error && data?.some((assignment) => {
+    if (campaignId) {
+      return assignment.campaign_id === campaignId
+        || (assignment.campaign_id === null && assignment.organization_id === scopeOrganizationId);
+    }
+    if (organizationId) {
+      return assignment.campaign_id === null && assignment.organization_id === organizationId;
+    }
+    return true;
+  });
+  return allowed
+    ? { allowed: true }
+    : { allowed: false, reason: `User does not have any of these roles in this scope: ${roles.join(', ')}` };
 
-  const { data, error } = await query.limit(1);
-
-  if (error || !data || data.length === 0) {
-    return {
-      allowed: false,
-      reason: `User does not have any of these roles: ${roles.join(', ')}`,
-    };
-  }
-
-  return { allowed: true };
 }
 
 /**

@@ -97,8 +97,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       },
       { headers: { 'Cache-Control': 'private, no-store' } },
     );
-  } catch {
-    return NextResponse.json({ error: 'Member authentication required.' }, { status: 401 });
+  } catch (error) {
+    return handleApiError(error, 'Member correction');
   }
 }
 

@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import sharp from 'sharp';
+import { createHash } from 'node:crypto';
 import { buildPaymentProofObjectPath, PAYMENT_PROOF_MAX_BYTES, validatePaymentProof, PaymentProofValidationError } from './evidence-validation';
 
 function pngFixture() {
@@ -10,23 +12,41 @@ function pngFixture() {
 }
 
 describe('payment proof validation', () => {
-  it('accepts a PNG signature and records checksum and dimensions', () => {
-    const result = validatePaymentProof(pngFixture(), 'image/png');
-    expect(result.extension).toBe('png');
-    expect(result.width).toBe(1);
-    expect(result.height).toBe(1);
-    expect(result.sha256).toMatch(/^[a-f0-9]{64}$/);
+  it.each([
+    ['image/png', pngFixture()],
+    ['image/jpeg', Buffer.from([0xff, 0xd8, 0xff])],
+    ['image/webp', Buffer.from('RIFF0000WEBP')],
+  ])('rejects a signature-only invalid %s image', async (mime, bytes) => {
+    await expect(Promise.resolve().then(() => validatePaymentProof(bytes, mime)))
+      .rejects.toBeInstanceOf(PaymentProofValidationError);
+  });
+  it.each(['png', 'jpeg', 'webp'] as const)('decodes valid %s images and records the stored checksum and dimensions', async (format) => {
+    const bytes = await sharp({ create: { width: 2, height: 3, channels: 3, background: '#ffffff' } }).toFormat(format).toBuffer();
+    const result = await validatePaymentProof(bytes, `image/${format}`);
+    expect(result.extension).toBe(format === 'jpeg' ? 'jpg' : format);
+    expect(result.width).toBe(2);
+    expect(result.height).toBe(3);
+    expect(result.sha256).toBe(createHash('sha256').update(result.buffer).digest('hex'));
+    expect(result.sizeBytes).toBe(result.buffer.length);
   });
 
-  it('rejects a renamed executable or mismatched claimed MIME type', () => {
-    expect(() => validatePaymentProof(Buffer.from('#!/bin/sh\necho unsafe'), 'image/png')).toThrow(PaymentProofValidationError);
-    expect(() => validatePaymentProof(pngFixture(), 'application/pdf')).toThrow(PaymentProofValidationError);
+  it('rejects a renamed executable or mismatched claimed MIME type', async () => {
+    await expect(validatePaymentProof(Buffer.from('#!/bin/sh\necho unsafe'), 'image/png')).rejects.toThrow(PaymentProofValidationError);
+    await expect(validatePaymentProof(pngFixture(), 'application/pdf')).rejects.toThrow(PaymentProofValidationError);
   });
 
-  it('rejects files over the documented 10 MB limit', () => {
+  it('rejects files over the documented 10 MB limit', async () => {
     const oversized = Buffer.alloc(PAYMENT_PROOF_MAX_BYTES + 1);
     Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).copy(oversized, 0);
-    expect(() => validatePaymentProof(oversized, 'image/png')).toThrow(/10 MB/);
+    await expect(validatePaymentProof(oversized, 'image/png')).rejects.toThrow(/10 MB/);
+  });
+
+  it('strips embedded metadata and appended payloads before storage', async () => {
+    const image = await sharp({ create: { width: 2, height: 3, channels: 3, background: '#ffffff' } })
+      .withExif({ IFD0: { Artist: 'SYNTHETIC PRIVATE METADATA' } }).jpeg().toBuffer();
+    const result = await validatePaymentProof(Buffer.concat([image, Buffer.from('<script>unsafe()</script>')]), 'image/jpeg');
+    expect((await sharp(result.buffer).metadata()).exif).toBeUndefined();
+    expect(result.buffer.includes(Buffer.from('<script>'))).toBe(false);
   });
 
   it('builds non-enumerable case-scoped paths without names or phone numbers', () => {

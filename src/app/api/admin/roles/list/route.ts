@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       .from('role_assignments')
       .select(`
         id, role, is_active, granted_at, revoked_at, reason,
-        users!inner (id, email, full_name, mfa_enabled)
+        users!role_assignments_user_id_fkey!inner (id, email, full_name, mfa_enabled)
       `)
       .or(
         `campaign_id.eq.${campaignId},and(campaign_id.is.null,organization_id.eq.${campaign.organization_id})`,

@@ -26,7 +26,9 @@ function correction(overrides: Record<string, unknown> = {}) {
 test.describe('member status', () => {
   test('shows all six things separately', async ({ page }) => {
     await signInMember(page, world.cases.correctionRequested);
-    const body = await (await page.request.get('/api/member/status')).json();
+    const response = await page.request.get('/api/member/status');
+    expect(response.status()).toBe(200);
+    const body = await response.json();
 
     expect(body.reference).toBe(world.cases.correctionRequested.reference);
     expect(body.states.application_state).toBe('correction_needed');
@@ -46,7 +48,9 @@ test.describe('member status', () => {
 
   test('a member session cannot reach another case', async ({ page }) => {
     await signInMember(page, world.cases.correctionRequested);
-    const body = await (await page.request.get('/api/member/correction')).json();
+    const response = await page.request.get('/api/member/correction');
+    expect(response.status()).toBe(200);
+    const body = await response.json();
     // There is no case parameter to supply; the response is always the
     // session's own case.
     expect(body.reference).toBe(world.cases.correctionRequested.reference);
@@ -76,7 +80,7 @@ test.describe('member status', () => {
     expect(response.status()).toBe(401);
   });
 
-  test('issues a signed, secure, HTTP-only cookie that expires in 30 minutes', async ({
+  test('issues a signed, HTTP-only cookie scoped for the current transport that expires in 30 minutes', async ({
     page,
   }) => {
     await signInMember(page, world.cases.correctionRequested);
@@ -85,6 +89,7 @@ test.describe('member status', () => {
     );
     expect(cookie).toBeTruthy();
     expect(cookie?.httpOnly).toBe(true);
+    expect(cookie?.secure).toBe(new URL(test.info().project.use.baseURL as string).protocol === 'https:');
     expect(cookie?.value.split('.')).toHaveLength(2);
     const lifetime = (cookie?.expires ?? 0) - Math.floor(Date.now() / 1000);
     expect(lifetime).toBeGreaterThan(25 * 60);

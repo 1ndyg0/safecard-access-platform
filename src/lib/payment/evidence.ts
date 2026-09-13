@@ -13,7 +13,7 @@ export async function storePaymentProof(input: {
   claimedMimeType: string;
   uploadedBy: string;
 }) {
-  const proof = validatePaymentProof(input.buffer, input.claimedMimeType);
+  const { buffer: sanitizedBuffer, ...proof } = await validatePaymentProof(input.buffer, input.claimedMimeType);
   const evidenceId = uuidv4();
   const admin = getSupabaseAdminClient();
   const bucket = process.env.PAYMENT_PROOFS_BUCKET ?? 'payment-proofs';
@@ -26,7 +26,7 @@ export async function storePaymentProof(input: {
   if (intent.case_id !== input.caseId || intent.campaign_id !== input.campaignId) throw new Error('Payment evidence does not match the application case.');
   if (Number(intent.expected_amount) !== input.amount) throw new Error('Payment evidence amount does not match the payment intent.');
   const objectPath = buildPaymentProofObjectPath(input.campaignId, input.caseId, input.paymentIntentId, evidenceId, proof.extension);
-  const upload = await admin.storage.from(bucket).upload(objectPath, input.buffer, {
+  const upload = await admin.storage.from(bucket).upload(objectPath, sanitizedBuffer, {
     contentType: proof.mimeType,
     cacheControl: '60',
     upsert: false,

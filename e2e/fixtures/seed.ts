@@ -11,7 +11,9 @@
  */
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import sharp from 'sharp';
+import { resetSyntheticDatabase } from './reset';
 
 const PASSWORD = 'e2e-operations-console-passphrase';
 
@@ -83,7 +85,7 @@ function assertDisposableTarget(url: string): void {
   }
 
   const isLocal =
-    url.includes('127.0.0.1') || url.includes('localhost') || url.includes('kong:8000');
+    ['127.0.0.1', 'localhost', 'kong'].includes(new URL(url).hostname);
   if (isLocal) return;
   if (process.env.E2E_ALLOW_REMOTE === '1') return;
   throw new Error(
@@ -133,14 +135,9 @@ const TABLES_TO_CLEAR = [
   'organizations',
 ] as const;
 
-async function clear(admin: SupabaseClient): Promise<void> {
-  for (const table of TABLES_TO_CLEAR) {
-    const { error } = await admin
-      .from(table)
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
-    if (error) throw new Error(`Failed to clear ${table}: ${error.message}`);
-  }
+async function clear(): Promise<void> {
+  await resetSyntheticDatabase(TABLES_TO_CLEAR);
+
 }
 
 async function createStaff(
@@ -337,7 +334,7 @@ export async function seedWorld(): Promise<SeededWorld> {
   contentCreatedBy = null;
   consentByCase.clear();
 
-  await clear(admin);
+  await clear();
   // deleteExistingStaff is intentionally not called here. It issues GoTrue
   // deleteUser() calls which soft-delete auth users: the user disappears from
   // listUsers() but the auth identity record survives, causing an immediate
@@ -351,8 +348,8 @@ export async function seedWorld(): Promise<SeededWorld> {
   await admin
     .from('organizations')
     .insert([
-      { id: organizationId, name: 'E2E School', organization_type: 'school' },
-      { id: otherOrganizationId, name: 'E2E Other School', organization_type: 'school' },
+      { id: organizationId, name: 'E2E School', slug: `e2e-school-${organizationId}`, org_type: 'school' },
+      { id: otherOrganizationId, name: 'E2E Other School', slug: `e2e-school-${otherOrganizationId}`, org_type: 'school' },
     ]);
 
   const campaignId = randomUUID();
@@ -515,15 +512,20 @@ export async function seedWorld(): Promise<SeededWorld> {
   });
   if (evidenceError) throw new Error(`Failed to insert evidence: ${evidenceError.message}`);
 
+  const proofBytes = await sharp({ create: { width: 1, height: 1, channels: 3, background: '#ffffff' } }).png().toBuffer();
+  const proofPath = `campaigns/${campaignId}/cases/${cases.approvedUnverifiedPayment}/payments/${paymentIntentId}/evidence/${paymentEvidenceId}.png`;
+  const stored = await admin.storage.from('payment-proofs').upload(proofPath, proofBytes, { contentType: 'image/png', upsert: false });
+  if (stored.error) throw new Error('Could not store the synthetic receipt fixture.');
+
   const { error: versionError } = await admin.from('payment_evidence_versions').insert({
     id: paymentEvidenceId,
     payment_evidence_id: parentEvidenceId,
     payment_intent_id: paymentIntentId,
     version_number: 1,
-    object_path: `campaigns/${campaignId}/cases/${cases.approvedUnverifiedPayment}/payments/${paymentIntentId}/evidence/${paymentEvidenceId}.png`,
+    object_path: proofPath,
     content_type: 'image/png',
-    file_size_bytes: 24,
-    sha256: 'a'.repeat(64),
+    file_size_bytes: proofBytes.length,
+    sha256: createHash('sha256').update(proofBytes).digest('hex'),
     image_width: 1,
     image_height: 1,
     state: 'verification_pending',
@@ -555,15 +557,16 @@ export async function addSubmittedCases(
   admin: SupabaseClient,
   campaignId: string,
   count: number,
+  submitted = true,
 ): Promise<void> {
   for (let index = 0; index < count; index += 1) {
     await insertCase(
       admin,
       campaignId,
-      { application_state: 'submitted', payment_state: 'verified_by_official_source' },
+      { application_state: submitted ? 'submitted' : 'draft', payment_state: submitted ? 'verified_by_official_source' : 'not_started' },
       {
-        applicationRef: `SC-2026-COHORT${String(index).padStart(2, '0')}`,
-        submittedAt: new Date(Date.now() - 3_600_000).toISOString(),
+        applicationRef: `SC-2026-${randomUUID().slice(0, 8).toUpperCase()}`,
+        submittedAt: submitted ? new Date(Date.now() - 3_600_000).toISOString() : undefined,
       },
     );
   }

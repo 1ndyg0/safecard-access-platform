@@ -155,7 +155,7 @@ declare
   v_new_handoff public.prc_handoff_state;
   v_prior_membership public.membership_state;
 begin
-  select i, b.campaign_id into v_item, v_campaign_id
+  select i.* into v_item
   from public.prc_export_items i
   join public.prc_export_batches b on b.id = i.batch_id
   where i.id = p_export_item_id
@@ -167,6 +167,8 @@ begin
   where id = v_item.case_id
   for update;
   if not found then raise exception 'Case not found'; end if;
+  select b.campaign_id into v_campaign_id
+  from public.prc_export_batches b where b.id = v_item.batch_id;
   v_prior_membership := v_case.membership_state;
 
   if p_prc_status not in ('acknowledged', 'correction_requested', 'accepted', 'rejected') then
@@ -201,7 +203,7 @@ begin
       prc_source_timestamp = pg_catalog.now()
   where id = p_export_item_id;
 
-  update public.recipient_cases
+  update public.recipient_cases as c
   set prc_handoff_state = v_new_handoff,
       application_state = case
         when p_prc_status = 'correction_requested'
@@ -217,7 +219,7 @@ begin
         when p_prc_status = 'accepted' then 'active_confirmed'::public.membership_state
         when p_prc_status = 'rejected' then 'declined'::public.membership_state
         when p_prc_status = 'correction_requested' then 'not_active'::public.membership_state
-        else membership_state
+        else c.membership_state
       end
   where id = v_item.case_id;
 

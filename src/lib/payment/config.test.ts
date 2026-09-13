@@ -11,7 +11,7 @@ describe('manual payment configuration', () => {
 
   it('keeps every supplied bank account and SWIFT value centralized', () => {
     expect(MANUAL_PAYMENT_CONFIG.routes.filter((route): route is Extract<typeof route, { bank: string }> => 'bank' in route)).toMatchObject([
-      { bank: 'BPI', accountNumber: '002963007828', swiftCode: 'BOPIPHMM', branch: 'Chinese Gen., Blumentritt Branch' },
+      { bank: 'BPI', accountNumber: '002963000782B', swiftCode: 'BOPIPHMM', branch: 'Chinese Gen., Blumentritt Branch' },
       { bank: 'BDO', accountNumber: '004530012185', swiftCode: 'BNORPHM', branch: 'South Harbor, Port Area Manila' },
       { bank: 'Security Bank', accountNumber: '0132062464003', swiftCode: 'SETCPHMM', branch: 'EDSA Mandaluyong Branch' },
       { bank: 'Metrobank', accountNumber: '151-3-15114558-3', swiftCode: 'MBTCPHMM', branch: 'Bonifacio Drive, Port Area Manila' },

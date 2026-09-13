@@ -1,32 +1,47 @@
-[project]
-id = ""
-# Fill in your Supabase project ID
+# Disposable local/CI stack only. Hosted configuration is managed separately.
+project_id = "safecard-r1-ci"
 
 [api]
 enabled = true
 port = 54321
 schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
 
 [db]
 port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.seed]
+enabled = false
 
 [studio]
 enabled = true
 port = 54323
 
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000/**"]
+site_url = "http://127.0.0.1:3100"
+additional_redirect_urls = ["http://127.0.0.1:3100/auth/callback"]
+enable_anonymous_sign_ins = true
 
 [auth.email]
 enable_signup = true
 enable_confirmations = false
 
-[auth.external.phone]
-enabled = false
-# Enable when SMS provider is approved
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
 
-[auth.anonymous]
-enabled = true
-# Low-friction recipient sessions on shared phones
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.mfa.phone]
+enroll_enabled = false
+verify_enabled = false
