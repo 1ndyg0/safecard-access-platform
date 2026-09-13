@@ -17,6 +17,16 @@ import { requirePaymentAccess } from '@/lib/auth/permissions';
 import { enforceRateLimit } from '@/lib/api/rate-limit';
 import { assertSyntheticText } from '@/lib/safety/data-mode';
 
+/** The reference field is optional in the wizard now — proof-of-payment upload alone is
+ *  enough for staff review. The underlying RPC still requires a non-empty reference for
+ *  its idempotency check, so mint a deterministic internal one from the intent id when
+ *  the client did not supply a bank/GCash reference. */
+function ensurePaymentReference(clientRef: string, intentId: string): string {
+  const trimmed = clientRef.trim();
+  if (trimmed.length > 0) return trimmed;
+  return `PROOF-${intentId.replaceAll('-', '').slice(0, 12).toUpperCase()}`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     await enforceRateLimit(request, 'payment.mark-paid');
@@ -26,11 +36,14 @@ export async function POST(request: NextRequest) {
     const auth = await requireAuth();
     const access = await requirePaymentAccess(auth.userId, parsed.payment_intent_id);
     if (!access.allowed) throw new Error('Permission denied: payment access required');
+    // Assert on the user-supplied reference before we auto-mint one — the safety check is
+    // about what the caller typed, not about our own internal PROOF-XXXX id.
     assertSyntheticText(parsed.data_mode, parsed.payment_reference);
+    const paymentReference = ensurePaymentReference(parsed.payment_reference, parsed.payment_intent_id);
 
     await markPaymentPaid(
       parsed.payment_intent_id,
-      parsed.payment_reference,
+      paymentReference,
       parsed.payer_declaration,
       auth.userId,
     );

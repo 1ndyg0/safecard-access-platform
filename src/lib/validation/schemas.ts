@@ -184,10 +184,10 @@ export const createPaymentIntentSchema = z.object({
 
 export const markPaymentPaidSchema = z.object({
   payment_intent_id: uuidSchema,
-  payment_reference: z
-    .string()
-    .min(1, 'Payment reference is required')
-    .max(100),
+  // The user-supplied payment reference (bank/GCash confirmation number) is no longer
+  // required — the uploaded proof-of-payment image alone satisfies staff review. When
+  // present it is still stored for reconciliation. Kept trimmed and length-bounded.
+  payment_reference: z.string().trim().max(100).optional().default(''),
   payer_declaration: z.string().trim().min(10).max(500),
   data_mode: dataModeSchema,
 });

@@ -5,15 +5,20 @@ import { getApprovedPaymentRoutes, MANUAL_PAYMENT_CONFIG } from "@/lib/payment/c
 
 export const dynamic = "force-dynamic";
 
+const STATIC_QR_URL = "/payment/prc-gcash-qr.png";
+
 async function getQrImageUrl() {
+  // Prefer the Supabase Storage signed URL when the bucket holds an updated QR (rotations
+  // during the pilot). Fall back to the static asset shipped with the app so the QR always
+  // renders even when the storage lookup is unavailable or the object has not been uploaded.
   try {
     const bucket = process.env.PAYMENT_PROOFS_BUCKET ?? "payment-proofs";
     const { data } = await getSupabaseAdminClient().storage
       .from(bucket)
       .createSignedUrl(MANUAL_PAYMENT_CONFIG.qrObjectPath, 300);
-    return data?.signedUrl ?? null;
+    return data?.signedUrl ?? STATIC_QR_URL;
   } catch {
-    return null;
+    return STATIC_QR_URL;
   }
 }
 

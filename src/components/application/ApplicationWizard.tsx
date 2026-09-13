@@ -22,10 +22,6 @@ type Profile = {
 };
 type PaymentSummary = { routeLabel: string; reference: string };
 
-const syntheticProfile: Profile = {
-  first_name: "DEMO", last_name: "PERSON", date_of_birth: "2000-01-01", sex: "female",
-  mobile_number: "09000000000", address_line1: "TEST ADDRESS", city: "TEST CITY", province: "TEST PROVINCE", zip_code: "0000", email: "demo@example.invalid",
-};
 const emptyProfile: Profile = { first_name: "", last_name: "", date_of_birth: "", sex: "female", mobile_number: "", address_line1: "", city: "", province: "", zip_code: "", email: "" };
 
 function key(prefix: string) { return `${prefix}-${crypto.randomUUID()}`; }
@@ -53,7 +49,7 @@ export function ApplicationWizard() {
   const [consentRecordId, setConsentRecordId] = useState<string>();
   const [answers, setAnswers] = useState({ cost: "", activation: "", choice: "", emergency: "" });
   const [agreed, setAgreed] = useState({ voluntary: false, privacy: false, boundaries: false });
-  const [profile, setProfile] = useState<Profile>(syntheticProfile);
+  const [profile, setProfile] = useState<Profile>(emptyProfile);
   const [paymentSummary, setPaymentSummary] = useState<PaymentSummary | null>(null);
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
@@ -61,7 +57,7 @@ export function ApplicationWizard() {
 
   useEffect(() => {
     fetch("/api/pilot/config", { cache: "no-store" }).then((r) => r.json()).then((next: PilotConfig) => {
-      setConfig(next); setProfile(next.mode === "live" ? emptyProfile : syntheticProfile);
+      setConfig(next); setProfile(emptyProfile);
     }).catch(() => setConfig({ mode: "synthetic", campaign: null, payment: { available: false, reason: "Unavailable" }, externalNotifications: { available: false, reason: "Parked" } }));
   }, []);
 
@@ -204,13 +200,12 @@ export function ApplicationWizard() {
 
   async function submit() {
     if (!profileValid()) { setError(isFil ? "Kumpletuhin ang lahat ng required fields gamit ang tamang format." : "Please complete every required field using the requested format."); return; }
-    if (!isLive) {
-      setReference(`DEMO-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`);
-      setProfile(syntheticProfile);
-      setStep("complete");
+    if (!isLive || !caseId || !consentRecordId || !config?.content) {
+      setError(isFil
+        ? "Hindi pa handa ang pilot intake. Mangyaring subukan muli o makipag-ugnayan sa Hotline 143."
+        : "Application intake is not fully configured yet. Please try again shortly or contact Hotline 143.");
       return;
     }
-    if (!caseId || !consentRecordId || !config?.content) { setError(isFil ? "Hindi kumpleto ang secure session mo. Magsimula ulit." : "Your secure session is incomplete. Start again."); return; }
     setBusy(true); setError("");
     try {
       await api("/api/intake/profile", { case_id: caseId, profile_data: profile, data_mode: "live" });
@@ -229,7 +224,7 @@ export function ApplicationWizard() {
 
   async function clearSharedDevice() {
     if (isLive) await fetch("/api/intake/clear-session", { method: "POST" }).catch(() => undefined);
-    window.sessionStorage.clear(); setProfile(isLive ? emptyProfile : syntheticProfile); router.push("/");
+    window.sessionStorage.clear(); setProfile(emptyProfile); router.push("/");
   }
 
   const progress = PROGRESS_STEPS.indexOf(step);
@@ -243,8 +238,8 @@ export function ApplicationWizard() {
       </header>
 
       <div className="wizard-banner">
-        <strong>{isLive ? ui.bannerLive : ui.bannerSynthetic}</strong>
-        <span>{isLive ? ui.bannerLiveBody : ui.bannerSyntheticBody}</span>
+        <strong>{ui.bannerLive}</strong>
+        <span>{ui.bannerLiveBody}</span>
       </div>
 
       {showProgress && (
@@ -429,7 +424,7 @@ export function ApplicationWizard() {
             )}
             {error && <p className="form-message error">{error}</p>}
             <div className="wizard-actions">
-              <button className="button-primary" disabled={busy} onClick={submit}>{busy ? ui.submitting : isLive ? ui.submit : ui.completeDemo}</button>
+              <button className="button-primary" disabled={busy} onClick={submit}>{busy ? ui.submitting : ui.submit}</button>
               <button className="button-quiet" onClick={goBack}>{ui.backLabel}</button>
               <button className="button-quiet wizard-cancel" onClick={cancelWizard}>{ui.cancelLabel}</button>
             </div>
@@ -440,11 +435,11 @@ export function ApplicationWizard() {
         {step === "complete" && (
           <div className="completion-panel">
             <span className="completion-mark">✓</span>
-            <p className="eyebrow" style={{ marginTop: "18px" }}>{isLive ? ui.completeLiveEyebrow : ui.completeSyntheticEyebrow}</p>
-            <h1>{isLive ? ui.completeLiveTitle : ui.completeSyntheticTitle}</h1>
-            <p className="wizard-lede">{isLive ? ui.completeLiveBody : ui.completeSyntheticBody}</p>
+            <p className="eyebrow" style={{ marginTop: "18px" }}>{ui.completeLiveEyebrow}</p>
+            <h1>{ui.completeLiveTitle}</h1>
+            <p className="wizard-lede">{ui.completeLiveBody}</p>
             <div className="reference-box">
-              <span>{isLive ? ui.applicationRef : ui.demoRef}</span>
+              <span>{ui.applicationRef}</span>
               <strong>{reference}</strong>
             </div>
             <div className="next-steps-panel">
@@ -458,7 +453,7 @@ export function ApplicationWizard() {
                 <p className="hotline-note">{ui.completeHotlineNote} <strong>143</strong>. {isFil ? "Hindi nagdedesisyon ang SafeCard ng claims o membership activation." : "SafeCard never decides claims or membership activation."}</p>
               </div>
             <div className="wizard-actions" style={{ justifyContent: "center", marginTop: "28px" }}>
-              <Link className="button-primary" href={isLive ? "/member" : "/"}>{isLive ? ui.checkStatus : ui.returnHome}</Link>
+              <Link className="button-primary" href="/member">{ui.checkStatus}</Link>
               <button className="button-quiet" onClick={() => window.print()}>{ui.print}</button>
             </div>
           </div>
