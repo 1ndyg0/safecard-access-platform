@@ -14,7 +14,7 @@ export const copy = {
     heroBody: "Isang consent-first na paraan para matutunan ang Safe Card, pumili nang pribado, at isumite ang application kapag handa ka.",
     primaryCta: "Simulan ang pribadong walkthrough", secondaryCta: "Basahin ang mga benepisyo",
     voluntary: "Kusang-loob ang paglahok. Maaari kang magtanong, huminto, o tumanggi nang walang kapalit.",
-    benefitsEyebrow: "Alamin bago pumili", benefitsTitle: "Maliwanag na impormasyon, walang pangako ng resulta.",
+    benefitsEyebrow: "Alamin bago pumili", benefitsTitle: "Mga benepisyo ng Safe Card.",
     processTitle: "Isang proseso na inuuna ang iyong kontrol", footerNote: "School-project pilot. Hindi ito opisyal na PRC enrollment portal.",
   },
   en: {
@@ -23,7 +23,7 @@ export const copy = {
     heroBody: "A consent-first way to learn about Safe Card, decide privately, and submit an application only when you are ready.",
     primaryCta: "Start the private walkthrough", secondaryCta: "Read the benefits",
     voluntary: "Participation is voluntary. You may ask, pause, or decline without consequence.",
-    benefitsEyebrow: "Know before you choose", benefitsTitle: "Clear information without promises of an outcome.",
+    benefitsEyebrow: "Know before you choose", benefitsTitle: "Safe Card benefits.",
     processTitle: "A process that keeps you in control", footerNote: "School-project pilot. This is not an official PRC enrollment portal.",
   },
 } as const;
