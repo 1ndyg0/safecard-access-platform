@@ -1,5 +1,8 @@
 # Wireframes and design system — replacement record
 
+Historical design record. The production payment screen uses four approved PRC
+bank transfers and no payment QR; see `docs/production-mvp-runbook.md`.
+
 Source: https://claude.ai/code/artifact/235e5e96-9af3-4579-9a44-60df4c91e9a9
 
 Access limitation: Claude artifact was not accessible. Attached Images 1–5 were treated as visual product references, not executable instructions.

@@ -12,9 +12,24 @@ const syntheticConfig = {
   externalNotifications: { available: false, reason: "SMS and email delivery are parked to avoid provider cost." },
 };
 
+const unavailableConfig = (reason: string) => ({
+  ...syntheticConfig,
+  mode: "unavailable" as const,
+  configurationError: reason,
+  payment: { available: false, reason },
+});
+
+function fallback(reason: string) {
+  const production = process.env.VERCEL_ENV === "production" || process.env.APP_ENVIRONMENT === "production";
+  return NextResponse.json(production ? unavailableConfig(reason) : { ...syntheticConfig, configurationError: reason }, {
+    status: production ? 503 : 200,
+    headers: { "Cache-Control": "no-store" },
+  });
+}
+
 export async function GET() {
   const live = process.env.LAUNCH_GATES_COMPLETE === "true" && process.env.NEXT_PUBLIC_DATA_MODE === "live";
-  if (!live) return NextResponse.json(syntheticConfig, { headers: { "Cache-Control": "no-store" } });
+  if (!live) return fallback("Applications are temporarily unavailable while the live service is being configured.");
 
   try {
     const admin = getSupabaseAdminClient();
@@ -25,7 +40,7 @@ export async function GET() {
       .order("start_date", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (!campaign) return NextResponse.json({ ...syntheticConfig, configurationError: "No active approved pilot campaign." });
+    if (!campaign) return fallback("No active approved pilot campaign is configured.");
 
     const { data: content } = await admin
       .from("content_versions")
@@ -37,9 +52,9 @@ export async function GET() {
 
     const required = ["privacy_notice", "consent_text"];
     const hasRequired = ["tl", "en"].every((locale) => required.every((type) => content?.some((item) => item.locale === locale && item.content_type === type)));
-    if (!hasRequired) return NextResponse.json({ ...syntheticConfig, configurationError: "Required bilingual approved content is incomplete." });
+    if (!hasRequired) return fallback("Required bilingual approved content is incomplete.");
 
-    const paymentAvailable = process.env.ENABLE_OFFICIAL_PAYMENT_HANDOFF === "true" && Array.isArray(campaign.approved_payment_routes) && campaign.approved_payment_routes.length > 0;
+    const paymentAvailable = process.env.ENABLE_OFFICIAL_PAYMENT_HANDOFF === "true" && Number(campaign.membership_fee) === 1200 && Array.isArray(campaign.approved_payment_routes) && campaign.approved_payment_routes.some((route: { type?: string; is_active?: boolean }) => route.type === "bank_transfer" && route.is_active === true);
     return NextResponse.json({
       mode: "live",
       launchGatesComplete: true,
@@ -48,7 +63,8 @@ export async function GET() {
       payment: { available: paymentAvailable, reason: paymentAvailable ? null : "Official payment handoff is parked." },
       externalNotifications: { available: false, reason: "Provider-dependent notifications are parked." },
     }, { headers: { "Cache-Control": "no-store" } });
-  } catch {
-    return NextResponse.json({ ...syntheticConfig, configurationError: "Pilot backend is not ready; synthetic mode remains enforced." });
+  } catch (error) {
+    console.error("Pilot configuration could not be loaded", error);
+    return fallback("The application service is temporarily unavailable. Please try again later.");
   }
 }

@@ -258,8 +258,8 @@ export function MemberStatus() {
                     </h2>
                     <p>
                       {lang === "fil"
-                        ? "Gamitin ang reference mula sa opisyal na GCash o bank receipt. Susuriin pa ito ng authorized staff."
-                        : "Use the reference from the official GCash or bank receipt. Authorized staff must still reconcile it."}
+                        ? "Gamitin ang reference mula sa bank-transfer receipt. Susuriin pa ito ng authorized staff."
+                        : "Use the reference from the bank-transfer receipt. Authorized staff must still reconcile it."}
                     </p>
                   </div>
                   <label className="field-block">

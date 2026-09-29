@@ -27,6 +27,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { generateApplicationReference } from '@/lib/reference';
 import { createHash } from 'node:crypto';
 import { canonicalJson } from '@/lib/canonical-json';
+import { isBankPaymentRoute } from '@/lib/payment/config';
 
 function hashRequest(value: unknown): string {
   return createHash('sha256').update(canonicalJson(value)).digest('hex');
@@ -302,6 +303,7 @@ export async function withdrawConsent(
 export interface SaveProfileInput {
   caseId: string;
   profileData: Record<string, unknown>;
+  readyForPayment?: boolean;
 }
 
 export async function saveProfileDraft(input: SaveProfileInput): Promise<void> {
@@ -310,18 +312,21 @@ export async function saveProfileDraft(input: SaveProfileInput): Promise<void> {
   // Verify consent exists
   const { data: caseRecord } = await admin
     .from('recipient_cases')
-    .select('consent_state')
+    .select('consent_state,application_state')
     .eq('id', input.caseId)
     .single();
 
   if (!caseRecord || caseRecord.consent_state !== 'agreed') {
     throw new Error('Consent must be granted before saving profile data');
   }
+  if (!['draft', 'correction_needed'].includes(caseRecord.application_state)) {
+    throw new Error('Application details cannot be changed in the current state');
+  }
 
   // Update profile with approved fields only
   const { error } = await admin
     .from('recipient_profiles')
-    .update(input.profileData)
+    .update({ ...input.profileData, ...(input.readyForPayment ? { fields_completed: true } : {}) })
     .eq('case_id', input.caseId);
 
   if (error) {
@@ -400,6 +405,34 @@ export async function submitApplication(
 
   if (caseRecord.consent_state !== 'agreed') {
     throw new Error('Cannot submit: consent must be granted first');
+  }
+  if (caseRecord.comprehension_passed !== true) {
+    throw new Error('Cannot submit: the comprehension check must be completed correctly');
+  }
+
+  // The final application is not complete until an image is safely stored and
+  // the manual payment declaration is recorded. Verification remains a later
+  // staff decision; neither payment nor submission activates membership.
+  const { data: payment, error: paymentError } = await admin
+    .from('payment_intents')
+    .select('id,payer_marked_paid_at,payer_declaration,state,payment_route')
+    .eq('case_id', input.caseId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (paymentError || !payment || !isBankPaymentRoute(payment.payment_route) || !['verification_pending', 'verified_by_official_source'].includes(payment.state) || !payment.payer_marked_paid_at || !payment.payer_declaration) {
+    throw new Error('Cannot submit: approved bank-transfer declaration and proof image are required');
+  }
+  const { data: proof, error: proofError } = await admin
+    .from('payment_evidence_versions')
+    .select('id,content_type,state')
+    .eq('payment_intent_id', payment.id)
+    .in('state', ['verification_pending', 'verified'])
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (proofError || !proof || !['image/jpeg', 'image/png', 'image/webp'].includes(proof.content_type)) {
+    throw new Error('Cannot submit: a valid receipt image has not been uploaded');
   }
 
   const { data: consent } = await admin

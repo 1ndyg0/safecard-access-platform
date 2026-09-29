@@ -5,6 +5,9 @@
    ============================================================ */
 
 :root {
+  --font-jakarta: Arial, Helvetica, system-ui, sans-serif;
+  --font-dm-sans: Arial, Helvetica, system-ui, sans-serif;
+  --font-ibm-mono: Menlo, Consolas, monospace;
   /* Brand */
   --red: #C8102E;
   --red-dark: #9B0C22;

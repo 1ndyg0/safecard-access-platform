@@ -110,7 +110,7 @@ export function PaymentActions({
       setMessage(
         action === "verify_payment"
           ? "Payment verified. Membership is unchanged — only PRC confirmation can activate it."
-          : "Replacement evidence requested. The applicant will see your reason.",
+          : "Payment proof rejected. The applicant can upload replacement proof and will see your reason.",
       );
       reset();
       onCompleted();
@@ -162,17 +162,17 @@ export function PaymentActions({
             type="button"
             className="button-primary"
             onClick={() => setMode("verify")}
-            disabled={evidence.length === 0}
+            disabled={evidence.length === 0 || paymentState !== "verification_pending"}
           >
-            Verify payment
+            Approve payment proof
           </button>
           <button
             type="button"
             className="button-quiet"
             onClick={() => setMode("reupload")}
-            disabled={evidence.length === 0}
+            disabled={evidence.length === 0 || paymentState !== "verification_pending"}
           >
-            Request replacement evidence
+            Reject proof and request replacement
           </button>
           {evidence.length === 0 && (
             <p className="field-hint">No evidence has been submitted to verify yet.</p>
@@ -286,7 +286,7 @@ export function PaymentActions({
               className="button-primary"
               disabled={!confirmed || busy || reason.trim().length < 10}
             >
-              {busy ? "Sending…" : "Request replacement"}
+              {busy ? "Rejecting…" : "Reject proof and request replacement"}
             </button>
             <button type="button" className="link-button" onClick={reset} disabled={busy}>
               Cancel

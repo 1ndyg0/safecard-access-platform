@@ -1,5 +1,9 @@
 # SafeCard R1 implementation status
 
+Historical 8 September 2026 assessment. For the current production bank-transfer
+MVP, see `docs/production-mvp-runbook.md`; the payment and launch statements
+below describe the former R1 scope.
+
 Assessment baseline: 8 September 2026. This register maps the supplied vision, backlog, journey, personas, implementation prompts, and wireframe/design-system references to the repository. “Implemented” means code exists and passes the repository gates; it does not mean PRC, privacy, security, or production approval has been obtained.
 
 ## Implemented

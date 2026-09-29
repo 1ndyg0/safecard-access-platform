@@ -21,6 +21,7 @@ import { PaymentActions } from "@/components/admin/PaymentActions";
 import { AuditTimeline } from "@/components/admin/AuditTimeline";
 import { ReviewPanel } from "@/components/admin/ReviewPanel";
 import { readJson, useAsyncLoad } from "@/components/admin/use-async-load";
+import { bankLabelForRoute } from "@/lib/payment/config";
 
 type Payment = {
   id: string;
@@ -192,14 +193,14 @@ export function CaseDetail({ id }: { id: string }) {
             <section className="admin-panel stack">
               <p className="eyebrow">Payment intents and evidence</p>
               {data.payments.length === 0 ? (
-                <p>No payment intent. Provider-dependent payment is parked.</p>
+                <p>No bank-transfer payment record has been opened.</p>
               ) : (
                 data.payments.map((payment) => (
                   <article key={payment.id} className="payment-row">
                     <div>
                       <strong>{payment.payment_state.replaceAll("_", " ")}</strong>
                       <span>
-                        {payment.payment_route ?? "No route"} · {payment.expected_amount}{" "}
+                        {bankLabelForRoute(payment.payment_route)} · {payment.expected_amount}{" "}
                         {payment.currency}
                       </span>
                     </div>

@@ -2,7 +2,7 @@
  * POST /api/payment/verify
  *
  * Staff-only: manually verify a payment after reconciliation.
- * Used when GCash callback didn't fire or for manual payment routes.
+ * Used for manual payment reconciliation.
  *
  * Persona: Aira (school admin) reconciles payment evidence.
  */

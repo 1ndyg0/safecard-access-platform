@@ -1,79 +1,27 @@
-# SafeCard Pilot 2026 — Account Setup Guide for Indy
+# Staff access and migration safety
 
-This is a one-time setup you run inside Supabase to create the login accounts for the pilot. It takes about 5 minutes.
+The former pilot account script contained a shared password and direct writes to
+Supabase Auth tables. It has been retired. Do not run a historical copy or use
+any password recorded in Git history.
 
----
+1. Identify the production Supabase project in the dashboard and verify its
+   migration history against this checkout. The `00021` version differs from
+   the older pilot branch; resolve that divergence explicitly before applying
+   new migrations. Never rename an already applied migration to conceal it.
+2. Confirm a restorable database backup and record its timestamp. Do not apply
+   `00022_production_mvp_draft_payment.sql` until the backup and version history
+   are reviewed.
+3. In Supabase Auth, inspect any accounts created by the retired script. Revoke
+   sessions and reset or remove those accounts as appropriate. Invite each staff
+   member individually. Require their own password and MFA according to the
+   organization's access policy.
+4. Assign only the campaign roles each person needs. Confirm the matching
+   `public.users` entry is active and role assignments have the right campaign
+   and organization. Test staff sign-in with a non-owner account.
+5. Record the migration and access changes in the release log, including who
+   approved them. Production migration, access, and credential changes require
+   the project owner's confirmation immediately before execution.
 
-## What this does
-
-Running the SQL script below will create:
-- ✅ Login accounts for `ivvuriarte@gmail.com` (Ian Vince) and `tigparagas@gmail.com` (Indy) with temporary password `Password123`
-- ✅ All 6 admin roles for both accounts (school admin, PRC liaison, support agent, finance export, content approver, privacy admin)
-- ✅ Ambassador entries tied to the **Safe Card Pilot 2026** campaign
-
----
-
-## Steps
-
-### 1. Open Supabase
-Go to [https://supabase.com](https://supabase.com) and log in.
-
-### 2. Open the SafeCard project
-From your Supabase dashboard, click on the **SafeCard** project (not a new one — the existing one).
-
-### 3. Open the SQL Editor
-In the left sidebar, click **SQL Editor** (looks like a terminal icon `<>`).
-
-### 4. Paste the SQL
-Click **New query**, then paste the entire contents of the file `indy-pilot-accounts-setup.sql` (shared separately) into the editor.
-
-### 5. Run it
-Click the **Run** button (green play button, top right). You should see:
-```
-Success. No rows returned.
-```
-If you see any error, send a screenshot to Ian Vince before proceeding.
-
-### 6. Verify it worked
-Paste this into a new query and run it:
-```sql
-SELECT id, email FROM auth.users
-WHERE email IN ('ivvuriarte@gmail.com', 'tigparagas@gmail.com');
-```
-You should see 2 rows — one for each email.
-
-Then run this:
-```sql
-SELECT user_id, role FROM public.role_assignments
-WHERE user_id IN (
-  '00000000-0000-0000-0000-000000001001',
-  '00000000-0000-0000-0000-000000001002'
-);
-```
-You should see 12 rows — 6 roles for each account.
-
----
-
-## After setup — first login
-
-1. Go to the SafeCard app (link from Ian Vince)
-2. Click **Admin / Staff login** or go to `/admin`
-3. Log in with:
-   - **Email:** `tigparagas@gmail.com`
-   - **Password:** `Password123`
-4. Change your password immediately after logging in
-
-> ⚠️ Do NOT use `Password123` for anything real. This is a temporary pilot credential.
-
----
-
-## Files shared
-
-| File | What it is |
-|------|-----------|
-| `indy-pilot-accounts-setup.sql` | The SQL script to paste and run in Supabase |
-| This guide | Step-by-step instructions |
-
----
-
-Questions? Contact Ian Vince.
+The retired script remains represented by a harmless `00021` placeholder in
+fresh environments. That source change does not undo any remote execution of
+the old script or remove its contents from Git history.

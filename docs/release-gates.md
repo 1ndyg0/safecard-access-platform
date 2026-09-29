@@ -1,5 +1,9 @@
 # SafeCard R1 release gates
 
+Historical release record. The current bank-transfer MVP release procedure is
+in `docs/production-mvp-runbook.md`; do not use the payment instructions below
+to configure production.
+
 The authoritative integration branch is `codex/safecard-r1-integration`, reviewed from `36585cc4554859165455e1ef764761e094915e1f`. Historical smoke-only results and existing Vercel deployments do not verify this release.
 
 ## Current release boundary

@@ -252,7 +252,6 @@ export async function seedWorld(): Promise<SeededWorld> {
     max_applications: 1000,
     is_active: true,
     approved_payment_routes: [
-      { type: 'gcash', is_active: true },
       { type: 'bank_transfer', is_active: true },
     ],
   });

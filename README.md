@@ -1,14 +1,14 @@
 # SafeCard Access Platform
 
-SafeCard is a mobile-first, bilingual intake and education layer for the Philippine Red Cross Safe Card pilot. It is not the membership system of record: application submission, payment verification, PRC handoff, and membership activation remain separate, explicit states. Only a PRC acceptance can produce `active_confirmed` membership.
+SafeCard is a mobile-first, bilingual production MVP for Philippine Red Cross Safe Card applications. Applicants learn, decide privately, consent, enter details, choose one of four approved manual PRC bank-transfer routes, upload an image of payment proof, review, and submit for a reference. Staff verify payment separately from application review; only PRC confirmation can activate membership. See [the production runbook](docs/production-mvp-runbook.md) for the current hosted-service status and release procedure.
 
-## R1 safety boundary
+## Production MVP boundaries
 
-- No real personal data is accepted until `LAUNCH_GATES_COMPLETE=true`. Before sign-off, API callers must use `data_mode: "synthetic"` and the intentionally strict synthetic-data profile.
+- Production requires live data mode, operational Supabase, an active campaign, approved bilingual consent/privacy content, approved bank-transfer routes and the confirmed PHP 1,200 fee. A service outage is reported as unavailable; it is never represented as successful synthetic enrollment.
 - Consent is captured before a recipient profile can be saved.
 - Recipient, sponsor, guardian, and payer relationships are separate. Sponsors receive aggregate stage counts, never recipient profiles or application references.
 - The browser has no direct table access. Route Handlers authenticate and authorize each request, project minimal response DTOs, and use a server-only service-role client.
-- Direct GCash API/webhook processing is not part of R1. The payment module records an official external handoff and later staff reconciliation only.
+- Manual PRC bank transfer and image proof are the official MVP route. No payment gateway or automated verification is required.
 - A verified payment makes a case eligible for PRC export; it never activates membership.
 - Exports require a campaign-scoped role plus an actual AAL2 session. Export rows are immutable snapshots with a deterministic checksum and spreadsheet-formula protection.
 - Small campaign cohorts are suppressed in aggregate metrics.
@@ -59,8 +59,8 @@ The database lint/reset checks require the local Supabase stack to be running. A
 
 Member access deliberately uses application reference plus registered mobile number without SMS OTP. Successful matching creates a signed, HTTP-only, 30-minute session; no bearer token or personal data is stored in browser storage. Staff and ambassador access uses Supabase email/password. Cost-bearing SMS, email delivery, payment providers, and direct PRC integrations are parked.
 
-See [`docs/implementation-status.md`](docs/implementation-status.md) for the requirements-to-build coverage and the exact items that still require governance, an external provider, or additional implementation.
+See [`docs/production-mvp-runbook.md`](docs/production-mvp-runbook.md) for the release state, operational checks, and recovery procedure. Older R1 documents describe historical gates and may not describe the current production MVP.
 
-## Deployment gates
+## Deployment
 
-Keep `LAUNCH_GATES_COMPLETE=false` until product scope, PRC content, privacy/legal review, security review, support ownership, staff training, operational handoff, monitoring, backup/restore, UAT, and production readiness have documented approval. Configuration is an enforcement switch, not evidence that those approvals occurred.
+The repository contains the production MVP changes, but the deployed site must be verified separately. Setting flags is not proof that the database, payment owner details, and staff workflow work. Follow the production runbook and obtain the project owner's confirmation immediately before production deployment or database/access changes.

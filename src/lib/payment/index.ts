@@ -17,6 +17,8 @@ import type { PaymentState } from '@/types/database';
 import { v4 as uuidv4 } from 'uuid';
 import { createHash } from 'node:crypto';
 import { canonicalJson } from '@/lib/canonical-json';
+import { recipientProfileSchema } from '@/lib/validation/schemas';
+import { isBankPaymentRoute } from '@/lib/payment/config';
 
 // ============================================================
 // Create payment intent (official handoff)
@@ -42,6 +44,7 @@ export interface PaymentIntentResult {
 export async function createPaymentIntent(
   input: CreatePaymentIntentInput,
 ): Promise<PaymentIntentResult> {
+  if (!isBankPaymentRoute(input.paymentRoute)) throw new Error('Choose an approved bank transfer method');
   const admin = getSupabaseAdminClient();
 
   const requestHash = createHash('sha256').update(canonicalJson({
@@ -69,7 +72,7 @@ export async function createPaymentIntent(
   // Verify case exists and has submitted application.
   const { data: caseRecord } = await admin
     .from('recipient_cases')
-    .select('application_state, consent_state, campaign_id, referral_link_id')
+    .select('application_state, consent_state, comprehension_passed, campaign_id, referral_link_id')
     .eq('id', input.caseId)
     .single();
 
@@ -85,8 +88,18 @@ export async function createPaymentIntent(
     throw new Error('Cannot create payment: consent must be active');
   }
 
-  if (caseRecord.application_state !== 'submitted' && caseRecord.application_state !== 'resubmitted') {
-    throw new Error('Cannot create payment: application must be submitted first');
+  if (caseRecord.application_state === 'draft') {
+    if (caseRecord.comprehension_passed !== true) throw new Error('Complete the comprehension check before payment');
+    const { data: profile, error: profileError } = await admin
+      .from('recipient_profiles')
+      .select('first_name,last_name,date_of_birth,sex,address_line1,city,province,zip_code,mobile_number,email,fields_completed')
+      .eq('case_id', input.caseId)
+      .maybeSingle();
+    if (profileError || !profile?.fields_completed || !recipientProfileSchema.safeParse({ ...profile, email: profile.email || undefined }).success) {
+      throw new Error('Complete a valid application form before payment');
+    }
+  } else if (caseRecord.application_state !== 'submitted' && caseRecord.application_state !== 'resubmitted') {
+    throw new Error('Application is not ready for payment');
   }
 
   if (input.payerType === 'sponsor') {
@@ -129,9 +142,7 @@ export async function createPaymentIntent(
   const approvedRoutes = Array.isArray(campaign.approved_payment_routes)
     ? campaign.approved_payment_routes
     : [];
-  const approvalType = input.paymentRoute.startsWith('bank_transfer_')
-    ? 'bank_transfer'
-    : input.paymentRoute;
+  const approvalType = 'bank_transfer';
   const approvedRoute = approvedRoutes.find((route) => {
     if (!route || typeof route !== 'object') return false;
     const record = route as Record<string, unknown>;

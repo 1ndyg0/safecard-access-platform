@@ -1,5 +1,8 @@
 # Product backlog — replacement record
 
+Historical backlog record. The current production payment method is the four
+approved PRC bank transfers in `docs/production-mvp-runbook.md`.
+
 Source: https://claude.ai/code/artifact/5dce09ce-25b1-4e0c-b1d0-e175c46986bc
 
 Access limitation: Claude artifact unavailable; this record preserves the requested scope and traceability without inventing the original artifact text.

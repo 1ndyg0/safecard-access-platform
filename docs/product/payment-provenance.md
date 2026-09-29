@@ -1,23 +1,21 @@
-# Payment asset and account provenance
+# Production payment details
 
-Status: controlled-pilot implementation; owner verification still required.
+The project owner confirmed manual Philippine Red Cross bank transfer as the
+production MVP payment process in the latest task instruction. The application
+fee is PHP 1,200. The account name is Philippine Red Cross. The four account
+numbers are held exactly in `src/lib/payment/config.ts`: BPI `002963007828`,
+BDO `004530012185`, Security Bank `0132062464003`, and Metrobank
+`151-3-15114558-3`. All are PHP savings accounts. The app displays only these
+bank choices and does not show a payment QR or use a payment gateway.
 
-The payment configuration in `src/lib/payment/config.ts` is a single typed server-side adapter for the manual GCash and bank-transfer workflow requested for this release. It is intentionally protected by the launch-gate and payment-handoff switches. Payment verification never changes membership to `active_confirmed`.
+Payment declaration, private receipt-image upload, staff verification,
+application approval, and PRC membership confirmation are separate decisions.
+The old GCash image in `private-reference-assets/` is an ignored historical
+reference file and is not part of the build or public site. The tracked public
+payment QR asset was removed. Referral and confirmed-member QR codes are
+unrelated to payment and remain in the product.
 
-## Supplied QR asset
-
-- Source supplied in the task: `/Users/indyp/Downloads/Image 4.webp`
-- Local preserved copy: `private-reference-assets/payment/gcash-qr.webp`
-- SHA-256: `8849d13e01ac320db9fc6276629da497563eb7b574f17c0ade47967cc776e638`
-- The preserved copy is ignored by Git and is not served from `public/`.
-- A production upload requires an approved private Supabase Storage bucket and an owner verification that the QR is current and authorized by PRC.
-
-## Account values
-
-The account name, account numbers, SWIFT codes, branches, fee, and route labels are centralized in the server-only payment config module. They are not duplicated in components or client bundles. The supplied values remain a controlled-pilot fixture until the named owner records verification.
-
-## Change history
-
-| Date | Change | Approval state |
-| --- | --- | --- |
-| 2026-09-08 | Added the supplied QR provenance record and centralized manual payment configuration. | Awaiting PRC/payment-owner verification |
+The source documents provided do not establish a replacement-proof or
+incorrect-payment/refund policy. The application supports a reasoned request
+for replacement while preserving proof versions. Do not publish new policy
+wording without the approved source.
