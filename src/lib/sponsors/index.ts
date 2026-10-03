@@ -48,12 +48,13 @@ export async function createSponsor(
     throw new Error('Campaign not found or not active');
   }
 
-  const { count } = await admin
+  const { count, error: countError } = await admin
     .from('sponsors')
     .select('id', { count: 'exact', head: true })
     .eq('campaign_id', input.campaignId)
     .eq('is_active', true);
 
+  if (countError) throw new Error('Cannot create sponsor: campaign capacity could not be verified');
   if (campaign.max_sponsors !== null && (count ?? 0) >= campaign.max_sponsors) {
     throw new Error('Campaign has reached the maximum number of sponsors');
   }

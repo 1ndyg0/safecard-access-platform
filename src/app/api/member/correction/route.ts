@@ -23,6 +23,7 @@ import { getSupabaseAdminClient } from '@/lib/db/client';
 import { badRequest, conflict, handleApiError, notFound } from '@/lib/api/response';
 import { enforceRateLimit } from '@/lib/api/rate-limit';
 import { recipientProfileSchema } from '@/lib/validation/schemas';
+import { requireApprovedProfileFields } from '@/lib/intake/approved-profile';
 import { assertProfileDataAllowed, resolveDataMode } from '@/lib/safety/data-mode';
 import {
   CORRECTABLE_FIELDS,
@@ -152,6 +153,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // configuration, never from the request body, so a client cannot
     // declare itself into live mode.
     assertProfileDataAllowed(resolveDataMode(), body.profile);
+    await requireApprovedProfileFields(admin, caseRecord.campaign_id, body.profile);
 
     const requestHash = createHash('sha256')
       .update(JSON.stringify(body.profile))

@@ -2,6 +2,24 @@ import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { seedWorld } from './fixtures/seed';
 
+test('production capacity accepts unbounded intake while refusing invalid explicit quotas', async () => {
+  const world = await seedWorld();
+  const unbounded = await world.admin.from('pilot_campaigns')
+    .update({ max_applications: null, max_sponsors: null }).eq('id', world.campaignId)
+    .select('max_applications,max_sponsors').single();
+  expect(unbounded.error).toBeNull();
+  expect(unbounded.data).toEqual({ max_applications: null, max_sponsors: null });
+  for (const values of [{ max_applications: 0 }, { max_sponsors: -1 }]) {
+    const invalid = await world.admin.from('pilot_campaigns').update(values).eq('id', world.campaignId);
+    expect(invalid.error?.code).toBe('23514');
+  }
+  const explicit = await world.admin.from('pilot_campaigns')
+    .update({ max_applications: 100, max_sponsors: 10 }).eq('id', world.campaignId)
+    .select('max_applications,max_sponsors').single();
+  expect(explicit.error).toBeNull();
+  expect(explicit.data).toEqual({ max_applications: 100, max_sponsors: 10 });
+});
+
 test('draft application opens one approved bank-transfer intent only after comprehension and profile completion', async () => {
   // seedWorld refuses shared and production projects and resets a disposable database.
   const world = await seedWorld();

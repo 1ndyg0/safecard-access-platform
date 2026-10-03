@@ -111,6 +111,12 @@ test.describe('benefit storyboard', () => {
     await openBenefits(page);
     await header(page, 'ambulance').click();
     await expect(panel(page, 'ambulance')).toBeVisible();
+    // Visibility changes before the grid expansion finishes. The next
+    // header is still moving until that transition ends, particularly in
+    // WebKit when it scrolls the target into view for a pointer click.
+    await page.locator('.benefit-storyboard').evaluate(async (node) => {
+      await Promise.all(node.getAnimations({ subtree: true }).map((animation) => animation.finished.catch(() => undefined)));
+    });
 
     await header(page, 'blood').click();
     await expect(panel(page, 'blood')).toBeVisible();

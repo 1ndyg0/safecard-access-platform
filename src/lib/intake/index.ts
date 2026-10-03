@@ -28,6 +28,7 @@ import { generateApplicationReference } from '@/lib/reference';
 import { createHash } from 'node:crypto';
 import { canonicalJson } from '@/lib/canonical-json';
 import { isBankPaymentRoute } from '@/lib/payment/config';
+import { requireApprovedProfileFields } from './approved-profile';
 
 function hashRequest(value: unknown): string {
   return createHash('sha256').update(canonicalJson(value)).digest('hex');
@@ -312,7 +313,7 @@ export async function saveProfileDraft(input: SaveProfileInput): Promise<void> {
   // Verify consent exists
   const { data: caseRecord } = await admin
     .from('recipient_cases')
-    .select('consent_state,application_state')
+    .select('consent_state,application_state,campaign_id')
     .eq('id', input.caseId)
     .single();
 
@@ -322,6 +323,7 @@ export async function saveProfileDraft(input: SaveProfileInput): Promise<void> {
   if (!['draft', 'correction_needed'].includes(caseRecord.application_state)) {
     throw new Error('Application details cannot be changed in the current state');
   }
+  await requireApprovedProfileFields(admin, caseRecord.campaign_id, input.profileData);
 
   // Update profile with approved fields only
   const { error } = await admin
@@ -395,7 +397,7 @@ export async function submitApplication(
   // Validate prerequisites
   const { data: caseRecord } = await admin
     .from('recipient_cases')
-    .select('application_ref, consent_state, application_state, comprehension_score, comprehension_passed')
+    .select('application_ref, consent_state, application_state, comprehension_score, comprehension_passed, campaign_id')
     .eq('id', input.caseId)
     .single();
 
@@ -409,6 +411,7 @@ export async function submitApplication(
   if (caseRecord.comprehension_passed !== true) {
     throw new Error('Cannot submit: the comprehension check must be completed correctly');
   }
+  await requireApprovedProfileFields(admin, caseRecord.campaign_id, input.profileData);
 
   // The final application is not complete until an image is safely stored and
   // the manual payment declaration is recorded. Verification remains a later
@@ -481,10 +484,11 @@ export async function submitApplication(
   const submissionId = uuidv4();
 
   // Save profile data
-  await admin
+  const { error: profileSaveError } = await admin
     .from('recipient_profiles')
     .update({ ...input.profileData, fields_completed: true })
     .eq('case_id', input.caseId);
+  if (profileSaveError) throw new Error(`Failed to save profile: ${profileSaveError.message}`);
 
   const { data: priorSubmission } = await admin
     .from('application_submissions')

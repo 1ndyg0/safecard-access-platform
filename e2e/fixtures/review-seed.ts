@@ -14,6 +14,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import { resetSyntheticDatabase } from './reset';
+import { APPLICATION_PROFILE_FIELDS } from '../../src/lib/intake/approved-profile';
 
 const PASSWORD = 'e2e-review-corrections-passphrase';
 
@@ -250,6 +251,7 @@ export async function seedWorld(): Promise<SeededWorld> {
     slug: `e2e-review-${campaignId.slice(0, 8)}`,
     start_date: '2026-01-01',
     max_applications: 1000,
+    approved_fields: [...APPLICATION_PROFILE_FIELDS],
     is_active: true,
     approved_payment_routes: [
       { type: 'bank_transfer', is_active: true },
