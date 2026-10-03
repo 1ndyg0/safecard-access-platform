@@ -57,7 +57,7 @@ for (const bank of ['bpi', 'bdo', 'security_bank', 'metrobank']) {
         payer_declaration: 'TEST BANK TRANSFER PROOF', data_mode: 'synthetic' },
     }), 200);
     const proof = await sharp(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="800" height="240"><rect width="800" height="240" fill="white"/><text x="30" y="100" font-size="30">SYNTHETIC TEST PROOF - NO TRANSFER</text><text x="30" y="160" font-size="24">Disposable test only - PHP 1200</text></svg>')).png().toBuffer();
-    const { evidenceId } = await jsonAt(await page.request.post('/api/payment/evidence/upload', {
+    let { evidenceId } = await jsonAt(await page.request.post('/api/payment/evidence/upload', {
       multipart: { payment_intent_id: paymentIntentId, case_id: caseId, campaign_id: world.campaignId,
         amount: '1200', reference_number: 'TEST TRANSFER', payer_declaration: 'TEST BANK TRANSFER PROOF',
         data_mode: 'synthetic', file: { name: 'SYNTHETIC-TEST-NO-TRANSFER.png', mimeType: 'image/png', buffer: proof } },
@@ -78,6 +78,27 @@ for (const bank of ['bpi', 'bdo', 'security_bank', 'metrobank']) {
       const privateProof = await jsonAt(await staffPage.request.get(`/api/payment/evidence/${evidenceId}`), 200);
       expect(privateProof.expiresInSeconds).toBe(300);
       expect((await staffPage.request.get(privateProof.signedUrl)).status()).toBe(200);
+      const oldEvidenceId = evidenceId;
+      await jsonAt(await staffPage.request.post(`/api/admin/cases/${caseId}/payment`, {
+        data: { action: 'request_reupload', payment_intent_id: paymentIntentId, confirm: true,
+          evidence_id: evidenceId, expected_payment_state: 'verification_pending',
+          reason: 'SYNTHETIC TEST: request a clearly labeled replacement proof.' },
+      }), 200);
+      const replacement = await jsonAt(await page.request.post('/api/payment/evidence/upload', {
+        multipart: { payment_intent_id: paymentIntentId, case_id: caseId, campaign_id: world.campaignId,
+          amount: '1200', reference_number: 'TEST REPLACEMENT', payer_declaration: 'TEST BANK TRANSFER PROOF',
+          data_mode: 'synthetic', file: { name: 'SYNTHETIC-TEST-REPLACEMENT.png', mimeType: 'image/png', buffer: proof } },
+      }), 201);
+      evidenceId = replacement.evidenceId;
+      expect(evidenceId).not.toBe(oldEvidenceId);
+      const history = await world.admin.from('payment_evidence_versions')
+        .select('id,state,supersedes_id,version_number').eq('payment_intent_id', paymentIntentId)
+        .order('version_number');
+      expect(history.error).toBeNull();
+      expect(history.data).toEqual([
+        { id: oldEvidenceId, state: 'superseded', supersedes_id: null, version_number: 1 },
+        { id: evidenceId, state: 'verification_pending', supersedes_id: oldEvidenceId, version_number: 2 },
+      ]);
       const verified = await jsonAt(await staffPage.request.post(`/api/admin/cases/${caseId}/payment`, {
         data: { action: 'verify_payment', payment_intent_id: paymentIntentId, confirm: true,
           evidence_id: evidenceId, expected_payment_state: 'verification_pending' },
