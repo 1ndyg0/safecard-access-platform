@@ -8,8 +8,8 @@
  * - Their right to withdraw consent
  * - How to contact PRC for claims
  *
- * The comprehension check is pass/fail. A failed check does NOT
- * block submission but is recorded for transparency.
+ * The comprehension check is pass/fail. A passing check is required
+ * before opening a payment intent or submitting the application.
  */
 
 import { NextRequest } from 'next/server';

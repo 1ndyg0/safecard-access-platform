@@ -57,8 +57,9 @@ test('recovery token establishes a staff session without accepting an external r
   expect(data?.properties?.hashed_token).toBeTruthy();
   await page.goto(`/auth/confirm?type=recovery&token_hash=${data!.properties!.hashed_token}&next=https://example.invalid`);
   await expect(page).toHaveURL(/\/admin\/account$/);
+  const account = await page.request.get('/api/admin/account');
+  expect(account.status(), await account.text()).toBe(200);
   await expect(page.getByRole('heading', { name: 'Set your password' })).toBeVisible();
-  expect((await page.request.get('/api/admin/account')).status()).toBe(200);
 });
 
 test('unassigned users cannot open staff account setup', async ({ page }) => {
