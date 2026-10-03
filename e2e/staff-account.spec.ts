@@ -48,7 +48,7 @@ test('staff set their own password and can sign in with it again', async ({ page
   expect((await page.request.get('/api/admin/account')).status()).toBe(200);
 });
 
-test('recovery token establishes a staff session without accepting an external redirect', async ({ page }) => {
+test('recovery token establishes a staff session without accepting an external redirect', async ({ page }, testInfo) => {
   const world = await seedWorld();
   const { data, error } = await world.admin.auth.admin.generateLink({
     type: 'recovery', email: world.staff.finance.email,
@@ -56,7 +56,7 @@ test('recovery token establishes a staff session without accepting an external r
   expect(error).toBeNull();
   expect(data?.properties?.hashed_token).toBeTruthy();
   await page.goto(`/auth/confirm?type=recovery&token_hash=${data!.properties!.hashed_token}&next=https://example.invalid`);
-  await expect(page).toHaveURL(/\/admin\/account$/);
+  await expect(page).toHaveURL(new URL('/admin/account', testInfo.project.use.baseURL).toString());
   const account = await page.request.get('/api/admin/account');
   expect(account.status(), await account.text()).toBe(200);
   await expect(page.getByRole('heading', { name: 'Set your password' })).toBeVisible();
