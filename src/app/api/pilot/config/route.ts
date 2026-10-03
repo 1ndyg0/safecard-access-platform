@@ -40,7 +40,7 @@ export async function GET() {
       .order("start_date", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (!campaign) return fallback("No active approved pilot campaign is configured.");
+    if (!campaign) return fallback("No active approved application campaign is configured.");
 
     const { data: content } = await admin
       .from("content_versions")
@@ -48,7 +48,8 @@ export async function GET() {
       .in("content_type", ["benefit", "exclusion", "privacy_notice", "consent_text", "claims_education"])
       .in("locale", ["tl", "en"])
       .eq("approval_status", "approved")
-      .eq("is_published", true);
+      .eq("is_published", true)
+      .or('expiry_date.is.null,expiry_date.gt.' + new Date().toISOString().split('T')[0]);
 
     const required = ["privacy_notice", "consent_text"];
     const hasRequired = ["tl", "en"].every((locale) => required.every((type) => content?.some((item) => item.locale === locale && item.content_type === type)));

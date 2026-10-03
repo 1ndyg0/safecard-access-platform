@@ -1,21 +1,32 @@
 # SafeCard production MVP runbook
 
-Updated 29 September 2026. This describes the intended production flow and the
+Updated 3 October 2026. This describes the intended production flow and the
 observed release blockers. It is not a claim that the current Vercel deployment
 already runs these changes.
 
 ## Current hosted state
 
-The public Vercel site still runs `main` at `56e209f` as last verified. Its
-`/api/pilot/config` returned synthetic mode, launch gates off and payment
-unavailable. The linked production and staging Supabase projects appeared
-`INACTIVE` in the CLI, and production migration-history login failed. Public
-content/referral API requests returned 500. The work in this branch has **not**
-been deployed, and no hosted applicant/payment/admin transaction has passed.
+The public Vercel site still runs `main` at `56e209f` as last verified. Production
+Supabase `ajyhlkzbocjeepglkhrl` was resumed with owner approval and is healthy.
+Its migration history reaches `00020` plus the two legacy timestamp versions;
+`00021`, `00022` and `00023` have not been applied. The required organization,
+campaign, approved bilingual notices and named staff roles remain absent.
+The work in this branch has **not** been deployed, and no hosted
+applicant/payment/admin transaction has passed. The historical 500 responses
+do not establish current failures: the 3 October Vercel last-hour log window
+contained no request logs, while Supabase's last-day counts showed no 4xx/5xx
+entries with very little application traffic.
 Keep the production URL available while repairing the underlying service. Do
 not represent an unavailable application as a successful demo enrollment.
 
 ## Applicant and staff workflow
+
+Indy confirmed that SafeCard is his personal project, coached by Vibe Coders PH.
+No legal operating organization or approved PRC operating agreement is currently
+in place. Use a SafeCard internal organization namespace rather than claiming
+PRC operates this application. The bank details were confirmed by the project
+owner; PRC must still approve the operating relationship, data fields, notices,
+retention, guardian and payment policies before real intake can open.
 
 Applicant: education → four answered and correctly understood questions →
 private accept/decline → approved consent and privacy notice → validated profile
@@ -30,6 +41,18 @@ approve payment or reject it with a reason and permit replacement → applicatio
 review → PRC handoff. Each action is audited. Payment verification does not
 approve the application or activate membership. PRC confirmation remains its
 own recorded step. Automated bank verification is not part of the MVP.
+
+Invited staff set their own password and authenticator at `/admin/account`.
+The page verifies active staff access. MFA assurance comes from the actual
+Supabase session; a profile's `mfa_enabled` field cannot satisfy an AAL2 gate.
+Disabled staff profiles are refused even if a role assignment remains active.
+Configure Supabase's invite email link before sending invitations as:
+`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite`.
+For recovery use the same path with `type=recovery`. Approve the exact production
+Site URL, redirect allowlist, email sender and templates before changing hosted
+Auth settings. `/auth/confirm` accepts only invitation/recovery token hashes and
+redirects to the local account page; request-supplied destinations are ignored.
+The pattern follows [Supabase's email template guidance](https://supabase.com/docs/guides/auth/auth-email-templates).
 
 ## Facts to confirm with the payment and program owners
 
@@ -59,6 +82,18 @@ definitive public benefit or activation wording is expanded.
 4. On a disposable database and storage target, apply migrations in order,
    run SQL lint and the production applicant/admin browser workflow. The
    current machine has no Docker runtime, so this stage has not run locally.
+
+The disposable database CI job for `43cb65d` passed 147 workflow/security tests
+and 9 admin performance tests, including migration `00023`. Its public check
+failed one WebKit accordion test; the new test synchronizes with the actual
+expansion animation. Later commits add field-approval enforcement, notice display,
+staff account setup and regression coverage, so their complete CI must pass too.
+CI has not verified production account/email delivery or a full backup restore.
+
+The 29 September private PostgreSQL backup has a readable catalog and schema.
+It excludes Storage file bytes, and a full restore has not been tested. Refresh
+the snapshot immediately before an authorized migration and verify its catalog;
+do not describe catalog inspection as a successful recovery test.
 
 ## Release and rollback
 

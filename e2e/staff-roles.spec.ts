@@ -9,6 +9,15 @@ test.beforeEach(async () => {
 });
 
 test.describe('staff role management', () => {
+  test('a disabled staff profile cannot use its still-active role to access private proof', async ({ page }) => {
+    await signIn(page, world.staff.finance);
+    const { error } = await world.admin.from('users')
+      .update({ is_active: false }).eq('id', world.staff.finance.userId);
+    expect(error).toBeNull();
+    const proof = await page.request.get(`/api/payment/evidence/${world.paymentEvidenceId}`);
+    expect(proof.status()).toBe(403);
+  });
+
   test('campaign metadata cannot authorize sibling-campaign receipt access', async ({ page }) => {
     const { data: campaign, error } = await world.admin.from('pilot_campaigns')
       .select('organization_id').eq('id', world.campaignId).single();

@@ -53,6 +53,8 @@ for (const bank of banks) {
     await page.getByRole('button', { name: 'Continue →' }).click();
     await page.getByRole('button', { name: /Accept \/ Mag-apply/ }).click();
     await expect(page.getByRole('heading', { name: 'Consent before personal data.' })).toBeVisible();
+    await expect(page.locator(`[data-content-version-id="${privacyId}"]`)).toContainText('Test privacy');
+    await expect(page.locator(`[data-content-version-id="${consentContentId}"]`)).toContainText('Test consent');
     await page.locator('.consent-row input[type="checkbox"]').evaluateAll((inputs) => inputs.forEach((input) => (input as HTMLInputElement).click()));
     await page.getByRole('button', { name: 'Continue privately →' }).click();
     await page.getByLabel('First name').fill('Synthetic');

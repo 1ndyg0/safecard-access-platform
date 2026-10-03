@@ -1,6 +1,43 @@
-import Link from "next/link";
-import { BrandMark } from "@/components/BrandMark";
+import Link from 'next/link';
+import { BrandMark } from '@/components/BrandMark';
+import { getPublishedContent } from '@/lib/content';
 
-export default function PrivacyPage() {
-  return <main className="content-page"><header className="content-nav"><Link href="/"><BrandMark /></Link><Link href="/help">Get help</Link></header><article className="content-shell"><p className="eyebrow">Pilot privacy and rights notice</p><h1>Your choice comes before your data.</h1><p className="content-lede">This working notice documents the platform controls. It does not replace the final privacy notice, data-sharing agreement, or retention schedule that must be approved by PRC and the participating school before live use.</p><div className="content-grid"><article><span>01</span><h2>Voluntary choice</h2><p>You may accept, ask, decline, or withdraw. Sponsors do not see which private choice you made.</p></article><article><span>02</span><h2>Minimum data</h2><p>In live mode, the platform collects only approved application fields after comprehension and consent.</p></article><article><span>03</span><h2>Purpose limitation</h2><p>Data is used for the controlled application, payment verification, PRC handoff, support, security, and required audit evidence.</p></article><article><span>04</span><h2>Restricted access</h2><p>Role checks and row-level security separate sponsor aggregates, recipient profiles, finance operations, support, and PRC liaison work.</p></article><article><span>05</span><h2>Your rights</h2><p>You may request access, correction, withdrawal, or assistance through the approved operator process. Withdrawal cannot erase legally required audit evidence.</p></article><article><span>06</span><h2>Shared devices</h2><p>Use the clear-device action and close the browser. Member sessions expire after 30 minutes and are stored in secure, HTTP-only cookies.</p></article></div><div className="notice-panel"><strong>Current data mode</strong><span>The public build defaults to synthetic demonstration. Do not enter real personal information unless the page explicitly says “Controlled live pilot.”</span></div></article></main>;
+export const dynamic = 'force-dynamic';
+
+export default async function PrivacyPage({ searchParams }: {
+  searchParams: Promise<{ locale?: string }>;
+}) {
+  const locale = (await searchParams).locale === 'tl' ? 'tl' : 'en';
+  const filipino = locale === 'tl';
+  const live = process.env.LAUNCH_GATES_COMPLETE === 'true'
+    && process.env.NEXT_PUBLIC_DATA_MODE === 'live';
+  const notice = live ? await getPublishedContent('privacy_notice', locale).catch(() => null) : null;
+
+  return <main className="content-page" lang={filipino ? 'fil' : 'en'}>
+    <header className="content-nav">
+      <Link href="/"><BrandMark /></Link>
+      <Link href="/help">{filipino ? 'Humingi ng tulong' : 'Get help'}</Link>
+    </header>
+    <article className="content-shell">
+      <p className="eyebrow">{filipino ? 'Privacy at iyong mga karapatan' : 'Privacy and your rights'}</p>
+      <nav aria-label="Privacy notice language">
+        <Link href="/privacy?locale=tl" aria-current={filipino ? 'page' : undefined}>Filipino</Link>
+        {' · '}
+        <Link href="/privacy?locale=en" aria-current={!filipino ? 'page' : undefined}>English</Link>
+      </nav>
+      {notice ? <>
+        <h1>{notice.title}</h1>
+        <p>{filipino ? 'Bersiyon' : 'Version'} {notice.version}</p>
+        <div data-content-version-id={notice.id}>
+          {notice.body.split(/\n\s*\n/).map((paragraph, index) =>
+            <p key={index} style={{ whiteSpace: 'pre-wrap' }}>{paragraph}</p>)}
+        </div>
+      </> : <>
+        <h1>{filipino ? 'Inihahanda ang aprubadong paunawa sa privacy.' : 'The approved privacy notice is being prepared.'}</h1>
+        <p className="content-lede">{filipino
+          ? 'Hindi pa bukas ang live na aplikasyon hangga’t hindi nailalathala ang aprubadong paunawa at pahintulot. Huwag maglagay ng totoong personal na impormasyon sa demonstration.'
+          : 'Live applications require a published, approved privacy notice and consent text. Please do not enter real personal information in the demonstration.'}</p>
+      </>}
+    </article>
+  </main>;
 }

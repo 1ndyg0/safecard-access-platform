@@ -13,7 +13,7 @@ type Step = "learn" | "check" | "decide" | "consent" | "profile" | "payment" | "
 type PilotConfig = {
   mode: "synthetic" | "live" | "unavailable";
   campaign: { id: string; membership_fee: number } | null;
-  content?: Array<{ id: string; content_type: string; locale: "tl" | "en"; title: string; body: string }>;
+  content?: Array<{ id: string; content_type: string; locale: "tl" | "en"; title: string; body: string; version?: number }>;
   payment: { available: boolean; reason: string | null };
   externalNotifications: { available: boolean; reason: string };
   configurationError?: string;
@@ -75,9 +75,12 @@ export function ApplicationWizard() {
   const allAgreed = agreed.voluntary && agreed.privacy && agreed.boundaries;
   const isLive = config?.mode === "live";
   const isFil = locale === "fil";
+  const consentNotices = config?.content?.filter((item) =>
+    item.locale === (isFil ? "tl" : "en")
+    && ["privacy_notice", "consent_text"].includes(item.content_type)) ?? [];
 
   const ui = isFil ? {
-    bannerLive: "Live pilot na kontrolado", bannerLiveBody: "Aktibo ang mga approved data control.", bannerSynthetic: "Synthetic na walkthrough", bannerSyntheticBody: "Huwag maglagay ng totoong personal na impormasyon. Walang mae-enroll o sisingilin dito.",
+    bannerLive: "Live na aplikasyon ng SafeCard", bannerLiveBody: "Aktibo ang mga approved data control.", bannerSynthetic: "Synthetic na walkthrough", bannerSyntheticBody: "Huwag maglagay ng totoong personal na impormasyon. Walang mae-enroll o sisingilin dito.",
     learnEyebrow: "01 · Impormasyon", learnTitle: "Alamin ang mahalaga bago magpasya.", learnBody: "Ang working baseline ay ₱1,200 bawat taon para sa edad 3–85. Ang eksaktong benepisyo, exclusions, eligibility, activation, at claims ay PRC lamang ang nagkukumpirma.",
     paymentBoundary: "Bayad ≠ pahintulot", paymentBoundaryBody: "Hindi maaaring magpasya ang sponsor o payer para sa recipient.", submissionBoundary: "Submission ≠ activation", submissionBoundaryBody: "PRC lamang ang makakapagkumpirma ng membership.", claimsBoundary: "PRC ang nagdedesisyon sa claims", claimsBoundaryBody: "Hindi nagdedesisyon ang project team kung covered o approved ang claim.", fullGuide: "Buong gabay",
     checkEyebrow: "02 · Pag-check", checkTitle: "Apat na bagay na dapat malinaw.",
@@ -91,7 +94,7 @@ export function ApplicationWizard() {
     quizCorrectLabel: "✓ Tama", quizWrongLabel: "✗ Mali — tamang sagot:",
     continue: "Magpatuloy →", reviewGuide: "Balikan ang gabay",
     decideEyebrow: "03 · Pribadong desisyon", decideTitle: "Ang iyong sagot ay sa iyo lamang.", decideBody: "Hindi makakatanggap ng notification ang sponsor kung ikaw ay magtatanong o tatanggi.", accept: "Accept / Mag-apply", acceptBody: "Magpatuloy sa privacy at consent step.", ask: "Ask / Magtanong", askBody: "Buksan ang Hotline 143 nang hindi nagsisimula ng application.", decline: "Not now / Hindi ngayon", declineBody: "Umalis nang pribado nang walang ibibigay na personal na impormasyon.", busy: "Gumagawa ng pribadong session…",
-    consentEyebrow: "04 · Privacy at pahintulot", consentTitle: "Pahintulot bago ang personal na datos.", minimum: "Minimum na kailangang kolektahin", minimumBody: "Sa live pilot, PRC-approved application fields lamang ang maaaring kolektahin. Hindi makikita ng sponsors ang identity, address, mobile number, application answers, payment evidence, o claims activity ng recipient.", privacyLink: "Basahin ang privacy at rights notice", voluntary: "Kusang-loob ang pagsali at maaari akong umatras.", privacyConsent: "Naiintindihan ko kung bakit kinokolekta at ibinabahagi sa PRC ang approved fields.", boundaryConsent: "Naiintindihan ko na ang bayad at submission ay hindi nag-a-activate ng membership.", continuePrivately: "Magpatuloy nang pribado →",
+    consentEyebrow: "04 · Privacy at pahintulot", consentTitle: "Pahintulot bago ang personal na datos.", minimum: "Minimum na kailangang kolektahin", minimumBody: "Sa live na serbisyo, PRC-approved application fields lamang ang maaaring kolektahin. Hindi makikita ng sponsors ang identity, address, mobile number, application answers, payment evidence, o claims activity ng recipient.", privacyLink: "Basahin ang privacy at rights notice", voluntary: "Kusang-loob ang pagsali at maaari akong umatras.", privacyConsent: "Naiintindihan ko kung bakit kinokolekta at ibinabahagi sa PRC ang approved fields.", boundaryConsent: "Naiintindihan ko na ang bayad at submission ay hindi nag-a-activate ng membership.", continuePrivately: "Magpatuloy nang pribado →",
     profileEyebrow: "05 · Approved fields", profileLiveTitle: "Detalye ng iyong application", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Mase-save lamang ang draft sa protected pilot backend pagkatapos ng consent.", profileSyntheticBody: "Naka-lock ang fields sa reserved synthetic values. Hindi puwedeng gumamit ng totoong impormasyon hanggang makumpleto ang launch gates.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Susunod: Bayad →", clearDevice: "I-clear ang shared device",
     reviewEyebrow: "07 · Review", reviewTitle: "Suriin bago isumite.", name: "Pangalan", dateOfBirth: "Petsa ng kapanganakan", addressLabel: "Address", mobileLabel: "Mobile",
     paymentSummaryTitle: "Bayad na naisumite", paymentSummaryRoute: "Route", paymentSummaryReference: "Reference", paymentSummaryStatus: "✓ Nai-upload ang proof — naghihintay ng staff verification",
@@ -111,7 +114,7 @@ export function ApplicationWizard() {
     backLabel: "← Bumalik", cancelLabel: "I-cancel", cancelConfirm: "Sigurado ka bang gusto mong mag-cancel? Mawawala ang iyong progreso.",
     labels: ["Matuto", "Suriin", "Magpasya", "Pahintulot", "Form", "Bayad", "Suriin"],
   } : {
-    bannerLive: "Controlled live pilot", bannerLiveBody: "Approved data controls are active.", bannerSynthetic: "Synthetic walkthrough", bannerSyntheticBody: "Do not enter real personal information. Nothing here enrolls or charges anyone.",
+    bannerLive: "Live SafeCard applications", bannerLiveBody: "Approved data controls are active.", bannerSynthetic: "Synthetic walkthrough", bannerSyntheticBody: "Do not enter real personal information. Nothing here enrolls or charges anyone.",
     learnEyebrow: "01 · Education", learnTitle: "Know what matters before deciding.", learnBody: "The working baseline is ₱1,200 per year for ages 3–85. Only PRC confirms exact benefits, exclusions, eligibility, activation, and claims.",
     paymentBoundary: "Payment ≠ consent", paymentBoundaryBody: "A sponsor or payer cannot decide for the recipient.", submissionBoundary: "Submission ≠ activation", submissionBoundaryBody: "Only a PRC confirmation activates membership.", claimsBoundary: "Claims stay with PRC", claimsBoundaryBody: "The project team never decides coverage or outcomes.", fullGuide: "Full guide",
     checkEyebrow: "02 · Comprehension", checkTitle: "Four things that must be clear.",
@@ -125,7 +128,7 @@ export function ApplicationWizard() {
     quizCorrectLabel: "✓ Correct", quizWrongLabel: "✗ Incorrect — correct answer:",
     continue: "Continue →", reviewGuide: "Review guide",
     decideEyebrow: "03 · Private decision", decideTitle: "Your answer belongs to you.", decideBody: "The sponsor receives no notification about an 'ask' or 'decline' choice.", accept: "Accept / Mag-apply", acceptBody: "Continue to the privacy and consent step.", ask: "Ask / Magtanong", askBody: "Open Hotline 143 without starting an application.", decline: "Not now / Hindi ngayon", declineBody: "Leave privately without providing personal information.", busy: "Creating a private session…",
-    consentEyebrow: "04 · Privacy and consent", consentTitle: "Consent before personal data.", minimum: "Minimum necessary collection", minimumBody: "The live pilot may collect only PRC-approved application fields. Sponsors cannot see recipient identity, address, mobile number, application answers, payment evidence, or claims activity.", privacyLink: "Read the privacy and rights notice", voluntary: "I am choosing voluntarily and may withdraw.", privacyConsent: "I understand why the approved fields are collected and shared with PRC.", boundaryConsent: "I understand payment and submission do not activate membership.", continuePrivately: "Continue privately →",
+    consentEyebrow: "04 · Privacy and consent", consentTitle: "Consent before personal data.", minimum: "Minimum necessary collection", minimumBody: "The live service may collect only PRC-approved application fields. Sponsors cannot see recipient identity, address, mobile number, application answers, payment evidence, or claims activity.", privacyLink: "Read the privacy and rights notice", voluntary: "I am choosing voluntarily and may withdraw.", privacyConsent: "I understand why the approved fields are collected and shared with PRC.", boundaryConsent: "I understand payment and submission do not activate membership.", continuePrivately: "Continue privately →",
     profileEyebrow: "05 · Approved fields", profileLiveTitle: "Your application details", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Your draft is saved only to the protected pilot backend after consent.", profileSyntheticBody: "Fields are locked to reserved synthetic values. Real information is blocked until every launch gate passes.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Next: Payment →", clearDevice: "Clear shared device",
     reviewEyebrow: "07 · Review", reviewTitle: "Review before submitting.", name: "Name", dateOfBirth: "Date of birth", addressLabel: "Address", mobileLabel: "Mobile",
     paymentSummaryTitle: "Payment submitted", paymentSummaryRoute: "Route", paymentSummaryReference: "Reference", paymentSummaryStatus: "✓ Proof uploaded — pending staff review",
@@ -171,7 +174,7 @@ export function ApplicationWizard() {
     if (!answers.cost || !answers.activation || !answers.choice || !answers.emergency || !scoreComprehension(answers as { cost: "1200" | "100"; activation: "prc" | "sponsor"; choice: "recipient" | "payer"; emergency: "143" | "sponsor" }).passed) {
       setError(isFil ? "Balikan at itama ang apat na sagot bago magpatuloy." : "Please review and correct all four answers before continuing."); return;
     }
-    if (!config?.campaign) { setError(isFil ? "Hindi pa naka-configure ang live pilot." : "The live pilot is not configured."); return; }
+    if (!config?.campaign) { setError(isFil ? "Hindi pa handa ang live na serbisyo." : "The live application service is not configured."); return; }
     setBusy(true);
     try {
       const result = await api("/api/intake/case", { campaign_id: config.campaign.id, referral_link_id: referralLinkId, decision: "accept" });
@@ -366,8 +369,15 @@ export function ApplicationWizard() {
             <div className="privacy-panel">
               <strong>{ui.minimum}</strong>
               <p>{ui.minimumBody}</p>
-              <Link href="/privacy">{ui.privacyLink}</Link>
+              <Link href={`/privacy?locale=${isFil ? "tl" : "en"}`} target="_blank" rel="noopener noreferrer">{ui.privacyLink}</Link>
             </div>
+            {isLive && consentNotices.map((notice) => (
+              <article className="privacy-panel" key={notice.id} data-content-version-id={notice.id}>
+                <h2>{notice.title}</h2>
+                {notice.version !== undefined && <p>{isFil ? "Bersiyon" : "Version"} {notice.version}</p>}
+                <p style={{ whiteSpace: "pre-wrap" }}>{notice.body}</p>
+              </article>
+            ))}
             {(["voluntary", "privacy", "boundaries"] as const).map((item, i) => (
               <label key={item} className="consent-row">
                 <input type="checkbox" checked={agreed[item]} onChange={(e) => setAgreed({ ...agreed, [item]: e.target.checked })} />

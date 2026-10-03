@@ -42,8 +42,8 @@ const COPY = {
   cost: { fil: "Halimbawa ng gastos", en: "Cost example" },
   callHotline: { fil: "Tumawag sa Hotline 143", en: "Call Hotline 143" },
   provisional: {
-    fil: "Provisional na nilalaman. Ang approved PRC content registry ang source of truth bago ang live pilot.",
-    en: "Provisional content. The approved PRC content registry is the source of truth before the live pilot.",
+    fil: "Provisional na nilalaman. Ang approved PRC content registry ang source of truth bago ang live na serbisyo.",
+    en: "Provisional content. The approved PRC content registry is the source of truth before live service use.",
   },
   approved: {
     fil: "Approved na nilalaman mula sa PRC content registry.",

@@ -57,7 +57,7 @@ export function LandingExperience() {
         <div className="hero-card-stack reveal delay-1" aria-label="SafeCard working program summary">
           <article className="programme-card">
             <div className="card-kicker"><span>01</span>{isFil ? "Batayang impormasyon" : "Working baseline"}</div><strong>{isFil ? "₱1,200 / taon" : CURRENT_WORKING_FEE}</strong><p>{isFil ? "Edad 3–85" : CURRENT_WORKING_ELIGIBILITY}</p><div className="card-rule" />
-            <small>{locale === "fil" ? "Kinakailangan pa ang pinal na pag-apruba ng PRC bago gamitin sa live pilot." : "Final PRC approval is required before live pilot use."}</small>
+            <small>{locale === "fil" ? "Kinakailangan pa ang pinal na pag-apruba ng PRC bago gamitin sa live na serbisyo." : "Final PRC approval is required before live service use."}</small>
           </article>
           <article className="control-card"><span className="control-index">02</span><div><strong>{locale === "fil" ? "Ikaw ang may kontrol" : "You stay in control"}</strong><p>{locale === "fil" ? "Walang personal na datos bago ang iyong pasya at pahintulot." : "No personal data before your decision and consent."}</p></div></article>
         </div>

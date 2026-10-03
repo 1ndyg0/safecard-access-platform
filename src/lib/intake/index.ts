@@ -173,7 +173,8 @@ export async function grantConsent(
     .select('id, content_type, locale')
     .in('id', [input.consentContentVersionId, input.privacyNoticeVersionId])
     .eq('approval_status', 'approved')
-    .eq('is_published', true);
+    .eq('is_published', true)
+    .or('expiry_date.is.null,expiry_date.gt.' + new Date().toISOString().split('T')[0]);
   const consentVersion = approvedVersions?.find((item) => item.id === input.consentContentVersionId);
   const privacyVersion = approvedVersions?.find((item) => item.id === input.privacyNoticeVersionId);
   if (
@@ -461,7 +462,8 @@ export async function submitApplication(
     .select('id, content_type')
     .in('id', seenVersionIds)
     .eq('approval_status', 'approved')
-    .eq('is_published', true);
+    .eq('is_published', true)
+    .or('expiry_date.is.null,expiry_date.gt.' + new Date().toISOString().split('T')[0]);
   if (seenError || !seenVersions || seenVersions.length !== seenVersionIds.length) {
     throw new Error('All content versions seen must still be approved and published');
   }
