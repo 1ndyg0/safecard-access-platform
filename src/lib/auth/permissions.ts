@@ -207,7 +207,7 @@ export async function requireActiveCampaign(
     .eq('campaign_id', campaignId)
     .eq('is_active', true);
   if (countError) return { allowed: false, reason: 'Unable to verify campaign capacity' };
-  if ((count ?? 0) >= data.max_applications) {
+  if (data.max_applications !== null && (count ?? 0) >= data.max_applications) {
     return { allowed: false, reason: 'This campaign has reached its application limit' };
   }
 

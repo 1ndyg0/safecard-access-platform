@@ -54,7 +54,7 @@ export async function createSponsor(
     .eq('campaign_id', input.campaignId)
     .eq('is_active', true);
 
-  if ((count ?? 0) >= campaign.max_sponsors) {
+  if (campaign.max_sponsors !== null && (count ?? 0) >= campaign.max_sponsors) {
     throw new Error('Campaign has reached the maximum number of sponsors');
   }
 
