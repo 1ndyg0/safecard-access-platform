@@ -60,6 +60,15 @@ test('recovery token establishes a staff session without accepting an external r
   const account = await page.request.get('/api/admin/account');
   expect(account.status(), await account.text()).toBe(200);
   await expect(page.getByRole('heading', { name: 'Set your password' })).toBeVisible();
+  const recoveredPassword = 'synthetic-recovered-individual-password';
+  await page.getByLabel('New password', { exact: true }).fill(recoveredPassword);
+  await page.getByLabel('Confirm new password', { exact: true }).fill(recoveredPassword);
+  await page.getByRole('button', { name: 'Save password', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Your password has been saved');
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/login$/);
+  await signIn(page, { ...world.staff.finance, password: recoveredPassword });
+  expect((await page.request.get('/api/admin/account')).status()).toBe(200);
 });
 
 test('unassigned users cannot open staff account setup', async ({ page }) => {

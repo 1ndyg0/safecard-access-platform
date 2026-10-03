@@ -11,6 +11,7 @@ export function StaffAccountSetup() {
   const [loading, setLoading] = useState(true);
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
+  const [factorsLoaded, setFactorsLoaded] = useState(false);
   const [verifiedFactor, setVerifiedFactor] = useState<string | null>(null);
   const [pendingFactor, setPendingFactor] = useState<{ id: string; qr: string } | null>(null);
   const [code, setCode] = useState('');
@@ -22,16 +23,17 @@ export function StaffAccountSetup() {
     let active = true;
     async function load() {
       try {
-        const client = createSupabaseBrowserClient();
-        const { data, error: authError } = await client.auth.getUser();
-        if (authError || !data.user || data.user.is_anonymous) return;
         const staff = await fetch('/api/admin/account', { cache: 'no-store' });
         if (!staff.ok) return;
-        const factors = await client.auth.mfa.listFactors();
+        const account = await staff.json();
+        if (active) { setEmail(account.email ?? null); setLoading(false); }
+        // The server verifies the recovered session and active role. Loading
+        // authenticator information must not hide the password recovery form.
+        const factors = await createSupabaseBrowserClient().auth.mfa.listFactors();
         if (factors.error) throw factors.error;
         if (active) {
-          setEmail(data.user.email ?? null);
           setVerifiedFactor(factors.data.totp.find((factor) => factor.status === 'verified')?.id ?? null);
+          setFactorsLoaded(true);
         }
       } catch {
         if (active) setError('Account setup is temporarily unavailable. Please try again.');
@@ -100,7 +102,7 @@ export function StaffAccountSetup() {
       </form>
       <h2>Authenticator</h2>
       <p>Use an authenticator app for sensitive actions such as PRC export. Verify again here after a new password sign-in when an action asks for it.</p>
-      {!verifiedFactor && !pendingFactor && <button className="button-primary" disabled={busy} onClick={enroll}>Set up authenticator</button>}
+      {factorsLoaded && !verifiedFactor && !pendingFactor && <button className="button-primary" disabled={busy} onClick={enroll}>Set up authenticator</button>}
       {pendingFactor && <div><p>Scan this account setup code with your authenticator app. Do not share it.</p>
         <Image src={pendingFactor.qr} alt="Private authenticator setup code" width={220} height={220} unoptimized />
       </div>}
