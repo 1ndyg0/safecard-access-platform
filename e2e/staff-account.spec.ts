@@ -15,6 +15,31 @@ function authenticatorCode(secret: string): string {
   return ((digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).toString().padStart(6, '0');
 }
 
+test('staff login requests a recovery email without exposing unknown or disabled accounts', async ({ page }) => {
+  const world = await seedWorld();
+  await page.goto('/admin/login');
+  await page.getByLabel('Email', { exact: true }).fill(world.staff.finance.email);
+  await page.getByRole('button', { name: 'Forgot password? Send a recovery link', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('If this email belongs to an active staff account');
+  const sent = await world.admin.auth.admin.getUserById(world.staff.finance.userId);
+  expect(sent.error).toBeNull();
+  expect(sent.data.user?.recovery_sent_at).toBeTruthy();
+  const unknown = await page.request.post('/api/admin/account/recovery', {
+    data: { email: 'unknown@e2e.safecard.test', redirect_to: 'https://example.invalid' },
+  });
+  expect(unknown.status()).toBe(200);
+  const before = await world.admin.auth.admin.getUserById(world.staff.support.userId);
+  const disabled = await world.admin.from('users').update({ is_active: false }).eq('id', world.staff.support.userId);
+  expect(disabled.error).toBeNull();
+  const inactive = await page.request.post('/api/admin/account/recovery', { data: { email: world.staff.support.email } });
+  expect(inactive.status()).toBe(200);
+  expect(await inactive.json()).toEqual(await unknown.json());
+  const after = await world.admin.auth.admin.getUserById(world.staff.support.userId);
+  expect(after.data.user?.recovery_sent_at).toBe(before.data.user?.recovery_sent_at);
+  const invalid = await page.request.post('/api/admin/account/recovery', { data: { email: 'not-an-email' } });
+  expect(invalid.status()).toBe(400);
+});
+
 test('staff authenticator setup establishes genuine AAL2 assurance', async ({ page }) => {
   const world = await seedWorld();
   await signIn(page, world.staff.finance);
