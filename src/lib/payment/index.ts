@@ -19,6 +19,7 @@ import { createHash } from 'node:crypto';
 import { canonicalJson } from '@/lib/canonical-json';
 import { recipientProfileSchema } from '@/lib/validation/schemas';
 import { isBankPaymentRoute } from '@/lib/payment/config';
+import { requireAdultSelfApplication } from '@/lib/intake/require-applicant-capacity';
 
 // ============================================================
 // Create payment intent (official handoff)
@@ -87,6 +88,10 @@ export async function createPaymentIntent(
   if (caseRecord.consent_state !== 'agreed') {
     throw new Error('Cannot create payment: consent must be active');
   }
+
+  const { data: capacityProfile } = await admin.from('recipient_profiles')
+    .select('date_of_birth').eq('case_id', input.caseId).maybeSingle();
+  requireAdultSelfApplication(capacityProfile?.date_of_birth);
 
   if (caseRecord.application_state === 'draft') {
     if (caseRecord.comprehension_passed !== true) throw new Error('Complete the comprehension check before payment');

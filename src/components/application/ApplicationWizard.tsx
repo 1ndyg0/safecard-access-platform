@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
 import { useLocale } from "@/components/LocaleProvider";
 import { ManualPaymentPanel } from "@/components/application/ManualPaymentPanel";
+import { applicantCategory } from "@/lib/intake/applicant-capacity";
 import { isEligibleAge } from "@/lib/validation/age";
 import { scoreComprehension } from "@/lib/intake/comprehension";
 
@@ -72,7 +73,8 @@ export function ApplicationWizard() {
     }).catch(() => undefined);
   }, [referralSlug]);
 
-  const allAgreed = agreed.voluntary && agreed.privacy && agreed.boundaries;
+  const [category, setCategory] = useState<"adult" | "child" | "">("");
+  const allAgreed = category === "adult" && agreed.voluntary && agreed.privacy && agreed.boundaries;
   const isLive = config?.mode === "live";
   const isFil = locale === "fil";
   const consentNotices = config?.content?.filter((item) =>
@@ -95,7 +97,7 @@ export function ApplicationWizard() {
     continue: "Magpatuloy →", reviewGuide: "Balikan ang gabay",
     decideEyebrow: "03 · Pribadong desisyon", decideTitle: "Ang iyong sagot ay sa iyo lamang.", decideBody: "Hindi makakatanggap ng notification ang sponsor kung ikaw ay magtatanong o tatanggi.", accept: "Accept / Mag-apply", acceptBody: "Magpatuloy sa privacy at consent step.", ask: "Ask / Magtanong", askBody: "Buksan ang Hotline 143 nang hindi nagsisimula ng application.", decline: "Not now / Hindi ngayon", declineBody: "Umalis nang pribado nang walang ibibigay na personal na impormasyon.", busy: "Gumagawa ng pribadong session…",
     consentEyebrow: "04 · Privacy at pahintulot", consentTitle: "Pahintulot bago ang personal na datos.", minimum: "Minimum na kailangang kolektahin", minimumBody: "Sa live na serbisyo, PRC-approved application fields lamang ang maaaring kolektahin. Hindi makikita ng sponsors ang identity, address, mobile number, application answers, payment evidence, o claims activity ng recipient.", privacyLink: "Basahin ang privacy at rights notice", voluntary: "Kusang-loob ang pagsali at maaari akong umatras.", privacyConsent: "Naiintindihan ko kung bakit kinokolekta at ibinabahagi sa PRC ang approved fields.", boundaryConsent: "Naiintindihan ko na ang bayad at submission ay hindi nag-a-activate ng membership.", continuePrivately: "Magpatuloy nang pribado →",
-    profileEyebrow: "05 · Approved fields", profileLiveTitle: "Detalye ng iyong application", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Mase-save lamang ang draft sa protected pilot backend pagkatapos ng consent.", profileSyntheticBody: "Naka-lock ang fields sa reserved synthetic values. Hindi puwedeng gumamit ng totoong impormasyon hanggang makumpleto ang launch gates.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Susunod: Bayad →", clearDevice: "I-clear ang shared device",
+    profileEyebrow: "05 · Approved fields", profileLiveTitle: "Detalye ng iyong application", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Mase-save lamang ang draft sa protected application backend pagkatapos ng consent.", profileSyntheticBody: "Naka-lock ang fields sa reserved synthetic values. Hindi puwedeng gumamit ng totoong impormasyon hanggang makumpleto ang launch gates.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Susunod: Bayad →", clearDevice: "I-clear ang shared device",
     reviewEyebrow: "07 · Review", reviewTitle: "Suriin bago isumite.", name: "Pangalan", dateOfBirth: "Petsa ng kapanganakan", addressLabel: "Address", mobileLabel: "Mobile",
     paymentSummaryTitle: "Bayad na naisumite", paymentSummaryRoute: "Route", paymentSummaryReference: "Reference", paymentSummaryStatus: "✓ Nai-upload ang proof — naghihintay ng staff verification",
     submit: "Isumite ang application →", submitting: "Isinusumite…", completeDemo: "Kumpletuhin ang demo →", edit: "I-edit",
@@ -129,7 +131,7 @@ export function ApplicationWizard() {
     continue: "Continue →", reviewGuide: "Review guide",
     decideEyebrow: "03 · Private decision", decideTitle: "Your answer belongs to you.", decideBody: "The sponsor receives no notification about an 'ask' or 'decline' choice.", accept: "Accept / Mag-apply", acceptBody: "Continue to the privacy and consent step.", ask: "Ask / Magtanong", askBody: "Open Hotline 143 without starting an application.", decline: "Not now / Hindi ngayon", declineBody: "Leave privately without providing personal information.", busy: "Creating a private session…",
     consentEyebrow: "04 · Privacy and consent", consentTitle: "Consent before personal data.", minimum: "Minimum necessary collection", minimumBody: "The live service may collect only PRC-approved application fields. Sponsors cannot see recipient identity, address, mobile number, application answers, payment evidence, or claims activity.", privacyLink: "Read the privacy and rights notice", voluntary: "I am choosing voluntarily and may withdraw.", privacyConsent: "I understand why the approved fields are collected and shared with PRC.", boundaryConsent: "I understand payment and submission do not activate membership.", continuePrivately: "Continue privately →",
-    profileEyebrow: "05 · Approved fields", profileLiveTitle: "Your application details", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Your draft is saved only to the protected pilot backend after consent.", profileSyntheticBody: "Fields are locked to reserved synthetic values. Real information is blocked until every launch gate passes.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Next: Payment →", clearDevice: "Clear shared device",
+    profileEyebrow: "05 · Approved fields", profileLiveTitle: "Your application details", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Your draft is saved only to the protected application backend after consent.", profileSyntheticBody: "Fields are locked to reserved synthetic values. Real information is blocked until every launch gate passes.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Next: Payment →", clearDevice: "Clear shared device",
     reviewEyebrow: "07 · Review", reviewTitle: "Review before submitting.", name: "Name", dateOfBirth: "Date of birth", addressLabel: "Address", mobileLabel: "Mobile",
     paymentSummaryTitle: "Payment submitted", paymentSummaryRoute: "Route", paymentSummaryReference: "Reference", paymentSummaryStatus: "✓ Proof uploaded — pending staff review",
     submit: "Submit application →", submitting: "Submitting…", completeDemo: "Complete demo →", edit: "Edit",
@@ -197,7 +199,7 @@ export function ApplicationWizard() {
     if (!caseId || !consent || !privacy) { setError(isFil ? "Hindi available ang approved consent content." : "Approved consent content is unavailable."); return; }
     setBusy(true);
     try {
-      const result = await api("/api/consent/grant", { case_id: caseId, consent_type: "membership_application", consent_content_version_id: consent.id, privacy_notice_version_id: privacy.id, locale: contentLocale, idempotency_key: key("consent") });
+      const result = await api("/api/consent/grant", { applicant_category: category, consent_actor: "recipient", case_id: caseId, consent_type: "membership_application", consent_content_version_id: consent.id, privacy_notice_version_id: privacy.id, locale: contentLocale, idempotency_key: key("consent") });
       setConsentRecordId(result.consentRecordId); setStep("profile");
     } catch (caught) { setError(caught instanceof Error ? caught.message : (isFil ? "Hindi ma-record ang consent." : "Consent could not be recorded.")); }
     finally { setBusy(false); }
@@ -205,6 +207,7 @@ export function ApplicationWizard() {
 
   function profileError(): string | null {
     if (!profile.first_name.trim() || !profile.last_name.trim() || !profile.address_line1.trim() || !profile.city.trim() || !profile.province.trim()) return isFil ? "Kumpletuhin ang pangalan at address." : "Complete your name and address.";
+    if (applicantCategory(profile.date_of_birth) === "child") return isFil ? "Hinihintay pa ang aprubadong proseso para sa bata at guardian. Hindi maaaring gamitin ang pahintulot para sa adult." : "The child/guardian workflow is awaiting approved rules. Adult self-consent cannot be used for a child.";
     if (!isEligibleAge(profile.date_of_birth)) return isFil ? "Kailangang 3 hanggang 85 taong gulang ang aplikante." : "The applicant must be 3 to 85 years old.";
     if (!profile.sex) return isFil ? "Pumili ng sex." : "Please select sex.";
     if (!/^(09|\+639)\d{9}$/.test(profile.mobile_number)) return isFil ? "Ilagay ang tamang mobile number." : "Enter a valid mobile number.";
@@ -378,6 +381,14 @@ export function ApplicationWizard() {
                 <p style={{ whiteSpace: "pre-wrap" }}>{notice.body}</p>
               </article>
             ))}
+            <label className="field-label">{isFil ? "Sino ang aplikante?" : "Who is applying?"}
+              <select value={category} onChange={(event) => setCategory(event.target.value as "adult" | "child" | "")}>
+                <option value="">{isFil ? "Pumili" : "Choose"}</option>
+                <option value="adult">{isFil ? "Ako, 18 taong gulang o higit pa" : "Myself, aged 18 or older"}</option>
+                <option value="child">{isFil ? "Bata, 3–17 taong gulang" : "A child, aged 3–17"}</option>
+              </select>
+            </label>
+            {category === "child" && <p role="status">{isFil ? "Hinihintay pa ang aprubadong proseso para sa guardian. Hindi pa maaaring magpatuloy o magtala ng adult consent para sa bata." : "The guardian workflow is awaiting approved rules. You cannot continue or record adult self-consent for a child."}</p>}
             {(["voluntary", "privacy", "boundaries"] as const).map((item, i) => (
               <label key={item} className="consent-row">
                 <input type="checkbox" checked={agreed[item]} onChange={(e) => setAgreed({ ...agreed, [item]: e.target.checked })} />

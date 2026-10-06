@@ -24,6 +24,7 @@ import { badRequest, conflict, handleApiError, notFound } from '@/lib/api/respon
 import { enforceRateLimit } from '@/lib/api/rate-limit';
 import { recipientProfileSchema } from '@/lib/validation/schemas';
 import { requireApprovedProfileFields } from '@/lib/intake/approved-profile';
+import { requireAdultSelfApplication } from '@/lib/intake/require-applicant-capacity';
 import { assertProfileDataAllowed, resolveDataMode } from '@/lib/safety/data-mode';
 import {
   CORRECTABLE_FIELDS,
@@ -153,6 +154,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // configuration, never from the request body, so a client cannot
     // declare itself into live mode.
     assertProfileDataAllowed(resolveDataMode(), body.profile);
+    requireAdultSelfApplication(body.profile.date_of_birth);
     await requireApprovedProfileFields(admin, caseRecord.campaign_id, body.profile);
 
     const requestHash = createHash('sha256')

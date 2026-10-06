@@ -33,7 +33,7 @@ for (const bank of ['bpi', 'bdo', 'security_bank', 'metrobank']) {
       data: { campaign_id: world.campaignId, decision: 'accept' },
     }), 201);
     const { consentRecordId } = await jsonAt(await page.request.post('/api/consent/grant', {
-      data: { case_id: caseId, consent_type: 'membership_application',
+      data: { applicant_category: 'adult', consent_actor: 'recipient', case_id: caseId, consent_type: 'membership_application',
         consent_content_version_id: consentId, privacy_notice_version_id: notice.data!.id,
         locale: 'en', idempotency_key: `test-consent-${caseId}` },
     }), 201);

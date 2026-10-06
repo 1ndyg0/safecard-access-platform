@@ -125,6 +125,8 @@ export const recipientProfileSchema = z.object({
 // ============================================================
 
 export const grantConsentSchema = z.object({
+  applicant_category: z.enum(['adult', 'child']),
+  consent_actor: z.enum(['recipient', 'guardian']),
   case_id: uuidSchema,
   consent_type: z.enum([
     'membership_application',

@@ -29,6 +29,8 @@ import { createHash } from 'node:crypto';
 import { canonicalJson } from '@/lib/canonical-json';
 import { isBankPaymentRoute } from '@/lib/payment/config';
 import { requireApprovedProfileFields } from './approved-profile';
+import { requireAdultSelfApplication } from './require-applicant-capacity';
+import { LaunchGateError } from '@/lib/safety/data-mode';
 
 function hashRequest(value: unknown): string {
   return createHash('sha256').update(canonicalJson(value)).digest('hex');
@@ -114,6 +116,8 @@ export async function createRecipientCase(
 // ============================================================
 
 export interface GrantConsentInput {
+  applicantCategory: 'adult' | 'child';
+  consentActor: 'recipient' | 'guardian';
   caseId: string;
   consentType: 'membership_application' | 'data_processing' | 'notification_opt_in';
   consentContentVersionId: string;
@@ -128,7 +132,12 @@ export async function grantConsent(
   input: GrantConsentInput,
 ): Promise<{ consentRecordId: string; status: 'created' | 'exists' }> {
   const admin = getSupabaseAdminClient();
+  if (input.applicantCategory !== 'adult' || input.consentActor !== 'recipient') {
+    throw new LaunchGateError('The child/guardian consent workflow is awaiting approved rules. Adult self-consent cannot be used for a child.');
+  }
   const requestHash = hashRequest({
+    applicantCategory: input.applicantCategory,
+    consentActor: input.consentActor,
     caseId: input.caseId,
     consentType: input.consentType,
     consentContentVersionId: input.consentContentVersionId,
@@ -156,6 +165,10 @@ export async function grantConsent(
     }
     return { consentRecordId: existing.id, status: 'exists' };
   }
+
+  const { data: existingProfile } = await admin.from('recipient_profiles')
+    .select('date_of_birth').eq('case_id', input.caseId).maybeSingle();
+  if (existingProfile?.date_of_birth) requireAdultSelfApplication(existingProfile.date_of_birth);
 
   // Validate state transition
   const { data: currentCase } = await admin
@@ -205,6 +218,7 @@ export async function grantConsent(
     user_agent_hash: input.userAgentHash ?? null,
     idempotency_key: input.idempotencyKey,
     request_hash: requestHash,
+    metadata: { applicant_category: input.applicantCategory, consent_actor: input.consentActor, capacity_basis: 'self_declaration' },
   });
 
   if (error) {
@@ -324,6 +338,7 @@ export async function saveProfileDraft(input: SaveProfileInput): Promise<void> {
   if (!['draft', 'correction_needed'].includes(caseRecord.application_state)) {
     throw new Error('Application details cannot be changed in the current state');
   }
+  requireAdultSelfApplication(input.profileData.date_of_birth);
   await requireApprovedProfileFields(admin, caseRecord.campaign_id, input.profileData);
 
   // Update profile with approved fields only
@@ -412,6 +427,7 @@ export async function submitApplication(
   if (caseRecord.comprehension_passed !== true) {
     throw new Error('Cannot submit: the comprehension check must be completed correctly');
   }
+  requireAdultSelfApplication(input.profileData.date_of_birth);
   await requireApprovedProfileFields(admin, caseRecord.campaign_id, input.profileData);
 
   // The final application is not complete until an image is safely stored and

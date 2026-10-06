@@ -55,6 +55,11 @@ for (const bank of banks) {
     await expect(page.getByRole('heading', { name: 'Consent before personal data.' })).toBeVisible();
     await expect(page.locator(`[data-content-version-id="${privacyId}"]`)).toContainText('Test privacy');
     await expect(page.locator(`[data-content-version-id="${consentContentId}"]`)).toContainText('Test consent');
+    await page.getByLabel('Who is applying?').selectOption('child');
+    await expect(page.getByRole('status')).toContainText('guardian workflow');
+    await expect(page.getByRole('button', { name: 'Continue privately →' })).toBeDisabled();
+    expect(calls.some((call) => call.path === '/api/consent/grant')).toBe(false);
+    await page.getByLabel('Who is applying?').selectOption('adult');
     await page.locator('.consent-row input[type="checkbox"]').evaluateAll((inputs) => inputs.forEach((input) => (input as HTMLInputElement).click()));
     await page.getByRole('button', { name: 'Continue privately →' }).click();
     await page.getByLabel('First name').fill('Synthetic');
