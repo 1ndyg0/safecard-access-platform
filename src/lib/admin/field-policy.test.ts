@@ -17,7 +17,7 @@ const SENSITIVE_PROFILE_FIELDS = [
 
 describe('role-scoped case access', () => {
   it('gives finance reviewers payment access without unrelated profile fields', () => {
-    const policy = resolveCaseAccessPolicy(['finance_export']);
+    const policy = resolveCaseAccessPolicy(['payment_reviewer']);
     expect(policy).not.toBeNull();
     expect(policy?.canViewPayments).toBe(true);
     expect(policy?.canActOnPayments).toBe(true);
@@ -27,6 +27,12 @@ describe('role-scoped case access', () => {
     }
     // Only enough to match a name against a receipt.
     expect(policy?.profileFields).toEqual(['first_name', 'last_name']);
+  });
+
+  it('keeps export permission separate from payment decisions', () => {
+    const policy = resolveCaseAccessPolicy(['finance_export']);
+    expect(policy?.canActOnPayments).toBe(false);
+    expect(policy?.canViewPayments).toBe(false);
   });
 
   it('limits support agents to callback details and no payment access', () => {
@@ -47,7 +53,7 @@ describe('role-scoped case access', () => {
 
   it('never grants payment actions to a role other than finance', () => {
     for (const [role, policy] of Object.entries(CASE_ACCESS_POLICY_BY_ROLE)) {
-      if (role === 'finance_export') continue;
+      if (role === 'payment_reviewer') continue;
       expect(policy.canActOnPayments).toBe(false);
     }
   });
@@ -61,7 +67,7 @@ describe('role-scoped case access', () => {
   });
 
   it('unions the policies of multiple roles', () => {
-    const policy = resolveCaseAccessPolicy(['support_agent', 'finance_export']);
+    const policy = resolveCaseAccessPolicy(['support_agent', 'payment_reviewer']);
     expect(policy?.canActOnPayments).toBe(true);
     expect(policy?.profileFields).toContain('mobile_number');
     // The union is still narrower than the full profile.
@@ -69,7 +75,7 @@ describe('role-scoped case access', () => {
   });
 
   it('builds an explicit select clause and never a wildcard', () => {
-    const policy = resolveCaseAccessPolicy(['finance_export']);
+    const policy = resolveCaseAccessPolicy(['payment_reviewer']);
     const clause = profileSelectClause(policy!);
     expect(clause).toBe('first_name,last_name');
     expect(clause).not.toContain('*');

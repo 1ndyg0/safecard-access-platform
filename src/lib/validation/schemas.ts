@@ -317,6 +317,7 @@ export const assignRoleSchema = z.strictObject({
     'prc_liaison',
     'support_agent',
     'finance_export',
+    'payment_reviewer',
     'content_approver',
     'privacy_admin_owner',
   ]),

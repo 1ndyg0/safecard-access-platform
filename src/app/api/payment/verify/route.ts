@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const auth = await requireStaffAuth();
 
     const roleCheck = await requireAnyRole(auth.userId, [
-      'finance_export', 'school_admin', 'prc_liaison',
+      'payment_reviewer',
     ]);
     if (!roleCheck.allowed) return forbidden(roleCheck.reason);
 

@@ -385,6 +385,7 @@ export async function seedWorld(): Promise<SeededWorld> {
 
   await admin.from('role_assignments').insert([
     { user_id: staff.privacyAdmin.userId, role: 'privacy_admin_owner', campaign_id: campaignId, is_active: true },
+    { user_id: staff.finance.userId, role: 'payment_reviewer', campaign_id: campaignId, is_active: true },
     { user_id: staff.finance.userId, role: 'finance_export', campaign_id: campaignId, is_active: true },
     { user_id: staff.support.userId, role: 'support_agent', campaign_id: campaignId, is_active: true },
     { user_id: staff.schoolAdmin.userId, role: 'school_admin', campaign_id: campaignId, is_active: true },

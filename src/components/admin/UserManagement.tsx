@@ -8,6 +8,7 @@ import { readJson } from "@/components/admin/use-async-load";
 const roles = [
   "support_agent",
   "finance_export",
+    "payment_reviewer",
   "content_approver",
   "school_admin",
   "prc_liaison",
@@ -265,5 +266,7 @@ export function UserManagement() {
 }
 
 function formatRole(role: string) {
+  if (role === "payment_reviewer") return "payment proof review";
+  if (role === "finance_export") return "PRC export";
   return role.replaceAll("_", " ");
 }

@@ -240,7 +240,7 @@ async function requirePaymentVerifierRole(userId: string, campaignId: string): P
   const { requireAnyRole } = await import('@/lib/auth/permissions');
   const result = await requireAnyRole(
     userId,
-    ['finance_export', 'school_admin', 'prc_liaison'],
+    ['payment_reviewer'],
     campaignId,
   );
   return result.allowed;
