@@ -234,7 +234,7 @@ export function ApplicationWizard() {
     if (!paymentSummary || !finalConfirmed) { setError(isFil ? "Kailangan ang payment proof at final declaration." : "Payment proof and the final declaration are required."); return; }
     if (!isLive || !caseId || !consentRecordId || !config?.content) {
       setError(isFil
-        ? "Hindi pa handa ang pilot intake. Mangyaring subukan muli o makipag-ugnayan sa Hotline 143."
+        ? "Hindi pa handa ang application intake. Mangyaring subukan muli o makipag-ugnayan sa Hotline 143."
         : "Application intake is not fully configured yet. Please try again shortly or contact Hotline 143.");
       return;
     }

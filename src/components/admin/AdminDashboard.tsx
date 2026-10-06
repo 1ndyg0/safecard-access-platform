@@ -85,7 +85,7 @@ export function AdminDashboard() {
       <header className="admin-heading">
         <div>
           <p className="eyebrow">Operations console</p>
-          <h1>{overview?.user ? `Welcome, ${overview.user.full_name}` : "SafeCard pilot"}</h1>
+          <h1>{overview?.user ? `Welcome, ${overview.user.full_name}` : "SafeCard administration"}</h1>
           <p className="muted-note">Roles: {overview?.roles.join(", ") || "—"}</p>
         </div>
         <div className="field-block compact">
