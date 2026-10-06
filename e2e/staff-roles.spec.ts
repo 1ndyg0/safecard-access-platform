@@ -124,7 +124,10 @@ test.describe('staff role management', () => {
     await signIn(page, world.staff.privacyAdmin);
     await page.goto(`/admin/users?campaign_id=${world.campaignId}`);
     await expect(page.getByRole('heading', { name: 'Staff and roles' })).toBeVisible();
-    await expect(page.getByText('Finance Reviewer', { exact: true })).toBeVisible();
+    const financeAssignments = page.getByRole('article').filter({ hasText: 'finance@e2e.safecard.test' });
+    await expect(financeAssignments).toHaveCount(2);
+    await expect(financeAssignments.filter({ hasText: 'payment proof review' })).toBeVisible();
+    await expect(financeAssignments.filter({ hasText: 'PRC export' })).toBeVisible();
     await expect(page.getByText('PRC Liaison', { exact: true })).toBeVisible();
   });
 });
