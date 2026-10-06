@@ -1,165 +1,152 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useLocale } from "@/components/LocaleProvider";
 
-type PaymentRoute = {
+type BankRoute = {
   id: string;
   label: string;
-  instructions: string;
-  accountName?: string;
-  qrImageUrl?: string | null;
-  qrObjectPath?: string;
-  bank?: string;
-  accountType?: string;
-  currency?: string;
-  accountNumber?: string;
-  swiftCode?: string;
-  branch?: string;
+  bank: string;
+  accountName: string;
+  accountType: string;
+  currency: string;
+  accountNumber: string;
 };
-type PaymentConfig = { available: boolean; reason: string | null; amount: number | null; monthlyEquivalent?: number; currency: string; accountName?: string; routes: PaymentRoute[]; controlledPilotWarning?: string };
-
-function key(prefix: string) { return `${prefix}-${crypto.randomUUID()}`; }
-
+type PaymentConfig = { available: boolean; reason: string | null; amount: number | null; currency: string; routes: BankRoute[] };
 type PaymentSummary = { routeLabel: string; reference: string };
-
-// Fallback payment configuration used when the /api/payment-config endpoint is unreachable
-// (e.g. Supabase is misconfigured). Kept intentionally short and pointing at the same
-// official PRC details a live campaign row would return so the UI is production-usable
-// end-to-end even before every backend flag is flipped.
-const FALLBACK_PAYMENT_CONFIG: PaymentConfig = {
-  available: true,
-  reason: null,
-  amount: 1200,
-  monthlyEquivalent: 100,
-  currency: "PHP",
-  accountName: "PHILIPPINE RED CROSS",
-  routes: [
-    {
-      id: "gcash-prc",
-      label: "GCash",
-      instructions: "Open GCash, scan the official PRC QR code below, complete the transfer outside SafeCard, then return with your receipt.",
-      accountName: "PHILIPPINE RED CROSS",
-      accountNumber: "0917-000-0143",
-      qrImageUrl: "/payment/prc-gcash-qr.png",
-    },
-    {
-      id: "bank-bpi",
-      label: "Bank Transfer (BPI)",
-      instructions: "Transfer via BPI online banking or branch, save the receipt, then return to upload proof of payment.",
-      accountName: "PHILIPPINE RED CROSS",
-      bank: "Bank of the Philippine Islands",
-      accountNumber: "002963000782B",
-      branch: "Chinese Gen., Blumentritt Branch",
-    },
-  ],
-};
 
 export function ManualPaymentPanel({ caseId, campaignId, live, onBack, onComplete }: { caseId: string; campaignId: string; live: boolean; onBack?: () => void; onComplete: (summary: PaymentSummary) => void }) {
   const { locale } = useLocale();
-  const isFil = locale === "fil";
-  const ui = isFil ? {
-    unavailable: "Hindi available ang payment configuration.", chooseRoute: "Pumili ng approved payment route.", required: "Pumili ng route, mag-upload ng proof of payment, at kumpirmahin ang payer declaration.", handoffError: "Hindi mabuksan ang payment handoff.", uploadError: "Hindi na-upload ang proof.", completeError: "Hindi nakumpleto ang payment.", received: "Natanggap ang proof. Naka-pending ang staff verification; hindi pa active ang membership.", loading: "Nilo-load ang approved payment routes…", eyebrow: "06 · Bayad at proof", title: "Magbayad sa labas ng SafeCard, pagkatapos ay bumalik kasama ang proof.", fee: "Membership fee:", monthly: "Ang monthly equivalent ay paliwanag lamang at hindi installment offer.", separateTitle: "Hiwalay na state ang payment", separateBody: "Ang payment ay hindi consent, application submission, approval, PRC handoff, o membership activation. PRC lamang ang makakapagkumpirma.", warning: "Babala para sa controlled pilot", parked: "Hindi pa naka-enable ang official payment handoff.", routeLegend: "Pumili ng payment route", accountName: "Account name", bank: "Bank", accountNumber: "Account number", swift: "SWIFT", branch: "Branch", transferHelp: "Kumpletuhin ang transfer sa bank o GCash app. Hindi humahawak, naglilipat, o nagsi-settle ng funds ang SafeCard.", proof: "Proof of payment (JPEG, PNG, o WebP; max 10 MB)", preview: "Preview ng napiling payment proof", declaration: "Kinukumpirma kong ginawa ang transfer sa labas ng SafeCard at naiintindihan kong hindi ina-activate ng verification ang membership.", uploading: "Secure na ina-upload…", submit: "Isumite ang proof para ma-review →", copied: "Na-copy na", recorded: "Naitala ang proof of payment. Ire-review ng staff ang proof; mananatiling inactive ang membership hanggang kumpirmahin ng PRC.", qrAlt: "Official GCash QR code"
-  } : {
-    unavailable: "Payment configuration is unavailable.", chooseRoute: "Choose an approved payment route.", required: "Choose a route, upload proof of payment, and confirm the payer declaration.", handoffError: "Payment handoff could not be opened.", uploadError: "Proof upload failed.", completeError: "Payment could not be completed.", received: "Proof received. Staff verification is pending; membership is not active.", loading: "Loading approved payment routes…", eyebrow: "06 · Payment and proof", title: "Pay outside SafeCard, then return with proof.", fee: "Membership fee:", monthly: "The monthly equivalent is only explanatory and is not an installment offer.", separateTitle: "Payment is a separate state", separateBody: "Payment does not equal consent, application submission, approval, PRC handoff, or membership activation. Only PRC confirmation can activate membership.", warning: "Controlled pilot warning", parked: "Official payment handoff is not yet enabled.", routeLegend: "Choose a payment route", accountName: "Account name", bank: "Bank", accountNumber: "Account number", swift: "SWIFT", branch: "Branch", transferHelp: "Complete the transfer in your bank or GCash app. SafeCard does not hold, move, or settle funds.", proof: "Proof of payment (JPEG, PNG, or WebP; max 10 MB)", preview: "Selected payment proof preview", declaration: "I confirm this transfer was completed outside SafeCard and understand that verification does not activate membership.", uploading: "Uploading securely…", submit: "Submit proof for review →", copied: "Copied", recorded: "Proof of payment recorded. Staff will review the proof; your membership remains inactive until PRC confirms it.", qrAlt: "Official GCash QR code"
-  };
-  // Seed from the fallback config so the UI is interactive even before the /api/payment-config
-  // fetch resolves (or if it fails). The effect below overwrites with the campaign-specific
-  // config as soon as it arrives.
-  const [config, setConfig] = useState<PaymentConfig>(FALLBACK_PAYMENT_CONFIG);
+  const fil = locale === "fil";
+  const [config, setConfig] = useState<PaymentConfig | null>(null);
   const [routeId, setRouteId] = useState("");
-  const [paymentIntentId, setPaymentIntentId] = useState("");
-  const [declaration, setDeclaration] = useState(false);
+  const [intentId, setIntentId] = useState("");
+  const [preparing, setPreparing] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [declaration, setDeclaration] = useState(false);
+  const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [copied, setCopied] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [referenceLocked, setReferenceLocked] = useState(false);
+  const [handoffAttempt, setHandoffAttempt] = useState(0);
+  const declaredReference = useRef<string | null>(null);
 
   useEffect(() => {
+    let active = true;
     fetch(`/api/payment-config?campaign_id=${encodeURIComponent(campaignId)}`, { cache: "no-store" })
-      .then((response) => response.json())
-      .then((data: PaymentConfig) => { if (data?.available && data.routes?.length) setConfig(data); })
-      .catch(() => undefined);
+      .then(async (response) => {
+        const data = await response.json() as PaymentConfig;
+        if (!response.ok || !data.available || data.routes?.length !== 4) throw new Error(data.reason ?? "Approved bank transfer is unavailable.");
+        if (active) setConfig(data);
+      })
+      .catch((caught) => { if (active) setError(caught instanceof Error ? caught.message : "Payment configuration is unavailable."); });
+    return () => { active = false; };
   }, [campaignId]);
 
   useEffect(() => {
-    if (!file) {
-      // The preview URL is derived from the selected file and must be cleared when it changes.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPreviewUrl("");
-      return;
-    }
-    const url = URL.createObjectURL(file); setPreviewUrl(url);
+    if (!live || !config?.available || !config.amount || !routeId || intentId) return;
+    let active = true;
+    const payload = { case_id: caseId, campaign_id: campaignId, payer_type: "other", expected_amount: config.amount, payment_route: routeId, idempotency_key: `payment-${caseId}`, data_mode: "live" };
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPreparing(true);
+    setError("");
+    fetch("/api/payment/handoff", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error ?? "Payment record could not be opened.");
+        if (active) setIntentId(body.paymentIntentId);
+      })
+      .catch((caught) => { if (active) setError(caught instanceof Error ? caught.message : "Payment record could not be opened."); })
+      .finally(() => { if (active) setPreparing(false); });
+    return () => { active = false; };
+  }, [caseId, campaignId, config, live, routeId, intentId, handoffAttempt]);
+
+  useEffect(() => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const selectedRoute = config?.routes.find((route) => route.id === routeId);
-  const selectedPaymentRoute = selectedRoute?.bank
-    ? `bank_transfer_${selectedRoute.id.replaceAll("-", "_")}`
-    : selectedRoute?.id ?? "";
+  const route = config?.routes.find((item) => item.id === routeId);
 
-  async function copy(value: string, label: string) {
-    if (!value || !navigator.clipboard) return;
-    await navigator.clipboard.writeText(value); setCopied(label); window.setTimeout(() => setCopied(""), 1800);
+  async function copyAccount() {
+    if (!route || !navigator.clipboard) return;
+    await navigator.clipboard.writeText(route.accountNumber);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
   }
 
-  async function submitPayment() {
-    setError(""); setNotice("");
-    if (!config?.available || !config.amount || !selectedRoute) { setError(config?.reason ?? ui.chooseRoute); return; }
-    if (!file || !declaration) { setError(ui.required); return; }
+  async function submitProof() {
+    setError("");
+    if (!live || !route || !intentId || !config?.amount) { setError("Choose an approved bank first."); return; }
+    if (!file || !declaration) { setError(fil ? "Kailangan ang proof at declaration." : "A proof image and declaration are required."); return; }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size === 0 || file.size > 10 * 1024 * 1024) {
+      setError(fil ? "JPEG, PNG, o WebP lamang, hanggang 10 MB." : "Choose a JPEG, PNG, or WebP image up to 10 MB."); return;
+    }
     setBusy(true);
     try {
-      // Live path (works when caseId is a real case). If backend rejects (e.g. env flags off),
-      // surface the error rather than silently faking a completion — this is a production flow.
-      if (live) {
-        const handoffPayload = { case_id: caseId, campaign_id: campaignId, payer_type: "other", expected_amount: config.amount, payment_route: selectedPaymentRoute, idempotency_key: key("payment"), data_mode: "live" };
-        const handoff = await fetch("/api/payment/handoff", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(handoffPayload) });
-        const handoffBody = await handoff.json(); if (!handoff.ok) throw new Error(handoffBody.error ?? ui.handoffError);
-        const intentId = handoffBody.paymentIntentId as string; setPaymentIntentId(intentId);
-        const marked = await fetch("/api/payment/mark-paid", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payment_intent_id: intentId, payer_declaration: "I completed this transfer outside SafeCard and understand it does not activate membership.", data_mode: "live" }) });
-        const markedBody = await marked.json(); if (!marked.ok) throw new Error(markedBody.error ?? ui.uploadError);
-        const form = new FormData(); form.set("payment_intent_id", intentId); form.set("case_id", caseId); form.set("campaign_id", campaignId); form.set("amount", String(config.amount)); form.set("payer_declaration", "I completed this transfer outside SafeCard and understand it does not activate membership."); form.set("data_mode", "live"); form.set("file", file);
-        const uploaded = await fetch("/api/payment/evidence/upload", { method: "POST", body: form });
-        const uploadBody = await uploaded.json(); if (!uploaded.ok) throw new Error(uploadBody.error ?? ui.uploadError);
-        setNotice(ui.received); onComplete({ routeLabel: selectedRoute?.label ?? '', reference: intentId });
-        return;
-      }
-      // Non-live path — the wizard is running before the case has been persisted (e.g. pilot
-      // config unavailable). Complete locally so the caller can still walk the review step;
-      // no backend row is created.
-      await new Promise((resolve) => window.setTimeout(resolve, 400));
-      setNotice(ui.received);
-      onComplete({ routeLabel: selectedRoute.label, reference: "" });
-    } catch (caught) { setError(caught instanceof Error ? caught.message : ui.completeError); }
+      const payerDeclaration = `I transferred PHP ${config.amount} to Philippine Red Cross by ${route.bank} outside SafeCard and understand this does not activate membership.`;
+      declaredReference.current ??= reference.trim();
+      setReferenceLocked(true);
+      const marked = await fetch("/api/payment/mark-paid", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payment_intent_id: intentId, payment_reference: declaredReference.current, payer_declaration: payerDeclaration, data_mode: "live" }) });
+      const markedBody = await marked.json();
+      if (!marked.ok) throw new Error(markedBody.error ?? "Payment declaration failed.");
+      const form = new FormData();
+      form.set("payment_intent_id", intentId);
+      form.set("case_id", caseId);
+      form.set("campaign_id", campaignId);
+      form.set("amount", String(config.amount));
+      form.set("reference_number", declaredReference.current);
+      form.set("payer_declaration", payerDeclaration);
+      form.set("data_mode", "live");
+      form.set("file", file);
+      const uploaded = await fetch("/api/payment/evidence/upload", { method: "POST", body: form });
+      const result = await uploaded.json();
+      if (!uploaded.ok) throw new Error(result.error ?? "Proof upload failed.");
+      onComplete({ routeLabel: route.bank, reference: declaredReference.current || result.evidenceId });
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Payment proof could not be recorded."); }
     finally { setBusy(false); }
   }
 
-  if (!config) return <div className="payment-panel" aria-live="polite">{ui.loading}</div>;
+  if (!config) return <div className="payment-panel" role="status">{error || (fil ? "Nilo-load ang mga bank account…" : "Loading approved bank accounts…")}{error && <button type="button" className="button-quiet" onClick={() => window.location.reload()}>{fil ? "Subukan muli" : "Try again"}</button>}</div>;
   return <div className="payment-panel">
-    <p className="eyebrow">{ui.eyebrow}</p>
-    <h1>{ui.title}</h1>
-    <p className="wizard-lede">{ui.fee} <strong>₱{config.amount?.toLocaleString() ?? "1,200"} / year</strong>. {ui.monthly}</p>
-    <div className="notice-panel amber"><strong>{ui.separateTitle}</strong><span>{ui.separateBody}</span></div>
-    {!config.available && <div className="parked-panel"><strong>{ui.warning}</strong><p>{isFil ? ui.parked : (config.reason ?? ui.parked)}</p></div>}
-    {config.available && <>
-      <fieldset className="payment-route-list"><legend>{ui.routeLegend}</legend>{config.routes.map((route) => <label className={`payment-route ${route.id === routeId ? "selected" : ""}`} key={route.id}><input type="radio" name="payment-route" value={route.id} checked={route.id === routeId} onChange={() => setRouteId(route.id)} /><span><strong>{route.label}</strong><small>{route.instructions}</small></span></label>)}</fieldset>
-      {selectedRoute && <section className="payment-details" aria-live="polite"><h2>{selectedRoute.label}</h2>{(selectedRoute.accountName ?? config.accountName) && <CopyRow label={ui.accountName} value={selectedRoute.accountName ?? config.accountName ?? ""} copied={copied} onCopy={copy} />}{selectedRoute.bank && <CopyRow label={ui.bank} value={selectedRoute.bank} copied={copied} onCopy={copy} />}{selectedRoute.qrImageUrl && <Image src={selectedRoute.qrImageUrl} alt={ui.qrAlt} className="payment-qr" width={360} height={360} unoptimized />}{selectedRoute.accountNumber && <CopyRow label={ui.accountNumber} value={selectedRoute.accountNumber} copied={copied} onCopy={copy} />}{selectedRoute.swiftCode && <CopyRow label={ui.swift} value={selectedRoute.swiftCode} copied={copied} onCopy={copy} />}{selectedRoute.branch && <CopyRow label={ui.branch} value={selectedRoute.branch} copied={copied} onCopy={copy} />}<p className="content-footnote">{ui.transferHelp}</p></section>}
-      <label className="upload-field"><span>{ui.proof}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />{previewUrl && <Image src={previewUrl} alt={ui.preview} className="receipt-preview" width={720} height={960} unoptimized />}</label>
-      <label className="consent-row"><input type="checkbox" checked={declaration} onChange={(event) => setDeclaration(event.target.checked)} /><span>{ui.declaration}</span></label>
-      {error && <p className="form-message error" role="alert">{error}</p>}{notice && <p className="form-message" role="status">{notice}</p>}
-      <div className="wizard-actions">
-        <button className="button-primary" type="button" disabled={busy} onClick={submitPayment}>{busy ? ui.uploading : ui.submit}</button>
-        {onBack && <button className="button-quiet" type="button" onClick={onBack}>{isFil ? "← Bumalik" : "← Back"}</button>}
-      </div>
+    <p className="eyebrow">06 · {fil ? "Bank transfer at proof" : "Bank transfer and proof"}</p>
+    <h1>{fil ? "Pumili ng bank, magbayad sa labas ng SafeCard, at mag-upload ng proof." : "Choose a bank, pay outside SafeCard, and upload proof."}</h1>
+    <p className="wizard-lede">{fil ? "Application fee" : "Application fee"}: <strong>₱{config.amount?.toLocaleString()}</strong></p>
+    <p className="content-footnote">{fil ? "Ang payment verification ay hiwalay sa application review at PRC membership activation." : "Payment verification is separate from application review and PRC membership activation."}</p>
+    <label className="field-block"><span>{fil ? "Bank na gagamitin mo" : "Bank you will use"}</span>
+      <select value={routeId} disabled={Boolean(intentId) || preparing} onChange={(event) => setRouteId(event.target.value)}>
+        <option value="">{fil ? "Pumili ng bank" : "Choose a bank"}</option>
+        {config.routes.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+      </select>
+    </label>
+    {preparing && <p className="form-message" role="status">{fil ? "Inihahanda ang payment record…" : "Preparing payment record…"}</p>}
+    {route && intentId && <section className="payment-details" aria-live="polite">
+      <h2>{route.bank}</h2>
+      <dl className="review-list">
+        <div><dt>{fil ? "Pangalan ng account" : "Account name"}</dt><dd>{route.accountName}</dd></div>
+        <div><dt>{fil ? "Uri ng account" : "Account type"}</dt><dd>{route.accountType}</dd></div>
+        <div><dt>{fil ? "Currency" : "Currency"}</dt><dd>{route.currency}</dd></div>
+        <div><dt>{fil ? "Account number" : "Account number"}</dt><dd>{route.accountNumber} <button type="button" className="button-quiet" onClick={() => void copyAccount()}>{copied ? "Copied" : "Copy"}</button></dd></div>
+        <div><dt>{fil ? "Halaga" : "Amount"}</dt><dd>₱{config.amount?.toLocaleString()}</dd></div>
+      </dl>
+      <p className="content-footnote">{fil ? "I-transfer ang eksaktong halaga gamit ang bank app o branch. Itago ang receipt at bumalik dito para i-upload ito." : "Transfer the exact amount using your bank app or branch. Save the receipt and return here to upload it."}</p>
+    </section>}
+    {intentId && <>
+      <label className="field-block"><span>{fil ? "Transaction reference (kung mayroon)" : "Transaction reference (if available)"}</span><input value={reference} maxLength={100} disabled={referenceLocked} onChange={(event) => setReference(event.target.value)} /></label>
+      <label className="upload-field"><span>{fil ? "Proof image (JPEG, PNG, o WebP; max 10 MB)" : "Proof image (JPEG, PNG, or WebP; max 10 MB)"}</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { setFile(event.target.files?.[0] ?? null); setPreviewUrl(""); }} />{previewUrl && <Image src={previewUrl} alt={fil ? "Preview ng receipt" : "Receipt preview"} className="receipt-preview" width={720} height={960} unoptimized />}</label>
+      <label className="consent-row"><input type="checkbox" checked={declaration} onChange={(event) => setDeclaration(event.target.checked)} /><span>{fil ? "Kinukumpirma kong nag-transfer ako sa napiling bank sa labas ng SafeCard at hindi nito ina-activate ang membership." : "I confirm I transferred using the selected bank outside SafeCard and understand this does not activate membership."}</span></label>
     </>}
-    {copied && <p className="form-message" role="status">{ui.copied} {copied}.</p>}
-    {paymentIntentId && <p className="content-footnote">{ui.recorded}</p>}
+    {error && <p className="form-message error" role="alert">{error}</p>}
+    {error && routeId && !intentId && <button type="button" className="button-quiet" onClick={() => setHandoffAttempt((value) => value + 1)}>{fil ? "Subukan muli" : "Retry payment record"}</button>}
+    <div className="wizard-actions">
+      <button className="button-primary" type="button" disabled={busy || !intentId || !file || !declaration} onClick={() => void submitProof()}>{busy ? (fil ? "Ina-upload…" : "Uploading…") : (fil ? "I-upload ang proof →" : "Upload proof →")}</button>
+      {onBack && <button className="button-quiet" type="button" onClick={onBack}>{fil ? "← Bumalik" : "← Back"}</button>}
+    </div>
   </div>;
-}
-
-function CopyRow({ label, value, copied, onCopy }: { label: string; value: string; copied: string; onCopy: (value: string, label: string) => void }) {
-  return <div className="copy-row"><span><small>{label}</small><strong>{value}</strong></span><button type="button" className="button-quiet" onClick={() => onCopy(value, label)}>Copy</button>{copied === label && <span className="sr-only">Copied</span>}</div>;
 }

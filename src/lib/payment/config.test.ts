@@ -1,37 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { MANUAL_PAYMENT_CONFIG, getApprovedPaymentRoutes, getPaymentRoutes } from './config';
+import { BANK_PAYMENT_ROUTE_IDS, MANUAL_PAYMENT_CONFIG, bankLabelForRoute, getApprovedPaymentRoutes, isBankPaymentRoute } from './config';
 
-describe('manual payment configuration', () => {
-  it('keeps the approved annual fee and explanatory monthly equivalent exact', () => {
+describe('owner-confirmed bank transfer configuration', () => {
+  it('preserves the exact fee, recipient and four approved accounts', () => {
     expect(MANUAL_PAYMENT_CONFIG.amount).toBe(1200);
-    expect(MANUAL_PAYMENT_CONFIG.monthlyEquivalent).toBe(100);
-    expect(MANUAL_PAYMENT_CONFIG.currency).toBe('PHP');
-    expect(MANUAL_PAYMENT_CONFIG.accountName).toBe('PHILIPPINE RED CROSS');
-  });
-
-  it('keeps every supplied bank account and SWIFT value centralized', () => {
-    expect(MANUAL_PAYMENT_CONFIG.routes.filter((route): route is Extract<typeof route, { bank: string }> => 'bank' in route)).toMatchObject([
-      { bank: 'BPI', accountNumber: '002963000782B', swiftCode: 'BOPIPHMM', branch: 'Chinese Gen., Blumentritt Branch' },
-      { bank: 'BDO', accountNumber: '004530012185', swiftCode: 'BNORPHM', branch: 'South Harbor, Port Area Manila' },
-      { bank: 'Security Bank', accountNumber: '0132062464003', swiftCode: 'SETCPHMM', branch: 'EDSA Mandaluyong Branch' },
-      { bank: 'Metrobank', accountNumber: '151-3-15114558-3', swiftCode: 'MBTCPHMM', branch: 'Bonifacio Drive, Port Area Manila' },
+    expect(MANUAL_PAYMENT_CONFIG.accountName).toBe('Philippine Red Cross');
+    expect(MANUAL_PAYMENT_CONFIG.routes).toMatchObject([
+      { id: 'bank_transfer_bpi', bank: 'BPI', accountType: 'Savings', currency: 'PHP', accountNumber: '002963007828' },
+      { id: 'bank_transfer_bdo', bank: 'BDO', accountType: 'Savings', currency: 'PHP', accountNumber: '004530012185' },
+      { id: 'bank_transfer_security_bank', bank: 'Security Bank', accountType: 'Savings', currency: 'PHP', accountNumber: '0132062464003' },
+      { id: 'bank_transfer_metrobank', bank: 'Metrobank', accountType: 'Savings', currency: 'PHP', accountNumber: '151-3-15114558-3' },
     ]);
+    expect(MANUAL_PAYMENT_CONFIG.routes.every((route) => route.accountName === 'Philippine Red Cross')).toBe(true);
   });
 
-  it('only attaches the private signed QR URL to the GCash route', () => {
-    const routes = getPaymentRoutes('https://signed.example/qr');
-    expect(routes.find((route) => route.id === 'gcash')?.qrImageUrl).toBe('https://signed.example/qr');
-    expect(routes.filter((route) => route.id !== 'gcash').every((route) => !('qrImageUrl' in route))).toBe(true);
-  });
-
-  it('shows only route types approved for the selected campaign', () => {
-    expect(getApprovedPaymentRoutes(new Set(['gcash']))).toHaveLength(1);
-    expect(getApprovedPaymentRoutes(new Set(['gcash']))[0]?.id).toBe('gcash');
-    expect(getApprovedPaymentRoutes(new Set(['bank_transfer'])).map((route) => route.id)).toEqual([
-      'bpi',
-      'bdo',
-      'security-bank',
-      'metrobank',
-    ]);
+  it('requires campaign bank-transfer approval and rejects unknown identifiers', () => {
+    expect(getApprovedPaymentRoutes(new Set())).toEqual([]);
+    expect(getApprovedPaymentRoutes(new Set(['bank_transfer'])).map((route) => route.id)).toEqual(BANK_PAYMENT_ROUTE_IDS);
+    expect(BANK_PAYMENT_ROUTE_IDS.every(isBankPaymentRoute)).toBe(true);
+    expect(isBankPaymentRoute('gcash')).toBe(false);
+    expect(isBankPaymentRoute('bank_transfer_other')).toBe(false);
+    expect(bankLabelForRoute('bank_transfer_security_bank')).toBe('Security Bank');
   });
 });

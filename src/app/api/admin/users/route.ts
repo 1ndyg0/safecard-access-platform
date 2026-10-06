@@ -23,6 +23,7 @@ const createUserSchema = z.strictObject({
     'prc_liaison',
     'support_agent',
     'finance_export',
+    'payment_reviewer',
     'content_approver',
     'privacy_admin_owner',
   ]),
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
       parsed.email,
       {
         data: { full_name: parsed.full_name },
-        redirectTo: `${new URL(appUrl).origin}/auth/callback`,
+        redirectTo: `${new URL(appUrl).origin}/admin/account`,
       },
     );
     if (invitationError || !invitation.user) {

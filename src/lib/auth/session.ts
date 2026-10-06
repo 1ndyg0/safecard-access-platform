@@ -8,6 +8,7 @@
 
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { getSupabaseAdminClient } from '@/lib/db/client';
 import type { AuthContext } from './permissions';
 
 function requirePublicEnv(name: 'NEXT_PUBLIC_SUPABASE_URL' | 'NEXT_PUBLIC_SUPABASE_ANON_KEY') {
@@ -90,6 +91,11 @@ export async function requireStaffAuth(): Promise<AuthContext> {
   const ctx = await requireAuth();
   if (ctx.isAnonymous) {
     throw new AuthError('Staff authentication required. Anonymous sessions cannot access this resource.');
+  }
+  const { data: profile, error } = await getSupabaseAdminClient()
+    .from('users').select('id').eq('id', ctx.userId).eq('is_active', true).maybeSingle();
+  if (error || !profile) {
+    throw new AuthError('Staff account is not active. Contact the project administrator.');
   }
   return ctx;
 }

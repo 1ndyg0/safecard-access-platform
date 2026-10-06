@@ -27,6 +27,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { generateApplicationReference } from '@/lib/reference';
 import { createHash } from 'node:crypto';
 import { canonicalJson } from '@/lib/canonical-json';
+import { isBankPaymentRoute } from '@/lib/payment/config';
+import { requireApprovedProfileFields } from './approved-profile';
+import { requireAdultSelfApplication } from './require-applicant-capacity';
+import { LaunchGateError } from '@/lib/safety/data-mode';
 
 function hashRequest(value: unknown): string {
   return createHash('sha256').update(canonicalJson(value)).digest('hex');
@@ -112,6 +116,8 @@ export async function createRecipientCase(
 // ============================================================
 
 export interface GrantConsentInput {
+  applicantCategory: 'adult' | 'child';
+  consentActor: 'recipient' | 'guardian';
   caseId: string;
   consentType: 'membership_application' | 'data_processing' | 'notification_opt_in';
   consentContentVersionId: string;
@@ -126,7 +132,12 @@ export async function grantConsent(
   input: GrantConsentInput,
 ): Promise<{ consentRecordId: string; status: 'created' | 'exists' }> {
   const admin = getSupabaseAdminClient();
+  if (input.applicantCategory !== 'adult' || input.consentActor !== 'recipient') {
+    throw new LaunchGateError('The child/guardian consent workflow is awaiting approved rules. Adult self-consent cannot be used for a child.');
+  }
   const requestHash = hashRequest({
+    applicantCategory: input.applicantCategory,
+    consentActor: input.consentActor,
     caseId: input.caseId,
     consentType: input.consentType,
     consentContentVersionId: input.consentContentVersionId,
@@ -155,6 +166,10 @@ export async function grantConsent(
     return { consentRecordId: existing.id, status: 'exists' };
   }
 
+  const { data: existingProfile } = await admin.from('recipient_profiles')
+    .select('date_of_birth').eq('case_id', input.caseId).maybeSingle();
+  if (existingProfile?.date_of_birth) requireAdultSelfApplication(existingProfile.date_of_birth);
+
   // Validate state transition
   const { data: currentCase } = await admin
     .from('recipient_cases')
@@ -171,7 +186,8 @@ export async function grantConsent(
     .select('id, content_type, locale')
     .in('id', [input.consentContentVersionId, input.privacyNoticeVersionId])
     .eq('approval_status', 'approved')
-    .eq('is_published', true);
+    .eq('is_published', true)
+    .or('expiry_date.is.null,expiry_date.gt.' + new Date().toISOString().split('T')[0]);
   const consentVersion = approvedVersions?.find((item) => item.id === input.consentContentVersionId);
   const privacyVersion = approvedVersions?.find((item) => item.id === input.privacyNoticeVersionId);
   if (
@@ -202,6 +218,7 @@ export async function grantConsent(
     user_agent_hash: input.userAgentHash ?? null,
     idempotency_key: input.idempotencyKey,
     request_hash: requestHash,
+    metadata: { applicant_category: input.applicantCategory, consent_actor: input.consentActor, capacity_basis: 'self_declaration' },
   });
 
   if (error) {
@@ -302,6 +319,7 @@ export async function withdrawConsent(
 export interface SaveProfileInput {
   caseId: string;
   profileData: Record<string, unknown>;
+  readyForPayment?: boolean;
 }
 
 export async function saveProfileDraft(input: SaveProfileInput): Promise<void> {
@@ -310,18 +328,23 @@ export async function saveProfileDraft(input: SaveProfileInput): Promise<void> {
   // Verify consent exists
   const { data: caseRecord } = await admin
     .from('recipient_cases')
-    .select('consent_state')
+    .select('consent_state,application_state,campaign_id')
     .eq('id', input.caseId)
     .single();
 
   if (!caseRecord || caseRecord.consent_state !== 'agreed') {
     throw new Error('Consent must be granted before saving profile data');
   }
+  if (!['draft', 'correction_needed'].includes(caseRecord.application_state)) {
+    throw new Error('Application details cannot be changed in the current state');
+  }
+  requireAdultSelfApplication(input.profileData.date_of_birth);
+  await requireApprovedProfileFields(admin, caseRecord.campaign_id, input.profileData);
 
   // Update profile with approved fields only
   const { error } = await admin
     .from('recipient_profiles')
-    .update(input.profileData)
+    .update({ ...input.profileData, ...(input.readyForPayment ? { fields_completed: true } : {}) })
     .eq('case_id', input.caseId);
 
   if (error) {
@@ -390,7 +413,7 @@ export async function submitApplication(
   // Validate prerequisites
   const { data: caseRecord } = await admin
     .from('recipient_cases')
-    .select('application_ref, consent_state, application_state, comprehension_score, comprehension_passed')
+    .select('application_ref, consent_state, application_state, comprehension_score, comprehension_passed, campaign_id')
     .eq('id', input.caseId)
     .single();
 
@@ -400,6 +423,36 @@ export async function submitApplication(
 
   if (caseRecord.consent_state !== 'agreed') {
     throw new Error('Cannot submit: consent must be granted first');
+  }
+  if (caseRecord.comprehension_passed !== true) {
+    throw new Error('Cannot submit: the comprehension check must be completed correctly');
+  }
+  requireAdultSelfApplication(input.profileData.date_of_birth);
+  await requireApprovedProfileFields(admin, caseRecord.campaign_id, input.profileData);
+
+  // The final application is not complete until an image is safely stored and
+  // the manual payment declaration is recorded. Verification remains a later
+  // staff decision; neither payment nor submission activates membership.
+  const { data: payment, error: paymentError } = await admin
+    .from('payment_intents')
+    .select('id,payer_marked_paid_at,payer_declaration,state,payment_route')
+    .eq('case_id', input.caseId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (paymentError || !payment || !isBankPaymentRoute(payment.payment_route) || !['verification_pending', 'verified_by_official_source'].includes(payment.state) || !payment.payer_marked_paid_at || !payment.payer_declaration) {
+    throw new Error('Cannot submit: approved bank-transfer declaration and proof image are required');
+  }
+  const { data: proof, error: proofError } = await admin
+    .from('payment_evidence_versions')
+    .select('id,content_type,state')
+    .eq('payment_intent_id', payment.id)
+    .in('state', ['verification_pending', 'verified'])
+    .order('version_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (proofError || !proof || !['image/jpeg', 'image/png', 'image/webp'].includes(proof.content_type)) {
+    throw new Error('Cannot submit: a valid receipt image has not been uploaded');
   }
 
   const { data: consent } = await admin
@@ -425,7 +478,8 @@ export async function submitApplication(
     .select('id, content_type')
     .in('id', seenVersionIds)
     .eq('approval_status', 'approved')
-    .eq('is_published', true);
+    .eq('is_published', true)
+    .or('expiry_date.is.null,expiry_date.gt.' + new Date().toISOString().split('T')[0]);
   if (seenError || !seenVersions || seenVersions.length !== seenVersionIds.length) {
     throw new Error('All content versions seen must still be approved and published');
   }
@@ -448,10 +502,11 @@ export async function submitApplication(
   const submissionId = uuidv4();
 
   // Save profile data
-  await admin
+  const { error: profileSaveError } = await admin
     .from('recipient_profiles')
     .update({ ...input.profileData, fields_completed: true })
     .eq('case_id', input.caseId);
+  if (profileSaveError) throw new Error(`Failed to save profile: ${profileSaveError.message}`);
 
   const { data: priorSubmission } = await admin
     .from('application_submissions')

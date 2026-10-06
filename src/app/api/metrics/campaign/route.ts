@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const campaignId = request.nextUrl.searchParams.get('campaign_id');
     if (!campaignId) return badRequest('campaign_id is required');
     const roleCheck = await requireAnyRole(auth.userId, [
-      'privacy_admin_owner', 'school_admin', 'prc_liaison', 'support_agent', 'finance_export',
+      'privacy_admin_owner', 'school_admin', 'prc_liaison', 'support_agent', 'finance_export', 'payment_reviewer',
     ], campaignId);
     if (!roleCheck.allowed) return forbidden(roleCheck.reason);
 

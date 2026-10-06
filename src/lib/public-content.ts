@@ -10,21 +10,21 @@ export const benefits = [
 export const copy = {
   fil: {
     navBenefits: "Mga benepisyo", navProcess: "Proseso", memberLogin: "Member login", ambassadorLogin: "Ambassador", adminLogin: "Admin",
-    badge: "Controlled pilot · content for validation", heroTitle: "Unawain muna. Ikaw ang magpasya.",
+    badge: "Personal na proyekto · nilalamang susuriin", heroTitle: "Unawain muna. Ikaw ang magpasya.",
     heroBody: "Isang consent-first na paraan para matutunan ang Safe Card, pumili nang pribado, at isumite ang application kapag handa ka.",
     primaryCta: "Simulan ang pribadong walkthrough", secondaryCta: "Basahin ang mga benepisyo",
     voluntary: "Kusang-loob ang paglahok. Maaari kang magtanong, huminto, o tumanggi nang walang kapalit.",
     benefitsEyebrow: "Alamin bago pumili", benefitsTitle: "Mga benepisyo ng Safe Card.",
-    processTitle: "Isang proseso na inuuna ang iyong kontrol", footerNote: "School-project pilot. Hindi ito opisyal na PRC enrollment portal.",
+    processTitle: "Isang proseso na inuuna ang iyong kontrol", footerNote: "Personal na proyekto ni Indy. Hindi ito opisyal na PRC enrollment portal.",
   },
   en: {
     navBenefits: "Benefits", navProcess: "How it works", memberLogin: "Member login", ambassadorLogin: "Ambassador", adminLogin: "Admin",
-    badge: "Controlled pilot · content for validation", heroTitle: "Understand first. Decide for yourself.",
+    badge: "Personal project · content for review", heroTitle: "Understand first. Decide for yourself.",
     heroBody: "A consent-first way to learn about Safe Card, decide privately, and submit an application only when you are ready.",
     primaryCta: "Start the private walkthrough", secondaryCta: "Read the benefits",
     voluntary: "Participation is voluntary. You may ask, pause, or decline without consequence.",
     benefitsEyebrow: "Know before you choose", benefitsTitle: "Safe Card benefits.",
-    processTitle: "A process that keeps you in control", footerNote: "School-project pilot. This is not an official PRC enrollment portal.",
+    processTitle: "A process that keeps you in control", footerNote: "Indy's personal project. This is not an official PRC enrollment portal.",
   },
 } as const;
 

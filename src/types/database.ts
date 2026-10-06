@@ -15,6 +15,7 @@ export type StaffRole =
   | 'prc_liaison'
   | 'support_agent'
   | 'finance_export'
+  | 'payment_reviewer'
   | 'content_approver'
   | 'privacy_admin_owner';
 
@@ -163,8 +164,8 @@ export interface PilotCampaign {
   slug: string;
   start_date: string;
   end_date: string | null;
-  max_applications: number;
-  max_sponsors: number;
+  max_applications: number | null;
+  max_sponsors: number | null;
   membership_fee: number;
   approved_fields: string[];
   approved_payment_routes: PaymentRouteConfig[];

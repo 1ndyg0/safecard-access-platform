@@ -3,7 +3,7 @@
  *
  * Payer marks payment as completed with a reference number.
  * This does NOT verify the payment — verification comes from
- * GCash callback or manual staff reconciliation.
+ * Manual staff reconciliation.
  *
  * Journey phase 5: "I paid" reconciliation
  */
@@ -20,7 +20,7 @@ import { assertSyntheticText } from '@/lib/safety/data-mode';
 /** The reference field is optional in the wizard now — proof-of-payment upload alone is
  *  enough for staff review. The underlying RPC still requires a non-empty reference for
  *  its idempotency check, so mint a deterministic internal one from the intent id when
- *  the client did not supply a bank/GCash reference. */
+ *  the client did not supply a bank reference. */
 function ensurePaymentReference(clientRef: string, intentId: string): string {
   const trimmed = clientRef.trim();
   if (trimmed.length > 0) return trimmed;

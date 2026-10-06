@@ -9,6 +9,15 @@ test.beforeEach(async () => {
 });
 
 test.describe('staff role management', () => {
+  test('a disabled staff profile cannot use its still-active role to access private proof', async ({ page }) => {
+    await signIn(page, world.staff.finance);
+    const { error } = await world.admin.from('users')
+      .update({ is_active: false }).eq('id', world.staff.finance.userId);
+    expect(error).toBeNull();
+    const proof = await page.request.get(`/api/payment/evidence/${world.paymentEvidenceId}`);
+    expect(proof.status()).toBe(403);
+  });
+
   test('campaign metadata cannot authorize sibling-campaign receipt access', async ({ page }) => {
     const { data: campaign, error } = await world.admin.from('pilot_campaigns')
       .select('organization_id').eq('id', world.campaignId).single();
@@ -115,7 +124,10 @@ test.describe('staff role management', () => {
     await signIn(page, world.staff.privacyAdmin);
     await page.goto(`/admin/users?campaign_id=${world.campaignId}`);
     await expect(page.getByRole('heading', { name: 'Staff and roles' })).toBeVisible();
-    await expect(page.getByText('Finance Reviewer', { exact: true })).toBeVisible();
+    const financeAssignments = page.getByRole('article').filter({ hasText: 'finance@e2e.safecard.test' });
+    await expect(financeAssignments).toHaveCount(2);
+    await expect(financeAssignments.filter({ hasText: 'payment proof review' })).toBeVisible();
+    await expect(financeAssignments.filter({ hasText: 'PRC export' })).toBeVisible();
     await expect(page.getByText('PRC Liaison', { exact: true })).toBeVisible();
   });
 });

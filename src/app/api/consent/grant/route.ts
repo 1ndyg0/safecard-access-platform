@@ -42,6 +42,8 @@ export async function POST(request: NextRequest) {
 
     const result = await grantConsent({
       caseId: parsed.data.case_id,
+      applicantCategory: parsed.data.applicant_category,
+      consentActor: parsed.data.consent_actor,
       consentType: parsed.data.consent_type,
       consentContentVersionId: parsed.data.consent_content_version_id,
       privacyNoticeVersionId: parsed.data.privacy_notice_version_id,

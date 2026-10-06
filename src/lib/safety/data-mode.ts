@@ -1,9 +1,8 @@
 import 'server-only';
 
-import { z } from 'zod';
-
-export const dataModeSchema = z.enum(['synthetic', 'live']);
-export type DataMode = z.infer<typeof dataModeSchema>;
+import type { DataMode } from './data-mode-schema';
+export { dataModeSchema } from './data-mode-schema';
+export type { DataMode } from './data-mode-schema';
 
 export class LaunchGateError extends Error {
   constructor(message: string) {
@@ -13,6 +12,9 @@ export class LaunchGateError extends Error {
 }
 
 export function assertDataModeAllowed(mode: DataMode): void {
+  if (mode === 'synthetic' && (process.env.VERCEL_ENV === 'production' || process.env.APP_ENVIRONMENT === 'production')) {
+    throw new LaunchGateError('Synthetic records are disabled in production.');
+  }
   if (mode === 'live' && process.env.LAUNCH_GATES_COMPLETE !== 'true') {
     throw new LaunchGateError(
       'Live data collection is disabled until all launch gates are complete.',

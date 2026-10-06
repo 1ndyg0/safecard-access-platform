@@ -1,5 +1,9 @@
 # SafeCard R1 implementation status
 
+Historical 8 September 2026 assessment. For the current production bank-transfer
+MVP, see `docs/production-mvp-runbook.md`; the payment and launch statements
+below describe the former R1 scope.
+
 Assessment baseline: 8 September 2026. This register maps the supplied vision, backlog, journey, personas, implementation prompts, and wireframe/design-system references to the repository. “Implemented” means code exists and passes the repository gates; it does not mean PRC, privacy, security, or production approval has been obtained.
 
 ## Implemented
@@ -66,4 +70,7 @@ The following are blockers to live personal data and payment—not coding omissi
 6. Staff/ambassador provisioning, authenticator enrollment for export-capable roles, training and least-privilege review.
 7. Independent security review, accessibility audit, bilingual content review, representative UAT, backup/restore evidence, monitoring and production readiness sign-off.
 
-`LAUNCH_GATES_COMPLETE=true` must be set only after those approvals are documented. `ENABLE_OFFICIAL_PAYMENT_HANDOFF=true` additionally requires valid `PRC_PAYMENT_ROUTES_JSON`. The application displays its active mode so synthetic testing cannot be mistaken for live enrollment.
+For the current production MVP, the bank-transfer approval is read from the
+active campaign's `approved_payment_routes` and the exact accounts in
+`src/lib/payment/config.ts`. The obsolete `PRC_PAYMENT_ROUTES_JSON` setting is
+not used. Verify the live flags and backend in the production runbook.

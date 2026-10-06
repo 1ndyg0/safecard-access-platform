@@ -8,8 +8,8 @@
  * - Their right to withdraw consent
  * - How to contact PRC for claims
  *
- * The comprehension check is pass/fail. A failed check does NOT
- * block submission but is recorded for transparency.
+ * The comprehension check is pass/fail. A passing check is required
+ * before opening a payment intent or submitting the application.
  */
 
 import { NextRequest } from 'next/server';
@@ -19,19 +19,11 @@ import { writeAuditEvent } from '@/lib/audit';
 import { success, unauthorized, notFound, handleApiError } from '@/lib/api/response';
 import { enforceRateLimit } from '@/lib/api/rate-limit';
 import { z } from 'zod';
+import { comprehensionAnswersSchema, scoreComprehension } from '@/lib/intake/comprehension';
 
 const comprehensionSchema = z.object({
   case_id: z.string().uuid(),
-  answers: z.object({
-    /** "What does Safe Card cover?" — must select correct option */
-    coverage_understanding: z.boolean(),
-    /** "Does paying guarantee activation?" — must answer false */
-    payment_not_activation: z.boolean(),
-    /** "Can you withdraw consent?" — must answer true */
-    can_withdraw_consent: z.boolean(),
-    /** "Who do you contact for claims?" — must select PRC */
-    claims_contact_correct: z.boolean(),
-  }),
+  answers: comprehensionAnswersSchema,
 });
 
 export async function POST(request: NextRequest) {
@@ -57,33 +49,25 @@ export async function POST(request: NextRequest) {
     if (caseData.auth_user_id !== auth.userId) {
       return unauthorized('You can only complete comprehension for your own case');
     }
+    if (caseData.application_state !== 'draft') {
+      throw new Error('Comprehension answers cannot be changed after application submission');
+    }
 
     // Calculate result
-    const { answers } = parsed;
-    // Each boolean means the recipient selected the correct statement.
-    const passed =
-      answers.coverage_understanding &&
-      answers.payment_not_activation &&
-      answers.can_withdraw_consent &&
-      answers.claims_contact_correct;
-
-    const score = [
-      answers.coverage_understanding,
-      answers.payment_not_activation,
-      answers.can_withdraw_consent,
-      answers.claims_contact_correct,
-    ].filter(Boolean).length;
+    const { score, passed } = scoreComprehension(parsed.answers);
 
     // Store the result on the application submission (if one exists)
     // or just record it for when submission happens
-    await admin
+    const { error: updateError } = await admin
       .from('recipient_cases')
       .update({
         comprehension_passed: passed,
         comprehension_score: score,
+        comprehension_answers: parsed.answers,
         comprehension_checked_at: new Date().toISOString(),
       })
       .eq('id', parsed.case_id);
+    if (updateError) throw new Error(`Comprehension result could not be saved: ${updateError.message}`);
 
     await writeAuditEvent({
       event_type: 'comprehension_check',

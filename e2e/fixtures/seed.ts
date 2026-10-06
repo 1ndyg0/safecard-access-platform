@@ -14,6 +14,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHash, randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 import { resetSyntheticDatabase } from './reset';
+import { APPLICATION_PROFILE_FIELDS } from '../../src/lib/intake/approved-profile';
 
 const PASSWORD = 'e2e-operations-console-passphrase';
 
@@ -350,9 +351,9 @@ export async function seedWorld(): Promise<SeededWorld> {
       slug: `e2e-primary-${campaignId.slice(0, 8)}`,
       start_date: '2026-01-01',
       max_applications: 1000,
+      approved_fields: [...APPLICATION_PROFILE_FIELDS],
       is_active: true,
       approved_payment_routes: [
-        { type: 'gcash', is_active: true },
         { type: 'bank_transfer', is_active: true },
       ],
     },
@@ -363,9 +364,9 @@ export async function seedWorld(): Promise<SeededWorld> {
       slug: `e2e-other-${otherCampaignId.slice(0, 8)}`,
       start_date: '2026-01-01',
       max_applications: 1000,
+      approved_fields: [...APPLICATION_PROFILE_FIELDS],
       is_active: true,
       approved_payment_routes: [
-        { type: 'gcash', is_active: true },
         { type: 'bank_transfer', is_active: true },
       ],
     },
@@ -384,6 +385,7 @@ export async function seedWorld(): Promise<SeededWorld> {
 
   await admin.from('role_assignments').insert([
     { user_id: staff.privacyAdmin.userId, role: 'privacy_admin_owner', campaign_id: campaignId, is_active: true },
+    { user_id: staff.finance.userId, role: 'payment_reviewer', campaign_id: campaignId, is_active: true },
     { user_id: staff.finance.userId, role: 'finance_export', campaign_id: campaignId, is_active: true },
     { user_id: staff.support.userId, role: 'support_agent', campaign_id: campaignId, is_active: true },
     { user_id: staff.schoolAdmin.userId, role: 'school_admin', campaign_id: campaignId, is_active: true },

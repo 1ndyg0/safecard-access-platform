@@ -6,6 +6,7 @@ import { enforceRateLimit } from '@/lib/api/rate-limit';
 import { assertSyntheticText } from '@/lib/safety/data-mode';
 import { handleApiError } from '@/lib/api/response';
 import { storePaymentProof } from '@/lib/payment/evidence';
+import { PAYMENT_PROOF_MAX_BYTES, PAYMENT_PROOF_MIME_TYPES } from '@/lib/payment/evidence-validation';
 
 const fieldsSchema = z.object({
   payment_intent_id: z.string().uuid(),
@@ -24,6 +25,9 @@ export async function POST(request: NextRequest) {
     const parsed = fieldsSchema.parse(Object.fromEntries(form.entries()));
     const file = form.get('file');
     if (!(file instanceof File)) return NextResponse.json({ error: 'A receipt image is required.' }, { status: 400 });
+    if (file.size === 0 || file.size > PAYMENT_PROOF_MAX_BYTES || !PAYMENT_PROOF_MIME_TYPES.includes(file.type as (typeof PAYMENT_PROOF_MIME_TYPES)[number])) {
+      return NextResponse.json({ error: 'Choose a JPEG, PNG, or WebP receipt image up to 10 MB.' }, { status: 400 });
+    }
 
     const auth = await requireAuth();
     const access = await requirePaymentAccess(auth.userId, parsed.payment_intent_id);

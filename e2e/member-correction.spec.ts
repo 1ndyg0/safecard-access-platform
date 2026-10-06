@@ -98,6 +98,20 @@ test.describe('member status', () => {
 });
 
 test.describe('corrections', () => {
+  test('rejects a field removed from campaign approval without creating a new submission', async ({ page }) => {
+    const { error } = await world.admin.from('pilot_campaigns')
+      .update({ approved_fields: ['first_name'] }).eq('id', world.campaignId);
+    expect(error).toBeNull();
+    await signInMember(page, world.cases.correctionRequested);
+    const response = await page.request.post('/api/member/correction', { data: correction() });
+    expect(response.status()).toBe(409);
+    expect((await response.json()).error).toContain('not approved');
+    const { count } = await world.admin.from('application_submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('case_id', world.cases.correctionRequested.id);
+    expect(count).toBe(1);
+  });
+
   test('offers the stored fields and the reviewer reason', async ({ page }) => {
     await signInMember(page, world.cases.correctionRequested);
     const body = await (await page.request.get('/api/member/correction?locale=fil')).json();

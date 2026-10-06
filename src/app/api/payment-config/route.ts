@@ -5,23 +5,6 @@ import { getApprovedPaymentRoutes, MANUAL_PAYMENT_CONFIG } from "@/lib/payment/c
 
 export const dynamic = "force-dynamic";
 
-const STATIC_QR_URL = "/payment/prc-gcash-qr.png";
-
-async function getQrImageUrl() {
-  // Prefer the Supabase Storage signed URL when the bucket holds an updated QR (rotations
-  // during the pilot). Fall back to the static asset shipped with the app so the QR always
-  // renders even when the storage lookup is unavailable or the object has not been uploaded.
-  try {
-    const bucket = process.env.PAYMENT_PROOFS_BUCKET ?? "payment-proofs";
-    const { data } = await getSupabaseAdminClient().storage
-      .from(bucket)
-      .createSignedUrl(MANUAL_PAYMENT_CONFIG.qrObjectPath, 300);
-    return data?.signedUrl ?? STATIC_QR_URL;
-  } catch {
-    return STATIC_QR_URL;
-  }
-}
-
 export async function GET(request: Request) {
   try {
     const campaignId = new URL(request.url).searchParams.get("campaign_id");
@@ -48,11 +31,10 @@ export async function GET(request: Request) {
         .filter((route) => route.is_active === true && typeof route.type === "string")
         .map((route) => route.type as string),
     );
-    const qrImageUrl = await getQrImageUrl();
-    const routes = getApprovedPaymentRoutes(approvedTypes, qrImageUrl ?? undefined);
-    if (routes.length === 0) {
+    const routes = getApprovedPaymentRoutes(approvedTypes);
+    if (routes.length === 0 || Number(campaign.membership_fee) !== MANUAL_PAYMENT_CONFIG.amount) {
       return NextResponse.json(
-        { available: false, reason: "No official payment route is approved for this campaign.", amount: null, currency: "PHP", routes: [] },
+        { available: false, reason: "Approved bank transfer or the annual fee is not configured for this campaign.", amount: null, currency: "PHP", routes: [] },
         { status: 409, headers: { "Cache-Control": "no-store" } },
       );
     }
@@ -60,11 +42,9 @@ export async function GET(request: Request) {
       available: true,
       reason: null,
       amount: Number(campaign.membership_fee),
-      monthlyEquivalent: MANUAL_PAYMENT_CONFIG.monthlyEquivalent,
       currency: MANUAL_PAYMENT_CONFIG.currency,
       accountName: MANUAL_PAYMENT_CONFIG.accountName,
       routes,
-      controlledPilotWarning: "Verify the QR and account details with the payment owner and PRC before production activation.",
     }, {
       headers: { "Cache-Control": "private, no-store" },
     });

@@ -1,28 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
 import { useLocale } from "@/components/LocaleProvider";
 import { ManualPaymentPanel } from "@/components/application/ManualPaymentPanel";
+import { applicantCategory } from "@/lib/intake/applicant-capacity";
+import { isEligibleAge } from "@/lib/validation/age";
+import { scoreComprehension } from "@/lib/intake/comprehension";
 
 type Step = "learn" | "check" | "decide" | "consent" | "profile" | "payment" | "review" | "complete" | "declined";
 type PilotConfig = {
-  mode: "synthetic" | "live";
+  mode: "synthetic" | "live" | "unavailable";
   campaign: { id: string; membership_fee: number } | null;
-  content?: Array<{ id: string; content_type: string; locale: "tl" | "en"; title: string; body: string }>;
+  content?: Array<{ id: string; content_type: string; locale: "tl" | "en"; title: string; body: string; version?: number }>;
   payment: { available: boolean; reason: string | null };
   externalNotifications: { available: boolean; reason: string };
   configurationError?: string;
 };
 type Profile = {
-  first_name: string; last_name: string; date_of_birth: string; sex: "male" | "female";
+  first_name: string; last_name: string; date_of_birth: string; sex: "male" | "female" | "";
   mobile_number: string; address_line1: string; city: string; province: string; zip_code: string; email?: string;
 };
 type PaymentSummary = { routeLabel: string; reference: string };
 
-const emptyProfile: Profile = { first_name: "", last_name: "", date_of_birth: "", sex: "female", mobile_number: "", address_line1: "", city: "", province: "", zip_code: "", email: "" };
+const emptyProfile: Profile = { first_name: "", last_name: "", date_of_birth: "", sex: "", mobile_number: "", address_line1: "", city: "", province: "", zip_code: "", email: "" };
 
 function key(prefix: string) { return `${prefix}-${crypto.randomUUID()}`; }
 
@@ -54,11 +57,13 @@ export function ApplicationWizard() {
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [finalConfirmed, setFinalConfirmed] = useState(false);
+  const submissionKey = useRef<string | null>(null);
 
   useEffect(() => {
     fetch("/api/pilot/config", { cache: "no-store" }).then((r) => r.json()).then((next: PilotConfig) => {
       setConfig(next); setProfile(emptyProfile);
-    }).catch(() => setConfig({ mode: "synthetic", campaign: null, payment: { available: false, reason: "Unavailable" }, externalNotifications: { available: false, reason: "Parked" } }));
+    }).catch(() => setConfig({ mode: "unavailable", campaign: null, payment: { available: false, reason: "Unavailable" }, externalNotifications: { available: false, reason: "Unavailable" }, configurationError: "Application service is temporarily unavailable. Please try again shortly." }));
   }, []);
 
   useEffect(() => {
@@ -68,12 +73,16 @@ export function ApplicationWizard() {
     }).catch(() => undefined);
   }, [referralSlug]);
 
-  const allAgreed = agreed.voluntary && agreed.privacy && agreed.boundaries;
+  const [category, setCategory] = useState<"adult" | "child" | "">("");
+  const allAgreed = category === "adult" && agreed.voluntary && agreed.privacy && agreed.boundaries;
   const isLive = config?.mode === "live";
   const isFil = locale === "fil";
+  const consentNotices = config?.content?.filter((item) =>
+    item.locale === (isFil ? "tl" : "en")
+    && ["privacy_notice", "consent_text"].includes(item.content_type)) ?? [];
 
   const ui = isFil ? {
-    bannerLive: "Live pilot na kontrolado", bannerLiveBody: "Aktibo ang mga approved data control.", bannerSynthetic: "Synthetic na walkthrough", bannerSyntheticBody: "Huwag maglagay ng totoong personal na impormasyon. Walang mae-enroll o sisingilin dito.",
+    bannerLive: "Live na aplikasyon ng SafeCard", bannerLiveBody: "Aktibo ang mga approved data control.", bannerSynthetic: "Synthetic na walkthrough", bannerSyntheticBody: "Huwag maglagay ng totoong personal na impormasyon. Walang mae-enroll o sisingilin dito.",
     learnEyebrow: "01 · Impormasyon", learnTitle: "Alamin ang mahalaga bago magpasya.", learnBody: "Ang working baseline ay ₱1,200 bawat taon para sa edad 3–85. Ang eksaktong benepisyo, exclusions, eligibility, activation, at claims ay PRC lamang ang nagkukumpirma.",
     paymentBoundary: "Bayad ≠ pahintulot", paymentBoundaryBody: "Hindi maaaring magpasya ang sponsor o payer para sa recipient.", submissionBoundary: "Submission ≠ activation", submissionBoundaryBody: "PRC lamang ang makakapagkumpirma ng membership.", claimsBoundary: "PRC ang nagdedesisyon sa claims", claimsBoundaryBody: "Hindi nagdedesisyon ang project team kung covered o approved ang claim.", fullGuide: "Buong gabay",
     checkEyebrow: "02 · Pag-check", checkTitle: "Apat na bagay na dapat malinaw.",
@@ -87,14 +96,13 @@ export function ApplicationWizard() {
     quizCorrectLabel: "✓ Tama", quizWrongLabel: "✗ Mali — tamang sagot:",
     continue: "Magpatuloy →", reviewGuide: "Balikan ang gabay",
     decideEyebrow: "03 · Pribadong desisyon", decideTitle: "Ang iyong sagot ay sa iyo lamang.", decideBody: "Hindi makakatanggap ng notification ang sponsor kung ikaw ay magtatanong o tatanggi.", accept: "Accept / Mag-apply", acceptBody: "Magpatuloy sa privacy at consent step.", ask: "Ask / Magtanong", askBody: "Buksan ang Hotline 143 nang hindi nagsisimula ng application.", decline: "Not now / Hindi ngayon", declineBody: "Umalis nang pribado nang walang ibibigay na personal na impormasyon.", busy: "Gumagawa ng pribadong session…",
-    consentEyebrow: "04 · Privacy at pahintulot", consentTitle: "Pahintulot bago ang personal na datos.", minimum: "Minimum na kailangang kolektahin", minimumBody: "Sa live pilot, PRC-approved application fields lamang ang maaaring kolektahin. Hindi makikita ng sponsors ang identity, address, mobile number, application answers, payment evidence, o claims activity ng recipient.", privacyLink: "Basahin ang privacy at rights notice", voluntary: "Kusang-loob ang pagsali at maaari akong umatras.", privacyConsent: "Naiintindihan ko kung bakit kinokolekta at ibinabahagi sa PRC ang approved fields.", boundaryConsent: "Naiintindihan ko na ang bayad at submission ay hindi nag-a-activate ng membership.", continuePrivately: "Magpatuloy nang pribado →",
-    profileEyebrow: "05 · Approved fields", profileLiveTitle: "Detalye ng iyong application", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Mase-save lamang ang draft sa protected pilot backend pagkatapos ng consent.", profileSyntheticBody: "Naka-lock ang fields sa reserved synthetic values. Hindi puwedeng gumamit ng totoong impormasyon hanggang makumpleto ang launch gates.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Susunod: Bayad →", clearDevice: "I-clear ang shared device",
-    paymentDemoEyebrow: "06 · Bayad (demo)", paymentDemoTitle: "Sa live na app, magbabayad ka dito.", paymentDemoBody: "Kapag live na ang pilot, pipili ka ng payment route (GCash o bank transfer), ilalagay ang iyong payment reference, at mag-uupload ng proof ng bayad. Para sa demo na ito, pindutin ang Magpatuloy.", paymentDemoContinue: "Magpatuloy →",
+    consentEyebrow: "04 · Privacy at pahintulot", consentTitle: "Pahintulot bago ang personal na datos.", minimum: "Minimum na kailangang kolektahin", minimumBody: "Sa live na serbisyo, PRC-approved application fields lamang ang maaaring kolektahin. Hindi makikita ng sponsors ang identity, address, mobile number, application answers, payment evidence, o claims activity ng recipient.", privacyLink: "Basahin ang privacy at rights notice", voluntary: "Kusang-loob ang pagsali at maaari akong umatras.", privacyConsent: "Naiintindihan ko kung bakit kinokolekta at ibinabahagi sa PRC ang approved fields.", boundaryConsent: "Naiintindihan ko na ang bayad at submission ay hindi nag-a-activate ng membership.", continuePrivately: "Magpatuloy nang pribado →",
+    profileEyebrow: "05 · Approved fields", profileLiveTitle: "Detalye ng iyong application", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Mase-save lamang ang draft sa protected application backend pagkatapos ng consent.", profileSyntheticBody: "Naka-lock ang fields sa reserved synthetic values. Hindi puwedeng gumamit ng totoong impormasyon hanggang makumpleto ang launch gates.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Susunod: Bayad →", clearDevice: "I-clear ang shared device",
     reviewEyebrow: "07 · Review", reviewTitle: "Suriin bago isumite.", name: "Pangalan", dateOfBirth: "Petsa ng kapanganakan", addressLabel: "Address", mobileLabel: "Mobile",
     paymentSummaryTitle: "Bayad na naisumite", paymentSummaryRoute: "Route", paymentSummaryReference: "Reference", paymentSummaryStatus: "✓ Nai-upload ang proof — naghihintay ng staff verification",
     submit: "Isumite ang application →", submitting: "Isinusumite…", completeDemo: "Kumpletuhin ang demo →", edit: "I-edit",
     completeLiveEyebrow: "Application submitted", completeSyntheticEyebrow: "Synthetic walkthrough complete",
-    completeLiveTitle: "Handa ka na!", completeSyntheticTitle: "Walang totoong application na ginawa.",
+    completeLiveTitle: "Naisumite — naghihintay ng verification.", completeSyntheticTitle: "Walang totoong application na ginawa.",
     completeLiveBody: "Natanggap ang iyong application at ang iyong proof ng bayad ay naghihintay ng staff review.", completeSyntheticBody: "Demonstration lamang ang reference na ito at hindi ito puwedeng gamitin bilang membership credential.",
     applicationRef: "Application reference", demoRef: "Demo reference",
     completeNextStepsTitle: "Susunod na mangyayari",
@@ -108,7 +116,7 @@ export function ApplicationWizard() {
     backLabel: "← Bumalik", cancelLabel: "I-cancel", cancelConfirm: "Sigurado ka bang gusto mong mag-cancel? Mawawala ang iyong progreso.",
     labels: ["Matuto", "Suriin", "Magpasya", "Pahintulot", "Form", "Bayad", "Suriin"],
   } : {
-    bannerLive: "Controlled live pilot", bannerLiveBody: "Approved data controls are active.", bannerSynthetic: "Synthetic walkthrough", bannerSyntheticBody: "Do not enter real personal information. Nothing here enrolls or charges anyone.",
+    bannerLive: "Live SafeCard applications", bannerLiveBody: "Approved data controls are active.", bannerSynthetic: "Synthetic walkthrough", bannerSyntheticBody: "Do not enter real personal information. Nothing here enrolls or charges anyone.",
     learnEyebrow: "01 · Education", learnTitle: "Know what matters before deciding.", learnBody: "The working baseline is ₱1,200 per year for ages 3–85. Only PRC confirms exact benefits, exclusions, eligibility, activation, and claims.",
     paymentBoundary: "Payment ≠ consent", paymentBoundaryBody: "A sponsor or payer cannot decide for the recipient.", submissionBoundary: "Submission ≠ activation", submissionBoundaryBody: "Only a PRC confirmation activates membership.", claimsBoundary: "Claims stay with PRC", claimsBoundaryBody: "The project team never decides coverage or outcomes.", fullGuide: "Full guide",
     checkEyebrow: "02 · Comprehension", checkTitle: "Four things that must be clear.",
@@ -122,14 +130,13 @@ export function ApplicationWizard() {
     quizCorrectLabel: "✓ Correct", quizWrongLabel: "✗ Incorrect — correct answer:",
     continue: "Continue →", reviewGuide: "Review guide",
     decideEyebrow: "03 · Private decision", decideTitle: "Your answer belongs to you.", decideBody: "The sponsor receives no notification about an 'ask' or 'decline' choice.", accept: "Accept / Mag-apply", acceptBody: "Continue to the privacy and consent step.", ask: "Ask / Magtanong", askBody: "Open Hotline 143 without starting an application.", decline: "Not now / Hindi ngayon", declineBody: "Leave privately without providing personal information.", busy: "Creating a private session…",
-    consentEyebrow: "04 · Privacy and consent", consentTitle: "Consent before personal data.", minimum: "Minimum necessary collection", minimumBody: "The live pilot may collect only PRC-approved application fields. Sponsors cannot see recipient identity, address, mobile number, application answers, payment evidence, or claims activity.", privacyLink: "Read the privacy and rights notice", voluntary: "I am choosing voluntarily and may withdraw.", privacyConsent: "I understand why the approved fields are collected and shared with PRC.", boundaryConsent: "I understand payment and submission do not activate membership.", continuePrivately: "Continue privately →",
-    profileEyebrow: "05 · Approved fields", profileLiveTitle: "Your application details", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Your draft is saved only to the protected pilot backend after consent.", profileSyntheticBody: "Fields are locked to reserved synthetic values. Real information is blocked until every launch gate passes.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Next: Payment →", clearDevice: "Clear shared device",
-    paymentDemoEyebrow: "06 · Payment (demo)", paymentDemoTitle: "In the live app, you would pay here.", paymentDemoBody: "When the pilot goes live, you will choose a payment route (GCash or bank transfer), enter your payment reference, and upload proof of payment. For this demo, tap Continue.", paymentDemoContinue: "Continue →",
+    consentEyebrow: "04 · Privacy and consent", consentTitle: "Consent before personal data.", minimum: "Minimum necessary collection", minimumBody: "The live service may collect only PRC-approved application fields. Sponsors cannot see recipient identity, address, mobile number, application answers, payment evidence, or claims activity.", privacyLink: "Read the privacy and rights notice", voluntary: "I am choosing voluntarily and may withdraw.", privacyConsent: "I understand why the approved fields are collected and shared with PRC.", boundaryConsent: "I understand payment and submission do not activate membership.", continuePrivately: "Continue privately →",
+    profileEyebrow: "05 · Approved fields", profileLiveTitle: "Your application details", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Your draft is saved only to the protected application backend after consent.", profileSyntheticBody: "Fields are locked to reserved synthetic values. Real information is blocked until every launch gate passes.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Next: Payment →", clearDevice: "Clear shared device",
     reviewEyebrow: "07 · Review", reviewTitle: "Review before submitting.", name: "Name", dateOfBirth: "Date of birth", addressLabel: "Address", mobileLabel: "Mobile",
     paymentSummaryTitle: "Payment submitted", paymentSummaryRoute: "Route", paymentSummaryReference: "Reference", paymentSummaryStatus: "✓ Proof uploaded — pending staff review",
     submit: "Submit application →", submitting: "Submitting…", completeDemo: "Complete demo →", edit: "Edit",
     completeLiveEyebrow: "Application submitted", completeSyntheticEyebrow: "Synthetic walkthrough complete",
-    completeLiveTitle: "You're all set!", completeSyntheticTitle: "No real application was created.",
+    completeLiveTitle: "Submitted — verification pending.", completeSyntheticTitle: "No real application was created.",
     completeLiveBody: "Your application has been received and your payment proof is pending staff review.", completeSyntheticBody: "This reference is demonstrative and cannot be used as a membership credential.",
     applicationRef: "Application reference", demoRef: "Demo reference",
     completeNextStepsTitle: "What happens next",
@@ -165,14 +172,18 @@ export function ApplicationWizard() {
     setError("");
     if (decision === "ask") { setError(isFil ? "Tumawag sa Philippine Red Cross Hotline 143 bago magpasya." : "Call Philippine Red Cross Hotline 143 to ask before deciding."); return; }
     if (decision === "decline") { setStep("declined"); return; }
-    if (!isLive) { setStep("consent"); return; }
-    if (!config?.campaign) { setError(isFil ? "Hindi pa naka-configure ang live pilot." : "The live pilot is not configured."); return; }
+    if (!isLive) { setError(isFil ? "Pansamantalang hindi available ang application. Subukan muli mamaya." : "Applications are temporarily unavailable. Please try again later."); return; }
+    if (!answers.cost || !answers.activation || !answers.choice || !answers.emergency || !scoreComprehension(answers as { cost: "1200" | "100"; activation: "prc" | "sponsor"; choice: "recipient" | "payer"; emergency: "143" | "sponsor" }).passed) {
+      setError(isFil ? "Balikan at itama ang apat na sagot bago magpatuloy." : "Please review and correct all four answers before continuing."); return;
+    }
+    if (!config?.campaign) { setError(isFil ? "Hindi pa handa ang live na serbisyo." : "The live application service is not configured."); return; }
     setBusy(true);
     try {
       const result = await api("/api/intake/case", { campaign_id: config.campaign.id, referral_link_id: referralLinkId, decision: "accept" });
       setCaseId(result.caseId);
       window.sessionStorage.setItem("safecard-case-id", result.caseId);
-      await api("/api/intake/comprehension", { case_id: result.caseId, answers: { coverage_understanding: true, payment_not_activation: true, can_withdraw_consent: true, claims_contact_correct: true } });
+      const comprehension = await api("/api/intake/comprehension", { case_id: result.caseId, answers });
+      if (!comprehension.passed) throw new Error(isFil ? "Balikan ang mga sagot bago magpatuloy." : "Review your answers before continuing.");
       setStep("consent");
     } catch (caught) { setError(caught instanceof Error ? caught.message : (isFil ? "Hindi masimulan ang application." : "Unable to start the application.")); }
     finally { setBusy(false); }
@@ -180,7 +191,7 @@ export function ApplicationWizard() {
 
   async function recordConsent() {
     if (!allAgreed) return;
-    if (!isLive) { setStep("profile"); return; }
+    if (!isLive) { setError(isFil ? "Pansamantalang hindi available ang application." : "Applications are temporarily unavailable."); return; }
     const content = config?.content ?? [];
     const contentLocale = locale === "fil" ? "tl" : "en";
     const consent = content.find((item) => item.locale === contentLocale && item.content_type === "consent_text");
@@ -188,32 +199,54 @@ export function ApplicationWizard() {
     if (!caseId || !consent || !privacy) { setError(isFil ? "Hindi available ang approved consent content." : "Approved consent content is unavailable."); return; }
     setBusy(true);
     try {
-      const result = await api("/api/consent/grant", { case_id: caseId, consent_type: "membership_application", consent_content_version_id: consent.id, privacy_notice_version_id: privacy.id, locale: contentLocale, idempotency_key: key("consent") });
+      const result = await api("/api/consent/grant", { applicant_category: category, consent_actor: "recipient", case_id: caseId, consent_type: "membership_application", consent_content_version_id: consent.id, privacy_notice_version_id: privacy.id, locale: contentLocale, idempotency_key: key("consent") });
       setConsentRecordId(result.consentRecordId); setStep("profile");
     } catch (caught) { setError(caught instanceof Error ? caught.message : (isFil ? "Hindi ma-record ang consent." : "Consent could not be recorded.")); }
     finally { setBusy(false); }
   }
 
-  function profileValid() {
-    return profile.first_name.trim() && profile.last_name.trim() && /^(09|\+639)\d{9}$/.test(profile.mobile_number) && /^\d{4}$/.test(profile.zip_code) && profile.address_line1.trim() && profile.city.trim() && profile.province.trim();
+  function profileError(): string | null {
+    if (!profile.first_name.trim() || !profile.last_name.trim() || !profile.address_line1.trim() || !profile.city.trim() || !profile.province.trim()) return isFil ? "Kumpletuhin ang pangalan at address." : "Complete your name and address.";
+    if (applicantCategory(profile.date_of_birth) === "child") return isFil ? "Hinihintay pa ang aprubadong proseso para sa bata at guardian. Hindi maaaring gamitin ang pahintulot para sa adult." : "The child/guardian workflow is awaiting approved rules. Adult self-consent cannot be used for a child.";
+    if (!isEligibleAge(profile.date_of_birth)) return isFil ? "Kailangang 3 hanggang 85 taong gulang ang aplikante." : "The applicant must be 3 to 85 years old.";
+    if (!profile.sex) return isFil ? "Pumili ng sex." : "Please select sex.";
+    if (!/^(09|\+639)\d{9}$/.test(profile.mobile_number)) return isFil ? "Ilagay ang tamang mobile number." : "Enter a valid mobile number.";
+    if (!/^\d{4}$/.test(profile.zip_code)) return isFil ? "Apat na digit ang ZIP code." : "Enter a four-digit ZIP code.";
+    if (profile.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) return isFil ? "Ilagay ang tamang email o iwan itong blangko." : "Enter a valid email or leave it blank.";
+    return null;
+  }
+
+  async function continueToPayment() {
+    const invalid = profileError();
+    if (invalid) { setError(invalid); return; }
+    if (!isLive || !caseId || !consentRecordId) { setError(isFil ? "Hindi available ang secure application session." : "The secure application session is unavailable."); return; }
+    setBusy(true); setError("");
+    try {
+      await api("/api/intake/profile", { case_id: caseId, profile_data: { ...profile, email: profile.email || undefined }, data_mode: "live", ready_for_payment: true });
+      setStep("payment");
+    } catch (caught) { setError(caught instanceof Error ? caught.message : (isFil ? "Hindi ma-save ang application details." : "Application details could not be saved.")); }
+    finally { setBusy(false); }
   }
 
   async function submit() {
-    if (!profileValid()) { setError(isFil ? "Kumpletuhin ang lahat ng required fields gamit ang tamang format." : "Please complete every required field using the requested format."); return; }
+    const invalid = profileError();
+    if (invalid) { setError(invalid); return; }
+    if (!paymentSummary || !finalConfirmed) { setError(isFil ? "Kailangan ang payment proof at final declaration." : "Payment proof and the final declaration are required."); return; }
     if (!isLive || !caseId || !consentRecordId || !config?.content) {
       setError(isFil
-        ? "Hindi pa handa ang pilot intake. Mangyaring subukan muli o makipag-ugnayan sa Hotline 143."
+        ? "Hindi pa handa ang application intake. Mangyaring subukan muli o makipag-ugnayan sa Hotline 143."
         : "Application intake is not fully configured yet. Please try again shortly or contact Hotline 143.");
       return;
     }
     setBusy(true); setError("");
     try {
-      await api("/api/intake/profile", { case_id: caseId, profile_data: profile, data_mode: "live" });
+      await api("/api/intake/profile", { case_id: caseId, profile_data: { ...profile, email: profile.email || undefined }, data_mode: "live", ready_for_payment: true });
       const contentLocale = locale === "fil" ? "tl" : "en";
       const seen = config.content.filter((item) => item.locale === contentLocale).map((item) => item.id);
       const privacy = config.content.find((item) => item.locale === contentLocale && item.content_type === "privacy_notice");
       if (!privacy) throw new Error(isFil ? "Wala ang approved privacy notice." : "Approved privacy notice is missing.");
-      const result = await api("/api/intake/submit", { case_id: caseId, consent_record_id: consentRecordId, content_versions_seen: seen, privacy_notice_version_id: privacy.id, profile_data: profile, submitted_by: "recipient", idempotency_key: key("submit"), data_mode: "live" });
+      submissionKey.current ??= key("submit");
+      const result = await api("/api/intake/submit", { case_id: caseId, consent_record_id: consentRecordId, content_versions_seen: seen, privacy_notice_version_id: privacy.id, profile_data: { ...profile, email: profile.email || undefined }, submitted_by: "recipient", idempotency_key: submissionKey.current, data_mode: "live" });
       setReference(result.applicationRef);
       setProfile(emptyProfile);
       window.sessionStorage.removeItem("safecard-case-id");
@@ -238,8 +271,8 @@ export function ApplicationWizard() {
       </header>
 
       <div className="wizard-banner">
-        <strong>{ui.bannerLive}</strong>
-        <span>{ui.bannerLiveBody}</span>
+        <strong>{isLive ? (isFil ? "SafeCard application" : "SafeCard application") : (isFil ? "Hindi available ang application" : "Applications unavailable")}</strong>
+        <span>{isLive ? (config?.payment.available ? (isFil ? "Bukas ang application at manual bank transfer." : "Applications and manual bank transfer are open.") : (config?.payment.reason ?? (isFil ? "Pansamantalang hindi available ang bank transfer." : "Bank transfer is temporarily unavailable."))) : (config?.configurationError ?? (isFil ? "Subukan muli mamaya." : "Please try again later."))}</span>
       </div>
 
       {showProgress && (
@@ -303,10 +336,11 @@ export function ApplicationWizard() {
               correctValue="143" explanation={ui.hotlineExplain} correctLabel={ui.quizCorrectLabel} wrongLabel={ui.quizWrongLabel}
             />
             <div className="wizard-actions">
-              <button className="button-primary" onClick={() => { setError(""); setStep("decide"); }}>{ui.continue}</button>
+              <button className="button-primary" onClick={() => { if (!answers.cost || !answers.activation || !answers.choice || !answers.emergency) { setError(isFil ? "Sagutin muna ang apat na tanong." : "Answer all four questions before continuing."); return; } if (!scoreComprehension(answers as { cost: "1200" | "100"; activation: "prc" | "sponsor"; choice: "recipient" | "payer"; emergency: "143" | "sponsor" }).passed) { setError(isFil ? "Balikan at itama ang mga sagot." : "Review and correct the highlighted answers."); return; } setError(""); setStep("decide"); }}>{ui.continue}</button>
               <button className="button-quiet" onClick={goBack}>{ui.backLabel}</button>
               <button className="button-quiet wizard-cancel" onClick={cancelWizard}>{ui.cancelLabel}</button>
             </div>
+            {error && <p className="form-message error" role="alert">{error}</p>}
           </>
         )}
 
@@ -338,8 +372,23 @@ export function ApplicationWizard() {
             <div className="privacy-panel">
               <strong>{ui.minimum}</strong>
               <p>{ui.minimumBody}</p>
-              <Link href="/privacy">{ui.privacyLink}</Link>
+              <Link href={`/privacy?locale=${isFil ? "tl" : "en"}`} target="_blank" rel="noopener noreferrer">{ui.privacyLink}</Link>
             </div>
+            {isLive && consentNotices.map((notice) => (
+              <article className="privacy-panel" key={notice.id} data-content-version-id={notice.id}>
+                <h2>{notice.title}</h2>
+                {notice.version !== undefined && <p>{isFil ? "Bersiyon" : "Version"} {notice.version}</p>}
+                <p style={{ whiteSpace: "pre-wrap" }}>{notice.body}</p>
+              </article>
+            ))}
+            <label className="field-label">{isFil ? "Sino ang aplikante?" : "Who is applying?"}
+              <select value={category} onChange={(event) => setCategory(event.target.value as "adult" | "child" | "")}>
+                <option value="">{isFil ? "Pumili" : "Choose"}</option>
+                <option value="adult">{isFil ? "Ako, 18 taong gulang o higit pa" : "Myself, aged 18 or older"}</option>
+                <option value="child">{isFil ? "Bata, 3–17 taong gulang" : "A child, aged 3–17"}</option>
+              </select>
+            </label>
+            {category === "child" && <p role="status">{isFil ? "Hinihintay pa ang aprubadong proseso para sa guardian. Hindi pa maaaring magpatuloy o magtala ng adult consent para sa bata." : "The guardian workflow is awaiting approved rules. You cannot continue or record adult self-consent for a child."}</p>}
             {(["voluntary", "privacy", "boundaries"] as const).map((item, i) => (
               <label key={item} className="consent-row">
                 <input type="checkbox" checked={agreed[item]} onChange={(e) => setAgreed({ ...agreed, [item]: e.target.checked })} />
@@ -368,6 +417,7 @@ export function ApplicationWizard() {
               <label className="field-block">
                 <span>{ui.sex}</span>
                 <select value={profile.sex} onChange={(e) => setProfile({ ...profile, sex: e.target.value as "male" | "female" })}>
+                  <option value="">{isFil ? "Pumili" : "Select"}</option>
                   <option value="female">{ui.female}</option>
                   <option value="male">{ui.male}</option>
                 </select>
@@ -381,7 +431,7 @@ export function ApplicationWizard() {
             </div>
             {error && <p className="form-message error">{error}</p>}
             <div className="wizard-actions">
-              <button className="button-primary" disabled={!profileValid()} onClick={() => profileValid() ? setStep("payment") : setError(isFil ? "Kumpletuhin ang lahat ng required fields." : "Complete every required field.")}>{ui.reviewBtn}</button>
+              <button className="button-primary" disabled={busy} onClick={() => void continueToPayment()}>{busy ? (isFil ? "Sine-save…" : "Saving…") : ui.reviewBtn}</button>
               <button className="button-quiet" onClick={goBack}>{ui.backLabel}</button>
               <button className="button-quiet wizard-cancel" onClick={clearSharedDevice}>{ui.clearDevice}</button>
             </div>
@@ -423,8 +473,9 @@ export function ApplicationWizard() {
               </div>
             )}
             {error && <p className="form-message error">{error}</p>}
+            <label className="consent-row"><input type="checkbox" checked={finalConfirmed} onChange={(event) => setFinalConfirmed(event.target.checked)} /><span>{isFil ? "Kinukumpirma kong tama ang application details at na-upload ko ang proof ng bank transfer. Naghihintay pa ng staff verification ang bayad." : "I confirm that the application details are correct and I uploaded proof of my bank transfer. Staff verification is still pending."}</span></label>
             <div className="wizard-actions">
-              <button className="button-primary" disabled={busy} onClick={submit}>{busy ? ui.submitting : ui.submit}</button>
+              <button className="button-primary" disabled={busy || !paymentSummary || !finalConfirmed} onClick={submit}>{busy ? ui.submitting : ui.submit}</button>
               <button className="button-quiet" onClick={goBack}>{ui.backLabel}</button>
               <button className="button-quiet wizard-cancel" onClick={cancelWizard}>{ui.cancelLabel}</button>
             </div>

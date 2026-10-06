@@ -1,5 +1,8 @@
 # Expanded MVP and Main Features — replacement record
 
+Historical requirements record. The current production payment method is the
+four approved PRC bank transfers in `docs/production-mvp-runbook.md`.
+
 Source: https://claude.ai/code/artifact/3f666821-cb7b-405c-9b3a-a4bd939ad556
 
 Access limitation: source artifact was not readable in this environment. This is a requirements replacement, not a claim that the artifact was edited.

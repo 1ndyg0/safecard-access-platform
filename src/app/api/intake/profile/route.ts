@@ -22,12 +22,10 @@ import { z } from 'zod';
 import { dataModeSchema, assertProfileDataAllowed } from '@/lib/safety/data-mode';
 import { enforceRateLimit } from '@/lib/api/rate-limit';
 
-const saveProfileBodySchema = z.object({
-  case_id: z.string().uuid(),
-  profile_data: recipientProfileSchema.partial(),
-  data_mode: dataModeSchema,
-  // Partial for draft saves — full validation happens on submit
-});
+const saveProfileBodySchema = z.discriminatedUnion('ready_for_payment', [
+  z.object({ case_id: z.string().uuid(), profile_data: recipientProfileSchema, data_mode: dataModeSchema, ready_for_payment: z.literal(true) }),
+  z.object({ case_id: z.string().uuid(), profile_data: recipientProfileSchema.partial(), data_mode: dataModeSchema, ready_for_payment: z.literal(false).optional().default(false) }),
+]);
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,6 +41,7 @@ export async function POST(request: NextRequest) {
     await saveProfileDraft({
       caseId: parsed.case_id,
       profileData: parsed.profile_data,
+      readyForPayment: parsed.ready_for_payment,
     });
 
     return success({ saved: true, message: 'Profile draft saved' });

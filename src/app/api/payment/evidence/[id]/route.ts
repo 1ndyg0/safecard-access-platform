@@ -17,7 +17,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
       .maybeSingle();
     if (!evidence) return NextResponse.json({ error: 'Evidence not found.' }, { status: 404 });
     const paymentIntent = Array.isArray(evidence.payment_intents) ? evidence.payment_intents[0] : evidence.payment_intents;
-    const access = await requireAnyRole(auth.userId, ['privacy_admin_owner', 'finance_export', 'prc_liaison'], paymentIntent.campaign_id);
+    const access = await requireAnyRole(auth.userId, ['privacy_admin_owner', 'payment_reviewer', 'prc_liaison'], paymentIntent.campaign_id);
     if (!access.allowed) return NextResponse.json({ error: access.reason }, { status: 403 });
     const bucket = process.env.PAYMENT_PROOFS_BUCKET ?? 'payment-proofs';
     const { data, error } = await admin.storage.from(bucket).createSignedUrl(evidence.object_path, 300);

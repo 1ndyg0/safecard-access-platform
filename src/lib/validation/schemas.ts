@@ -7,7 +7,9 @@
  */
 
 import { z } from 'zod';
-import { dataModeSchema } from '@/lib/safety/data-mode';
+import { dataModeSchema } from '@/lib/safety/data-mode-schema';
+import { isEligibleAge } from '@/lib/validation/age';
+import { BANK_PAYMENT_ROUTE_IDS } from '@/lib/payment/config';
 
 // ============================================================
 // Shared primitives
@@ -87,12 +89,7 @@ export const recipientProfileSchema = z.object({
   date_of_birth: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD format')
-    .refine((val) => {
-      const dob = new Date(val);
-      const now = new Date();
-      const age = now.getFullYear() - dob.getFullYear();
-      return age >= 3 && age <= 85;
-    }, 'Age must be between 3 and 85 years / Edad ay dapat 3 hanggang 85 taon'),
+    .refine(isEligibleAge, 'Age must be between 3 and 85 years / Edad ay dapat 3 hanggang 85 taon'),
   sex: z.enum(['male', 'female']),
   civil_status: z
     .string()
@@ -128,6 +125,8 @@ export const recipientProfileSchema = z.object({
 // ============================================================
 
 export const grantConsentSchema = z.object({
+  applicant_category: z.enum(['adult', 'child']),
+  consent_actor: z.enum(['recipient', 'guardian']),
   case_id: uuidSchema,
   consent_type: z.enum([
     'membership_application',
@@ -177,15 +176,15 @@ export const createPaymentIntentSchema = z.object({
   payer_name: z.string().max(100).optional(),
   payer_sponsor_id: uuidSchema.optional(),
   expected_amount: z.number().positive(),
-  payment_route: z.string().min(1).max(50),
+  payment_route: z.enum(BANK_PAYMENT_ROUTE_IDS),
   idempotency_key: idempotencyKeySchema,
   data_mode: dataModeSchema,
 });
 
 export const markPaymentPaidSchema = z.object({
   payment_intent_id: uuidSchema,
-  // The user-supplied payment reference (bank/GCash confirmation number) is no longer
-  // required — the uploaded proof-of-payment image alone satisfies staff review. When
+  // The user-supplied bank-transfer reference is optional because the uploaded
+  // proof image can be reviewed even when the payer has no reference number. When
   // present it is still stored for reconciliation. Kept trimmed and length-bounded.
   payment_reference: z.string().trim().max(100).optional().default(''),
   payer_declaration: z.string().trim().min(10).max(500),
@@ -320,6 +319,7 @@ export const assignRoleSchema = z.strictObject({
     'prc_liaison',
     'support_agent',
     'finance_export',
+    'payment_reviewer',
     'content_approver',
     'privacy_admin_owner',
   ]),

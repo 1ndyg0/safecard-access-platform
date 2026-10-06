@@ -1,92 +1,35 @@
-/**
- * Controlled-pilot payment configuration.
- *
- * Provenance: values transcribed from the user-supplied payment reference in
- * the implementation brief (2026-09-08). Owner/PRC verification is still
- * required before LAUNCH_GATES_COMPLETE and ENABLE_OFFICIAL_PAYMENT_HANDOFF
- * may be enabled. Keep this module server-only and do not duplicate values in
- * client components.
- */
+/** Owner-confirmed manual Philippine Red Cross bank transfer routes. */
+export const BANK_PAYMENT_ROUTE_IDS = [
+  'bank_transfer_bpi',
+  'bank_transfer_bdo',
+  'bank_transfer_security_bank',
+  'bank_transfer_metrobank',
+] as const;
+
+export type BankPaymentRouteId = (typeof BANK_PAYMENT_ROUTE_IDS)[number];
 
 export const MANUAL_PAYMENT_CONFIG = {
   amount: 1200,
   currency: 'PHP',
-  monthlyEquivalent: 100,
-  accountName: 'PHILIPPINE RED CROSS',
-  qrObjectPath: 'official/gcash-qr.webp',
+  accountName: 'Philippine Red Cross',
   routes: [
-    {
-      id: 'gcash',
-      label: 'GCash QR',
-      instructions: 'Open GCash, scan the official QR, complete the transfer outside SafeCard, then return with your receipt or transaction reference.',
-      accountName: 'PHILIPPINE RED CROSS',
-      qrObjectPath: 'official/gcash-qr.webp',
-    },
-    {
-      id: 'bpi',
-      label: 'BPI bank transfer',
-      instructions: 'Transfer PHP 1,200 to the official PRC account, save the receipt, then return to upload proof of payment.',
-      accountName: 'PHILIPPINE RED CROSS',
-      bank: 'BPI',
-      accountType: 'Savings',
-      currency: 'PHP',
-      accountNumber: '002963000782B',
-      swiftCode: 'BOPIPHMM',
-      branch: 'Chinese Gen., Blumentritt Branch',
-    },
-    {
-      id: 'bdo',
-      label: 'BDO bank transfer',
-      instructions: 'Transfer PHP 1,200 to the official PRC account, save the receipt, then return to upload proof of payment.',
-      accountName: 'PHILIPPINE RED CROSS',
-      bank: 'BDO',
-      accountType: 'Savings',
-      currency: 'PHP',
-      accountNumber: '004530012185',
-      swiftCode: 'BNORPHM',
-      branch: 'South Harbor, Port Area Manila',
-    },
-    {
-      id: 'security-bank',
-      label: 'Security Bank transfer',
-      instructions: 'Transfer PHP 1,200 to the official PRC account, save the receipt, then return to upload proof of payment.',
-      accountName: 'PHILIPPINE RED CROSS',
-      bank: 'Security Bank',
-      accountType: 'Savings',
-      currency: 'PHP',
-      accountNumber: '0132062464003',
-      swiftCode: 'SETCPHMM',
-      branch: 'EDSA Mandaluyong Branch',
-    },
-    {
-      id: 'metrobank',
-      label: 'Metrobank transfer',
-      instructions: 'Transfer PHP 1,200 to the official PRC account, save the receipt, then return to upload proof of payment.',
-      accountName: 'PHILIPPINE RED CROSS',
-      bank: 'Metrobank',
-      accountType: 'Savings',
-      currency: 'PHP',
-      accountNumber: '151-3-15114558-3',
-      swiftCode: 'MBTCPHMM',
-      branch: 'Bonifacio Drive, Port Area Manila',
-    },
+    { id: 'bank_transfer_bpi', label: 'BPI', bank: 'BPI', accountType: 'Savings', currency: 'PHP', accountName: 'Philippine Red Cross', accountNumber: '002963007828' },
+    { id: 'bank_transfer_bdo', label: 'BDO', bank: 'BDO', accountType: 'Savings', currency: 'PHP', accountName: 'Philippine Red Cross', accountNumber: '004530012185' },
+    { id: 'bank_transfer_security_bank', label: 'Security Bank', bank: 'Security Bank', accountType: 'Savings', currency: 'PHP', accountName: 'Philippine Red Cross', accountNumber: '0132062464003' },
+    { id: 'bank_transfer_metrobank', label: 'Metrobank', bank: 'Metrobank', accountType: 'Savings', currency: 'PHP', accountName: 'Philippine Red Cross', accountNumber: '151-3-15114558-3' },
   ],
 } as const;
 
 export type ManualPaymentRoute = (typeof MANUAL_PAYMENT_CONFIG.routes)[number];
 
-export function getPaymentRoutes(qrImageUrl?: string) {
-  return MANUAL_PAYMENT_CONFIG.routes.map((route) => {
-    if (route.id !== 'gcash') return route;
-    return { ...route, qrImageUrl: qrImageUrl ?? null };
-  });
+export function isBankPaymentRoute(value: string): value is BankPaymentRouteId {
+  return (BANK_PAYMENT_ROUTE_IDS as readonly string[]).includes(value);
 }
 
-export function getApprovedPaymentRoutes(
-  approvedTypes: ReadonlySet<string>,
-  qrImageUrl?: string,
-) {
-  return getPaymentRoutes(qrImageUrl).filter((route) =>
-    approvedTypes.has(route.id === 'gcash' ? 'gcash' : 'bank_transfer'),
-  );
+export function bankLabelForRoute(value: string | null): string {
+  return MANUAL_PAYMENT_CONFIG.routes.find((route) => route.id === value)?.label ?? 'Unknown bank route';
+}
+
+export function getApprovedPaymentRoutes(approvedTypes: ReadonlySet<string>) {
+  return approvedTypes.has('bank_transfer') ? [...MANUAL_PAYMENT_CONFIG.routes] : [];
 }

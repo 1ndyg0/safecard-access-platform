@@ -2,7 +2,7 @@
  * POST /api/payment/verify
  *
  * Staff-only: manually verify a payment after reconciliation.
- * Used when GCash callback didn't fire or for manual payment routes.
+ * Used for manual payment reconciliation.
  *
  * Persona: Aira (school admin) reconciles payment evidence.
  */
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const auth = await requireStaffAuth();
 
     const roleCheck = await requireAnyRole(auth.userId, [
-      'finance_export', 'school_admin', 'prc_liaison',
+      'payment_reviewer',
     ]);
     if (!roleCheck.allowed) return forbidden(roleCheck.reason);
 

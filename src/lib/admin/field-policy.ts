@@ -112,10 +112,19 @@ const POLICY: Record<StaffRole, CaseAccessPolicy> = {
 
   // Verifies money against evidence. Needs the name on the receipt to
   // match it, and no other profile field whatsoever.
-  finance_export: {
+  payment_reviewer: {
     profileFields: ['first_name', 'last_name'],
     canViewPayments: true,
     canActOnPayments: true,
+    canViewAudit: true,
+    canReviewApplication: false,
+  },
+
+  // Export permission alone never authorizes receipt decisions.
+  finance_export: {
+    profileFields: ['first_name', 'last_name'],
+    canViewPayments: false,
+    canActOnPayments: false,
     canViewAudit: true,
     canReviewApplication: false,
   },
