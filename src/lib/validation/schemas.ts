@@ -120,7 +120,11 @@ export const recipientProfileSchema = z.object({
       /^(09|\+639)\d{9}$/,
       'Mobile number format: 09XXXXXXXXX / Format ng numero: 09XXXXXXXXX'
     ),
-  email: z.string().email('Invalid email format').optional(),
+  // The form leaves optional fields as "" when untouched; treat blank as absent.
+  email: z.preprocess(
+    (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+    z.string().email('Invalid email format').optional(),
+  ),
 });
 
 // ============================================================
