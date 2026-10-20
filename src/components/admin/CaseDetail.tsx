@@ -229,7 +229,14 @@ export function CaseDetail({ id }: { id: string }) {
                         {payment.currency}
                       </span>
                     </div>
-                    {data.capabilities.canActOnPayments && (
+                    {data.capabilities.canActOnPayments && payment.payment_state !== "verification_pending" && (
+                      <p className="muted-note">
+                        {payment.payment_state === "verified_by_official_source"
+                          ? "Payment verified. Nothing more to verify."
+                          : "No payment action is available in this state."}
+                      </p>
+                    )}
+                    {data.capabilities.canActOnPayments && payment.payment_state === "verification_pending" && (
                       <PaymentActions
                         caseId={id}
                         paymentIntentId={payment.id}
