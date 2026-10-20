@@ -56,11 +56,11 @@ insert into public.pilot_campaigns (
 -- Note: In a real setup, these IDs come from Supabase Auth.
 -- For seeding, we use deterministic UUIDs.
 
-insert into public.users (id, email, full_name, is_active, mfa_enabled) values
-  ('00000000-0000-0000-0000-000000000101', 'aira@sample-academy.test', 'Aira Mendoza', true, true),
-  ('00000000-0000-0000-0000-000000000102', 'elena@redcross.test', 'Elena Cruz', true, true),
-  ('00000000-0000-0000-0000-000000000103', 'support@sample-academy.test', 'Support Agent', true, false),
-  ('00000000-0000-0000-0000-000000000104', 'privacy@sample-academy.test', 'Privacy Admin', true, true);
+insert into public.users (id, email, full_name, is_active) values
+  ('00000000-0000-0000-0000-000000000101', 'aira@sample-academy.test', 'Aira Mendoza', true),
+  ('00000000-0000-0000-0000-000000000102', 'elena@redcross.test', 'Elena Cruz', true),
+  ('00000000-0000-0000-0000-000000000103', 'support@sample-academy.test', 'Support Agent', true),
+  ('00000000-0000-0000-0000-000000000104', 'privacy@sample-academy.test', 'Privacy Admin', true);
 
 -- ============================================================
 -- Role assignments

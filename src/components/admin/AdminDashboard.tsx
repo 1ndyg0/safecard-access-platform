@@ -1,55 +1,35 @@
 "use client";
 
 /**
- * Operations dashboard.
- *
- * Every number here is fetched from the server for the selected
- * campaign. Nothing is hard-coded, and a value the platform cannot
- * compute says so rather than rendering a zero that reads as a fact.
+ * Dashboard: how many applications are waiting, approved and rejected, and
+ * one clear way into the list. Every number comes from the server for the
+ * selected campaign; nothing is hard-coded.
  */
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
 import { readJson, useAsyncLoad } from "@/components/admin/use-async-load";
-import type { AdminAnalytics } from "@/components/admin/analytics-types";
 
 type Campaign = { id: string; name: string; is_active: boolean };
 
 type Overview = {
   user: { full_name: string; email: string } | null;
-  roles: string[];
   campaigns: Campaign[];
   selectedCampaignId: string | null;
-  counts: Record<string, number>;
+  counts: { awaiting_review: number; approved: number; rejected: number; total: number };
 };
-
-/** Order and labels for the operational counts. */
-const COUNT_CARDS: Array<{ key: string; label: string }> = [
-  { key: "total_cases", label: "Total cases" },
-  { key: "draft_or_incomplete", label: "Draft or incomplete" },
-  { key: "submitted", label: "Submitted" },
-  { key: "awaiting_application_review", label: "Awaiting application review" },
-  { key: "correction_requested", label: "Correction requested" },
-  { key: "payment_evidence_pending", label: "Payment evidence pending" },
-  { key: "payment_verified", label: "Payment verified" },
-  { key: "approved", label: "Approved" },
-];
 
 export function AdminDashboard() {
   const router = useRouter();
   const [overview, setOverview] = useState<Overview | null>(null);
-  const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
   /** The reviewer's explicit choice. Empty means "whatever the server picks". */
   const [chosenCampaignId, setChosenCampaignId] = useState("");
 
   const loader = useCallback(
     async (isActive: () => boolean) => {
-      const query = chosenCampaignId
-        ? `?campaign_id=${encodeURIComponent(chosenCampaignId)}`
-        : "";
+      const query = chosenCampaignId ? `?campaign_id=${encodeURIComponent(chosenCampaignId)}` : "";
       const response = await fetch(`/api/admin/overview${query}`, { cache: "no-store" });
       if (response.status === 401) {
         router.replace("/admin/login");
@@ -58,57 +38,43 @@ export function AdminDashboard() {
       const body: Overview = await readJson(response, "Unable to load the dashboard.");
       if (!isActive()) return;
       setOverview(body);
-
-      if (!body.selectedCampaignId) {
-        setAnalytics(null);
-        return;
-      }
-      const analyticsResponse = await fetch(
-        `/api/admin/analytics?campaign_id=${encodeURIComponent(body.selectedCampaignId)}`,
-        { cache: "no-store" },
-      );
-      const analyticsBody = await readJson(analyticsResponse, "Unable to load analytics.");
-      if (!isActive()) return;
-      setAnalytics(analyticsBody.analytics);
     },
     [chosenCampaignId, router],
   );
 
   const { status, error, reload } = useAsyncLoad(loader, "Unable to load the dashboard.");
   const selectedCampaignId = overview?.selectedCampaignId ?? "";
+  const campaignQuery = selectedCampaignId ? `&campaign_id=${selectedCampaignId}` : "";
+  const counts = overview?.counts;
 
   return (
     <AdminShell>
       <header className="admin-heading">
         <div>
-          <p className="eyebrow">Operations console</p>
-          <h1>{overview?.user ? `Welcome, ${overview.user.full_name}` : "SafeCard pilot"}</h1>
-          <p className="muted-note">Roles: {overview?.roles.join(", ") || "—"}</p>
+          <p className="eyebrow">Administration</p>
+          <h1>{overview?.user ? `Welcome, ${overview.user.full_name}` : "Overview"}</h1>
         </div>
-        <div className="field-block compact">
-          <label htmlFor="campaign-selector">Campaign</label>
-          <select
-            id="campaign-selector"
-            value={chosenCampaignId || selectedCampaignId}
-            onChange={(event) => setChosenCampaignId(event.target.value)}
-            disabled={!overview || overview.campaigns.length === 0}
-          >
-            {overview && overview.campaigns.length === 0 && (
-              <option value="">No campaigns</option>
-            )}
-            {(overview?.campaigns ?? []).map((campaign) => (
-              <option key={campaign.id} value={campaign.id}>
-                {campaign.name}
-                {campaign.is_active ? "" : " (inactive)"}
-              </option>
-            ))}
-          </select>
-        </div>
+        {overview && overview.campaigns.length > 1 && (
+          <div className="field-block compact">
+            <label htmlFor="campaign-selector">Campaign</label>
+            <select
+              id="campaign-selector"
+              value={chosenCampaignId || selectedCampaignId}
+              onChange={(event) => setChosenCampaignId(event.target.value)}
+            >
+              {overview.campaigns.map((campaign) => (
+                <option key={campaign.id} value={campaign.id}>
+                  {campaign.name}
+                  {campaign.is_active ? "" : " (inactive)"}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </header>
 
-      {/* Status is announced rather than silently swapped in. */}
       <div aria-live="polite" role="status">
-        {status === "loading" && <p className="form-message">Loading dashboard…</p>}
+        {status === "loading" && <p className="form-message">Loading…</p>}
         {status === "error" && (
           <p className="form-message error">
             {error}{" "}
@@ -126,36 +92,39 @@ export function AdminDashboard() {
         </p>
       )}
 
-      {status === "ready" && overview?.selectedCampaignId && (
+      {status === "ready" && counts && overview?.selectedCampaignId && (
         <>
-          <h2 className="section-title">Operational counts</h2>
-          <div className="metric-grid metric-grid-wide">
-            {COUNT_CARDS.map((card) => (
-              <article key={card.key}>
-                <span>{card.label}</span>
-                <strong>{overview.counts[card.key] ?? 0}</strong>
-              </article>
-            ))}
-          </div>
+          <ul className="count-grid" aria-label="Applications by status">
+            <li>
+              <Link className="count-card count-card-primary" href={`/admin/applications?status=awaiting_review${campaignQuery}`}>
+                <span className="count-label">Awaiting review</span>
+                <strong className="count-value" data-testid="count-awaiting_review">{counts.awaiting_review}</strong>
+                <span className="count-hint">Need a decision</span>
+              </Link>
+            </li>
+            <li>
+              <Link className="count-card" href={`/admin/applications?status=approved${campaignQuery}`}>
+                <span className="count-label">Approved</span>
+                <strong className="count-value" data-testid="count-approved">{counts.approved}</strong>
+                <span className="count-hint">Payment verified</span>
+              </Link>
+            </li>
+            <li>
+              <Link className="count-card" href={`/admin/applications?status=rejected${campaignQuery}`}>
+                <span className="count-label">Rejected</span>
+                <strong className="count-value" data-testid="count-rejected">{counts.rejected}</strong>
+                <span className="count-hint">Applicant was told why</span>
+              </Link>
+            </li>
+          </ul>
 
-          <AnalyticsPanel analytics={analytics} />
+          <p className="count-total">
+            <span data-testid="count-total">{counts.total}</span> complete application{counts.total === 1 ? "" : "s"} received in total.
+          </p>
 
-          <section className="admin-panel">
-            <div>
-              <p className="eyebrow">Next step</p>
-              <h2>Work the submission queue</h2>
-              <p className="muted-note">
-                Filter by any single workflow state, or sort by longest waiting to reach the
-                cases that have been waiting on review the longest.
-              </p>
-            </div>
-            <Link
-              className="button-primary"
-              href={`/admin/submissions?campaign_id=${overview.selectedCampaignId}`}
-            >
-              Open submission queue →
-            </Link>
-          </section>
+          <Link className="button-primary admin-cta" href={`/admin/applications?status=awaiting_review${campaignQuery}`}>
+            Review applications →
+          </Link>
         </>
       )}
     </AdminShell>

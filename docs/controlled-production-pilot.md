@@ -61,7 +61,7 @@ Use the smallest campaign-scoped role that supports each duty:
 
 | Pilot duty | Role |
 |---|---|
-| Accountable administrator and user management | `privacy_admin_owner` |
+| Accountable administrator | `privacy_admin_owner` |
 | Application review, including payment-proof verification | `school_admin` (or `privacy_admin_owner`) |
 | Read-only contact support | `support_agent` |
 | Content-only work | `content_approver` |

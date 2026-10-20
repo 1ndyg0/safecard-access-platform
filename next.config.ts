@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async redirects() {
+    return [
+      // The queue was renamed. Bookmarks and old links keep working.
+      { source: "/admin/submissions", destination: "/admin/applications", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

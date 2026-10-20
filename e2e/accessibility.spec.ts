@@ -23,97 +23,104 @@ test.describe('accessibility', () => {
   test('the dashboard has no serious or critical violations', async ({ page }) => {
     await signIn(page, world.staff.privacyAdmin);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByTestId('count-awaiting_review')).toBeVisible();
     expect(await scan(page)).toEqual([]);
   });
 
-  test('the queue has no serious or critical violations', async ({ page }) => {
+  test('the applications list has no serious or critical violations', async ({ page }) => {
     await signIn(page, world.staff.privacyAdmin);
-    await page.goto(`/admin/submissions?campaign_id=${world.campaignId}`);
-    await expect(page.getByRole('heading', { name: 'Submissions' })).toBeVisible();
+    await page.goto(`/admin/applications?campaign_id=${world.campaignId}&status=all`);
+    await expect(page.getByTestId('application-row').first()).toBeVisible();
     expect(await scan(page)).toEqual([]);
   });
 
-  test('case detail has no serious or critical violations', async ({ page }) => {
+  test('the review slide-over has no serious or critical violations', async ({ page }) => {
     await signIn(page, world.staff.privacyAdmin);
-    await page.goto(`/admin/submissions/${world.cases.approvedUnverifiedPayment}`);
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await page.goto(`/admin/applications?campaign_id=${world.campaignId}`);
+    await page.getByRole('button', { name: /review ana reyes/i }).click();
+    await expect(page.getByRole('dialog').getByAltText('Uploaded proof of payment')).toBeVisible();
+    expect(await scan(page)).toEqual([]);
+
+    await page.getByRole('button', { name: 'Reject' }).click();
+    await expect(page.getByLabel('Reason for rejection')).toBeVisible();
     expect(await scan(page)).toEqual([]);
   });
 
-  test('every filter control has an associated label', async ({ page }) => {
+  test('every control on the list has an accessible name', async ({ page }) => {
     await signIn(page, world.staff.privacyAdmin);
-    await page.goto(`/admin/submissions?campaign_id=${world.campaignId}`);
-
-    for (const label of [
-      'Application reference',
-      'Consent',
-      'Application',
-      'Application review',
-      'Payment',
-      'Membership',
-      'Sort',
-    ]) {
-      await expect(page.getByLabel(label, { exact: true })).toBeVisible();
+    await page.goto(`/admin/applications?campaign_id=${world.campaignId}`);
+    await expect(page.getByLabel('Search')).toBeVisible();
+    await expect(page.getByRole('radiogroup').or(page.getByRole('group', { name: 'Status' }))).toBeVisible();
+    for (const name of ['Awaiting review', 'Approved', 'Rejected', 'All']) {
+      await expect(page.getByRole('radio', { name })).toBeVisible();
+    }
+    await page.getByRole('button', { name: /^more/i }).click();
+    for (const label of ['Received from', 'Received to', 'Oldest first']) {
+      await expect(page.getByLabel(label)).toBeVisible();
     }
   });
 
-  test('the aging chart is mirrored by a real table', async ({ page }) => {
+  test('targets are at least 44px and keyboard focus is visible', async ({ page }) => {
     await signIn(page, world.staff.privacyAdmin);
-    // The bars carry no information of their own.
-    await expect(page.locator('.aging-chart')).toHaveAttribute('aria-hidden', 'true');
-    // The same figures are readable as a table.
-    const table = page.getByRole('table', {
-      name: /cases awaiting review, by how long/i,
-    });
-    await expect(table).toBeVisible();
-    await expect(table.getByRole('rowheader', { name: 'Under 24 hours' })).toBeVisible();
-    await expect(table.getByRole('rowheader', { name: 'Over 3 days' })).toBeVisible();
-  });
+    await page.goto(`/admin/applications?campaign_id=${world.campaignId}`);
+    await expect(page.getByTestId('application-row').first()).toBeVisible();
 
-  test('keyboard focus stays visible while tabbing the filter bar', async ({ page }) => {
-    await signIn(page, world.staff.privacyAdmin);
-    await page.goto(`/admin/submissions?campaign_id=${world.campaignId}`);
-    await page.getByLabel('Application reference').focus();
+    const review = page.getByRole('button', { name: /review ana reyes/i });
+    const box = await review.boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
 
+    await page.getByLabel('Search').focus();
     for (let step = 0; step < 6; step += 1) {
       await page.keyboard.press('Tab');
       const outline = await page.evaluate(() => {
         const element = document.activeElement;
         if (!element) return null;
         const style = getComputedStyle(element);
-        return { width: style.outlineWidth, style: style.outlineStyle, tag: element.tagName };
+        return { style: style.outlineStyle, width: style.outlineWidth };
       });
       expect(outline).not.toBeNull();
       expect(outline?.style).not.toBe('none');
     }
   });
 
-  test('the queue is operable by keyboard alone', async ({ page }) => {
+  test('the list is operable by keyboard alone', async ({ page }) => {
     await signIn(page, world.staff.privacyAdmin);
-    await page.goto(`/admin/submissions?campaign_id=${world.campaignId}`);
+    await page.goto(`/admin/applications?campaign_id=${world.campaignId}`);
+    await expect(page.getByTestId('application-row').first()).toBeVisible();
 
-    await page.getByLabel('Payment').focus();
-    await page.getByLabel('Payment').selectOption('verified_by_official_source');
-    await page.getByRole('button', { name: 'Apply' }).press('Enter');
-
-    await expect(page).toHaveURL(/payment_state=verified_by_official_source/);
+    await page.getByRole('radio', { name: 'Awaiting review' }).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(page).toHaveURL(/status=approved/);
   });
 
-  test('errors and results are announced', async ({ page }) => {
+  test('results are announced and nothing overflows the page horizontally', async ({ page }) => {
     await signIn(page, world.staff.privacyAdmin);
-    await page.goto(`/admin/submissions?campaign_id=${world.campaignId}`);
-    const live = page.locator('[role="status"][aria-live="polite"]').first();
-    await expect(live).toBeAttached();
-  });
+    await page.goto(`/admin/applications?campaign_id=${world.campaignId}&status=all`);
+    await expect(page.locator('[role="status"][aria-live="polite"]').first()).toBeAttached();
+    await expect(page.getByTestId('application-row').first()).toBeVisible();
 
-  test('long translated content does not overflow the page horizontally', async ({ page }) => {
-    await signIn(page, world.staff.privacyAdmin);
-    await page.goto(`/admin/submissions?campaign_id=${world.campaignId}`);
-
-    // The table scrolls inside its own container; the body must not.
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow).toBeLessThanOrEqual(1);
+
+    // The slide-over fills a phone and still does not scroll sideways.
+    await page.getByRole('button', { name: /review ana reyes/i }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    const drawerOverflow = await page.evaluate(() => {
+      const dialog = document.querySelector('dialog');
+      return dialog ? dialog.scrollWidth - dialog.clientWidth : 0;
+    });
+    expect(drawerOverflow).toBeLessThanOrEqual(1);
+  });
+
+  test('the slide-over respects reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await signIn(page, world.staff.privacyAdmin);
+    await page.goto(`/admin/applications?campaign_id=${world.campaignId}`);
+    await page.getByRole('button', { name: /review ana reyes/i }).click();
+    const animation = await page.getByRole('dialog').evaluate((element) => getComputedStyle(element).animationName);
+    expect(animation).toBe('none');
   });
 });

@@ -51,7 +51,7 @@ The database lint/reset checks require the local Supabase stack to be running. A
 - Public education: `/`, `/benefits`, `/privacy`, `/help`
 - Consent-first application: `/apply` (legacy step URLs redirect here so they cannot bypass the gated flow)
 - Member access: `/member`, `/member/card`, `/member/status`
-- Staff access: `/admin/login`, `/admin`, `/admin/submissions`, `/admin/submissions/[id]`, `/admin/users`
+- Administrator access: `/admin/login`, `/admin` (three counts and a link in), `/admin/applications` (complete applications only; **Review** opens a slide-over to approve or reject). See [`docs/admin-console.md`](docs/admin-console.md).
 
 Member access deliberately uses application reference plus registered mobile number without SMS OTP. Successful matching creates a signed, HTTP-only, 30-minute session; no bearer token or personal data is stored in browser storage. Staff access uses Supabase email/password. Cost-bearing SMS, email delivery, payment providers, and direct PRC integrations are parked.
 
