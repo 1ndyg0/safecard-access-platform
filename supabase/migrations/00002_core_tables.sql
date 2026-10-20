@@ -9,7 +9,7 @@
 create table public.organizations (
   id          uuid primary key default extensions.uuid_generate_v4(),
   name        text not null,
-  slug        citext not null unique,
+  slug        extensions.citext not null unique,
   org_type    text not null check (org_type in ('prc', 'school', 'partner')),
   is_active   boolean not null default true,
   metadata    jsonb not null default '{}',
@@ -29,7 +29,7 @@ create table public.pilot_campaigns (
   id                  uuid primary key default extensions.uuid_generate_v4(),
   organization_id     uuid not null references public.organizations(id),
   name                text not null,
-  slug                citext not null unique,
+  slug                extensions.citext not null unique,
   start_date          date not null,
   end_date            date,
   max_applications    integer not null default 50,
@@ -59,7 +59,7 @@ create trigger trg_pilot_campaigns_updated_at
 create table public.users (
   id              uuid primary key references auth.users(id) on delete cascade,
   -- Matches Supabase Auth user id
-  email           citext not null unique,
+  email           extensions.citext not null unique,
   full_name       text not null,
   is_active       boolean not null default true,
   mfa_enabled     boolean not null default false,
