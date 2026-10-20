@@ -99,6 +99,8 @@ export function ReviewPanel({
   const [proofLoaded, setProofLoaded] = useState(false);
 
   const isFinal = reviewState === "rejected";
+  // Approving again is refused by the server, so do not offer it.
+  const alreadyApproved = reviewState === "approved";
   const needsReason = decision ? REASON_REQUIRED.includes(decision) : false;
   const reasonOk = !needsReason || reason.trim().length >= 10;
   const shownProof: ProofRef | undefined = pendingPayment
@@ -205,7 +207,10 @@ export function ReviewPanel({
         </p>
       ) : !decision ? (
         <div className="decision-actions">
-          {DECISION_OPTIONS.filter((option) => option !== "request_payment_proof" || Boolean(pendingPayment)).map((option) => (
+          {alreadyApproved && (
+            <p className="muted-note">This application is already approved. Nothing more to approve.</p>
+          )}
+          {DECISION_OPTIONS.filter((option) => !(alreadyApproved && option === "approved") && (option !== "request_payment_proof" || Boolean(pendingPayment))).map((option) => (
             <button
               key={option}
               type="button"
