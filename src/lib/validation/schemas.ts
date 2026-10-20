@@ -189,6 +189,8 @@ export const markPaymentPaidSchema = z.object({
   // present it is still stored for reconciliation. Kept trimmed and length-bounded.
   payment_reference: z.string().trim().max(100).optional().default(''),
   payer_declaration: z.string().trim().min(10).max(500),
+  paid_at: z.string().date(),
+  amount_paid: z.coerce.number().positive().max(1_000_000),
   data_mode: dataModeSchema,
 });
 

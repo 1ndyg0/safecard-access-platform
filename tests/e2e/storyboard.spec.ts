@@ -206,6 +206,10 @@ test.describe('benefit storyboard', () => {
         await expect(panel(page, id)).toHaveClass(/open/);
         await settleOpenPanel(page);
         await expect(panel(page, id)).toBeVisible();
+        // Opening a card moves every header below it for 340 ms. In mobile
+        // WebKit, clicking the next moving header can land on its old position
+        // even though Playwright has already observed this panel as visible.
+        await settleOpenPanel(page);
         await expect(panel(page, id).locator('.story-disclaimer')).not.toBeEmpty();
       }
     });

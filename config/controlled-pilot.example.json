@@ -1,0 +1,63 @@
+{
+  "organization": {
+    "name": "SafeCard Controlled Pilot",
+    "slug": "safecard-controlled-pilot",
+    "org_type": "partner"
+  },
+  "campaign": {
+    "name": "SafeCard Controlled Pilot 2026",
+    "slug": "controlled-pilot-2026",
+    "start_date": "2026-09-12",
+    "end_date": "2026-12-31",
+    "max_applications": 50,
+    "max_sponsors": 30,
+    "membership_fee": 1200,
+    "approved_fields": ["first_name", "middle_name", "last_name", "date_of_birth", "sex", "civil_status", "address_line1", "address_line2", "city", "province", "zip_code", "mobile_number", "email"],
+    "approved_payment_routes": [
+      { "type": "gcash", "is_active": true, "details": { "merchant_name": "PHILIPPINE RED CROSS", "asset": "official/gcash-qr.webp" } },
+      { "type": "bank_transfer", "is_active": true, "details": { "account_name": "PHILIPPINE RED CROSS", "bpi_account_number": "002963000782B" } }
+    ],
+    "stop_conditions": [
+      { "type": "max_applications", "threshold": 50, "description": "Pause intake when 50 applications are reached" },
+      { "type": "privacy_incident", "threshold": 1, "description": "Stop immediately after any privacy incident" }
+    ]
+  },
+  "content": [
+    {
+      "content_type": "privacy_notice",
+      "locale": "tl",
+      "version": 1,
+      "title": "Paunawa sa Privacy — Controlled Pilot",
+      "body": "Kokolektahin lamang ang iyong impormasyon para sa controlled SafeCard pilot application. Ipapadala lamang ito sa Philippine Red Cross para sa opisyal na pagproseso at hindi ibabahagi sa sponsor o nagbayad nang walang pahintulot mo. Maaari mong bawiin ang pahintulot at humiling ng access, pagwawasto, o pagbura ayon sa naaangkop na proseso. Ang tekstong ito ay pansamantalang governed pilot content at hindi final PRC policy.",
+      "summary": "Pansamantalang paunawa sa privacy para sa controlled pilot.",
+      "source": "SafeCard controlled pilot governance — owner-authorized, not final PRC policy"
+    },
+    {
+      "content_type": "privacy_notice",
+      "locale": "en",
+      "version": 1,
+      "title": "Privacy Notice — Controlled Pilot",
+      "body": "Your information is collected only for the controlled SafeCard pilot application. It is sent only to the Philippine Red Cross for official processing and is not shared with a sponsor or payer without your consent. You may withdraw consent and request access, correction, or deletion through the applicable process. This is temporary governed pilot content and is not final PRC policy.",
+      "summary": "Temporary privacy notice for the controlled pilot.",
+      "source": "SafeCard controlled pilot governance — owner-authorized, not final PRC policy"
+    },
+    {
+      "content_type": "consent_text",
+      "locale": "tl",
+      "version": 1,
+      "title": "Pahintulot sa Aplikasyon — Controlled Pilot",
+      "body": "Sa pagpapatuloy, kinukumpirma mong kusang-loob ang iyong desisyon, na nauunawaan mo ang pansamantalang pilot benefits at limitations, at pumapayag kang ipadala sa Philippine Red Cross ang approved application fields. Maaari mong bawiin ang pahintulot. Ang submission, bayad, payment verification, at application approval ay hindi membership activation; opisyal na PRC confirmation lamang ang maaaring mag-activate.",
+      "summary": "Pansamantalang pahintulot para sa controlled pilot.",
+      "source": "SafeCard controlled pilot governance — owner-authorized, not final PRC policy"
+    },
+    {
+      "content_type": "consent_text",
+      "locale": "en",
+      "version": 1,
+      "title": "Application Consent — Controlled Pilot",
+      "body": "By continuing, you confirm that your decision is voluntary, that you understand the temporary pilot benefits and limitations, and that you consent to sending the approved application fields to the Philippine Red Cross. You may withdraw consent. Submission, payment, payment verification, and application approval do not activate membership; only official PRC confirmation can activate it.",
+      "summary": "Temporary consent text for the controlled pilot.",
+      "source": "SafeCard controlled pilot governance — owner-authorized, not final PRC policy"
+    }
+  ]
+}

@@ -171,6 +171,8 @@ export async function markPaymentPaid(
   paymentIntentId: string,
   paymentReference: string,
   payerDeclaration: string,
+  paidAt: string,
+  amountPaid: number,
   actorId: string | null,
 ): Promise<{ paymentState: string }> {
   const admin = getSupabaseAdminClient();
@@ -178,6 +180,8 @@ export async function markPaymentPaid(
     p_payment_intent_id: paymentIntentId,
     p_payment_reference: paymentReference,
     p_payer_declaration: payerDeclaration,
+    p_paid_at: paidAt,
+    p_amount_paid: amountPaid,
     p_actor_id: actorId,
   });
   if (error) throw new Error(`Payment could not be marked paid: ${error.message}`);

@@ -9,6 +9,7 @@ import { createSupabaseBrowserClient } from "@/lib/db/browser";
 export function AdminShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   async function signOut() {
+    await fetch("/api/admin/session/audit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "logout" }) }).catch(() => undefined);
     await createSupabaseBrowserClient().auth.signOut();
     router.replace("/admin/login");
     router.refresh();

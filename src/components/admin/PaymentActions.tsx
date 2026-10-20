@@ -53,7 +53,7 @@ export function PaymentActions({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
-  const [preview, setPreview] = useState<{ id: string; url: string } | null>(null);
+  const [preview, setPreview] = useState<{ id: string; url: string; contentType: string } | null>(null);
 
   function reset() {
     setMode("idle");
@@ -62,14 +62,14 @@ export function PaymentActions({
     setBusy(false);
   }
 
-  async function openEvidence(id: string) {
+  async function openEvidence(id: string, contentType: string) {
     setMessage("");
     setFailed(false);
     try {
       const response = await fetch(`/api/payment/evidence/${id}`, { cache: "no-store" });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? "Evidence could not be opened.");
-      setPreview({ id, url: body.signedUrl });
+      setPreview({ id, url: body.signedUrl, contentType });
     } catch (caught) {
       setFailed(true);
       setMessage(caught instanceof Error ? caught.message : "Evidence could not be opened.");
@@ -138,20 +138,14 @@ export function PaymentActions({
                 <span>{item.content_type} · {Math.ceil(item.file_size_bytes / 1024)} KB</span>
                 <span>SHA-256 {item.sha256.slice(0, 12)}…</span>
               </div>
-              <button type="button" className="button-quiet" onClick={() => void openEvidence(item.id)}>
+              <button type="button" className="button-quiet" onClick={() => void openEvidence(item.id, item.content_type)}>
                 Open evidence
               </button>
             </article>
           ))}
           {preview && (
             <div className="evidence-preview">
-              <Image
-                src={preview.url}
-                alt="Payment evidence selected for reconciliation"
-                width={960}
-                height={960}
-                unoptimized
-              />
+              {preview.contentType === "application/pdf" ? <iframe src={preview.url} title="Payment evidence selected for reconciliation" className="receipt-preview" sandbox="" referrerPolicy="no-referrer" /> : <Image src={preview.url} alt="Payment evidence selected for reconciliation" width={960} height={960} unoptimized />}
               <button type="button" className="link-button" onClick={() => setPreview(null)}>
                 Close preview
               </button>

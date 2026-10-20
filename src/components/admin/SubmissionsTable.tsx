@@ -53,6 +53,7 @@ const FILTER_KEYS = [
   "payment_state",
   "prc_handoff_state",
   "membership_state",
+  "search",
   "application_ref",
   "from",
   "to",
@@ -185,6 +186,23 @@ export function SubmissionsTable() {
           reload();
         }}
       >
+        <div className="field-block compact">
+          <label htmlFor="filter-search">Authorized case search</label>
+          <input
+            id="filter-search"
+            name="search"
+            minLength={3}
+            maxLength={120}
+            placeholder="Name, exact email, phone, payment reference, or case reference"
+            value={filters.search ?? ""}
+            onChange={(event) => setFilter("search", event.target.value)}
+            aria-describedby="filter-search-hint"
+          />
+          <p id="filter-search-hint" className="field-hint">
+            Searchable fields follow your campaign role; results never disclose extra profile data.
+          </p>
+        </div>
+
         <div className="field-block compact">
           <label htmlFor="filter-ref">Application reference</label>
           <input

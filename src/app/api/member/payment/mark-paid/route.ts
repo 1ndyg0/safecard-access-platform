@@ -19,6 +19,8 @@ export const dynamic = 'force-dynamic';
 
 const bodySchema = z.strictObject({
   payment_reference: z.string().trim().min(1).max(100),
+  paid_at: z.string().date(),
+  amount_paid: z.coerce.number().positive().max(1_000_000),
   confirm: z.literal(true),
 });
 
@@ -57,6 +59,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       intent.id as string,
       parsed.data.payment_reference,
       PAYER_DECLARATION,
+      parsed.data.paid_at,
+      parsed.data.amount_paid,
       null,
     );
 

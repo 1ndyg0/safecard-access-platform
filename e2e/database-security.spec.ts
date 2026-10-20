@@ -12,7 +12,7 @@ test('receipt bucket enforces private access, MIME restrictions and 10 MB limit'
   expect(error).toBeNull();
   expect(bucket?.public).toBe(false);
   expect(bucket?.file_size_limit).toBe(10 * 1024 * 1024);
-  expect(bucket?.allowed_mime_types?.slice().sort()).toEqual(['image/jpeg', 'image/png', 'image/webp']);
+  expect(bucket?.allowed_mime_types?.slice().sort()).toEqual(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
 });
 
 for (const authenticated of [false, true]) {
@@ -96,7 +96,12 @@ test('repeated member payment declarations are idempotent and cannot rewind veri
   expect(record.error).toBeNull();
   const login = await page.request.post('/api/member/auth', { data: { referenceNumber: record.data!.application_ref, mobileNumber: '+639000000000' } });
   expect(login.status()).toBe(200);
-  const declaration = { payment_reference: 'TEST IDEMPOTENT REFERENCE', confirm: true };
+  const declaration = {
+    payment_reference: 'TEST IDEMPOTENT REFERENCE',
+    paid_at: new Date().toISOString().slice(0, 10),
+    amount_paid: 1200,
+    confirm: true,
+  };
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const response = await page.request.post('/api/member/payment/mark-paid', { data: declaration });
     expect(response.status()).toBe(200);

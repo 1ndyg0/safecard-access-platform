@@ -45,6 +45,15 @@ export async function GET(request: NextRequest) {
 
     if (!caseRecord) return badRequest('Case not found');
 
+    const { data: consentRecord } = await admin
+      .from('consent_records')
+      .select('id,state')
+      .eq('case_id', caseId)
+      .eq('state', 'agreed')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     // Get membership details if confirmed
     let membershipDetails: Record<string, unknown> | null = null;
     if (caseRecord.membership_state === 'active_confirmed') {
@@ -73,6 +82,7 @@ export async function GET(request: NextRequest) {
     return success({
       caseId: caseRecord.id,
       applicationRef: caseRecord.application_ref,
+      consentRecordId: consentRecord?.id ?? null,
       states: {
         consent: caseRecord.consent_state,
         application: caseRecord.application_state,
