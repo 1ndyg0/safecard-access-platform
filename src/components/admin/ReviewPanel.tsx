@@ -14,7 +14,8 @@
  * overwriting their call.
  */
 
-import { useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import Image from "next/image";
 import { newIdempotencyKey } from "@/lib/idempotency";
 
 type Decision = "approved" | "resubmission_requested" | "rejected";
@@ -28,18 +29,59 @@ const DECISION_LABELS: Record<Decision, string> = {
 const REASON_REQUIRED: Decision[] = ["resubmission_requested", "rejected"];
 
 /** A pending payment proof the signed-in reviewer may verify together with the approval. */
-export type PendingPayment = { intentId: string; paymentState: string; evidenceId: string };
+export type PendingPayment = { intentId: string; paymentState: string; evidenceId: string; contentType: string };
+
+/**
+ * The uploaded payment proof, shown inline where the decision is made. It loads through the same
+ * audited, short-lived signed-URL route as the payment screen, so each view is logged.
+ */
+function ProofPreview({ evidenceId, contentType, onLoaded }: { evidenceId: string; contentType: string; onLoaded: (loaded: boolean) => void }) {
+  const [url, setUrl] = useState("");
+  const [error, setError] = useState("");
+  const load = useCallback(async () => {
+    setError(""); setUrl(""); onLoaded(false);
+    try {
+      const response = await fetch(`/api/payment/evidence/${evidenceId}`, { cache: "no-store" });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error ?? "The payment proof could not be opened.");
+      setUrl(body.signedUrl);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "The payment proof could not be opened.");
+    }
+  }, [evidenceId, onLoaded]);
+  useEffect(() => {
+    // Fetch the signed URL once when the proof is first shown.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
+  return (
+    <div className="evidence-preview" aria-live="polite">
+      <p className="eyebrow">Payment proof uploaded by the applicant</p>
+      {error && <p className="form-message error">{error}</p>}
+      {!url && !error && <p className="muted-note">Loading the payment proof…</p>}
+      {url && (contentType === "application/pdf"
+        ? <iframe src={url} title="Uploaded payment proof" className="receipt-preview" sandbox="" referrerPolicy="no-referrer" onLoad={() => onLoaded(true)} />
+        : <Image src={url} alt="Uploaded payment proof" width={960} height={960} unoptimized onLoad={() => onLoaded(true)} onError={() => { setError("The payment proof image could not be displayed."); onLoaded(false); }} style={{ width: "100%", height: "auto", maxWidth: 480 }} />)}
+      <button type="button" className="link-button" onClick={() => void load()}>Reload proof</button>
+    </div>
+  );
+}
+
+/** The latest uploaded proof, for any reviewer who may view payments. */
+export type ProofRef = { evidenceId: string; contentType: string };
 
 export function ReviewPanel({
   caseId,
   reviewState,
   onDecided,
   pendingPayment,
+  proof,
 }: {
   caseId: string;
   reviewState: string;
   onDecided: () => void;
   pendingPayment?: PendingPayment;
+  proof?: ProofRef;
 }) {
   const baseId = useId();
   const [decision, setDecision] = useState<Decision | null>(null);
@@ -49,10 +91,15 @@ export function ReviewPanel({
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
   const keyRef = useRef<string>("");
+  const [proofLoaded, setProofLoaded] = useState(false);
 
   const isFinal = reviewState === "rejected";
   const needsReason = decision ? REASON_REQUIRED.includes(decision) : false;
   const reasonOk = !needsReason || reason.trim().length >= 10;
+  const shownProof: ProofRef | undefined = pendingPayment
+    ? { evidenceId: pendingPayment.evidenceId, contentType: pendingPayment.contentType }
+    : proof;
+  const handleProofLoaded = useCallback((loaded: boolean) => setProofLoaded(loaded), []);
 
   function start(next: Decision) {
     setDecision(next);
@@ -124,6 +171,10 @@ export function ReviewPanel({
         Current review state: <strong>{reviewState.replaceAll("_", " ")}</strong>
       </p>
 
+      {shownProof && !isFinal && (
+        <ProofPreview evidenceId={shownProof.evidenceId} contentType={shownProof.contentType} onLoaded={handleProofLoaded} />
+      )}
+
       <div aria-live="polite" role="status">
         {message && <p className={failed ? "form-message error" : "form-message"}>{message}</p>}
       </div>
@@ -185,7 +236,7 @@ export function ReviewPanel({
             />
             <label htmlFor={`${baseId}-confirm`}>
               {withPayment
-                ? "I confirm this decision. I reviewed the payment proof below and verify it with this approval. PRC handoff is not required."
+                ? "I confirm this decision. I looked at the payment proof shown above and verify it with this approval. PRC handoff is not required."
                 : "I confirm this decision. It does not verify payment and does not activate membership."}
             </label>
           </div>
@@ -194,7 +245,7 @@ export function ReviewPanel({
             <button
               type="submit"
               className="button-primary"
-              disabled={!confirmed || !reasonOk || busy}
+              disabled={!confirmed || !reasonOk || busy || (withPayment && !proofLoaded)}
             >
               {busy ? "Recording…" : withPayment ? "Confirm: approve and verify payment" : `Confirm: ${DECISION_LABELS[decision]}`}
             </button>

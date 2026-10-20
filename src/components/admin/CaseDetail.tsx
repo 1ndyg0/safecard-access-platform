@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { PaymentActions } from "@/components/admin/PaymentActions";
 import { AuditTimeline } from "@/components/admin/AuditTimeline";
-import { ReviewPanel, type PendingPayment } from "@/components/admin/ReviewPanel";
+import { ReviewPanel, type PendingPayment, type ProofRef } from "@/components/admin/ReviewPanel";
 import { readJson, useAsyncLoad } from "@/components/admin/use-async-load";
 
 type Payment = {
@@ -102,9 +102,17 @@ function pendingPaymentFor(data: Detail): PendingPayment | undefined {
     const latest = [...(payment.evidence ?? [])]
       .filter((item) => !item.is_verified)
       .sort((a, b) => b.version_number - a.version_number)[0];
-    if (latest) return { intentId: payment.id, paymentState: payment.payment_state, evidenceId: latest.id };
+    if (latest) return { intentId: payment.id, paymentState: payment.payment_state, evidenceId: latest.id, contentType: latest.content_type };
   }
   return undefined;
+}
+
+/** The most recent uploaded proof across this case's payments, for reviewers who may view payments. */
+function latestProofFor(data: Detail): ProofRef | undefined {
+  if (!data.capabilities.canViewPayments) return undefined;
+  const all = data.payments.flatMap((payment) => payment.evidence ?? []);
+  const latest = [...all].sort((a, b) => new Date(b.uploaded_at ?? b.created_at).getTime() - new Date(a.uploaded_at ?? a.created_at).getTime())[0];
+  return latest ? { evidenceId: latest.id, contentType: latest.content_type } : undefined;
 }
 
 export function CaseDetail({ id }: { id: string }) {
@@ -199,6 +207,7 @@ export function CaseDetail({ id }: { id: string }) {
               <ReviewPanel
                 caseId={id}
                 pendingPayment={pendingPaymentFor(data)}
+                proof={latestProofFor(data)}
                 reviewState={data.case.application_review_state ?? "pending"}
                 onDecided={() => setReloadToken((value) => value + 1)}
               />
