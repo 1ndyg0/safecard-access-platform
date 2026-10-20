@@ -14,9 +14,7 @@
 --      with a three-value status (awaiting_review / approved / rejected). This
 --      is the single definition of "complete", so no API route filters for it.
 --   3. Adds public.admin_application_counts(): the four numbers on the dashboard.
---   4. Stops new "request resubmission" decisions (NOT VALID check on the
---      ledger: historical rows are not rewritten).
---   5. Drops what the console no longer uses: the old queue/context views, the
+--   4. Drops what the console no longer uses: the old queue/context views, the
 --      dashboard/analytics/suppression functions, the staff role-management
 --      functions, the replacement-proof request function and users.mfa_enabled.
 --
@@ -83,26 +81,7 @@ create trigger trg_sync_case_review_outcome
   for each row execute function public.sync_case_review_outcome();
 
 -- ============================================================
--- 2. No new "request resubmission" decisions
---    NOT VALID: existing ledger rows (immutable) are not checked, new ones are.
--- ============================================================
-do $$
-begin
-  if not exists (
-    select 1 from pg_constraint
-    where conname = 'review_decisions_no_new_resubmission_chk'
-      and conrelid = 'public.application_review_decisions'::regclass
-  ) then
-    alter table public.application_review_decisions
-      add constraint review_decisions_no_new_resubmission_chk
-      check (decision <> 'resubmission_requested' and resulting_state <> 'resubmission_requested')
-      not valid;
-  end if;
-end;
-$$;
-
--- ============================================================
--- 3. Queue index (partial: only complete, active applications)
+-- 2. Queue index (partial: only complete, active applications)
 -- ============================================================
 create index if not exists idx_recipient_cases_admin_queue
   on public.recipient_cases (campaign_id, application_review_state, created_at desc)
@@ -110,7 +89,7 @@ create index if not exists idx_recipient_cases_admin_queue
     and application_state in ('submitted', 'resubmitted');
 
 -- ============================================================
--- 4. The applications view
+-- 3. The applications view
 --    Complete = details submitted (submitted/resubmitted) and a payment has
 --    reached the proof stage (anything beyond the applicant still paying).
 --    status: approved / rejected come from the review decision; everything
@@ -158,7 +137,7 @@ revoke all on public.admin_applications_view from public, anon, authenticated;
 grant select on public.admin_applications_view to service_role;
 
 -- ============================================================
--- 5. Dashboard counts
+-- 4. Dashboard counts
 -- ============================================================
 create or replace function public.admin_application_counts(p_campaign_id uuid)
 returns jsonb
@@ -181,7 +160,7 @@ revoke all on function public.admin_application_counts(uuid) from public, anon, 
 grant execute on function public.admin_application_counts(uuid) to service_role;
 
 -- ============================================================
--- 6. Drop what the console no longer uses
+-- 5. Drop what the console no longer uses
 -- ============================================================
 drop view if exists public.admin_case_queue_view;
 drop view if exists public.application_review_context;
@@ -205,7 +184,7 @@ drop function if exists public.request_payment_evidence_reupload_atomic(uuid, uu
 alter table public.users drop column if exists mfa_enabled;
 
 -- ============================================================
--- 7. Post-conditions
+-- 6. Post-conditions
 -- ============================================================
 do $$
 begin

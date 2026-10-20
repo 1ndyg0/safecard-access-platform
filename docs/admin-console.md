@@ -44,8 +44,7 @@ Forward-only and re-runnable. It adds `recipient_cases.rejection_reason`,
 `reviewed_by`, `reviewed_at` (kept in step with the append-only
 `application_review_decisions` ledger by a trigger, and backfilled from it),
 `admin_applications_view`, `admin_application_counts()` and a partial queue
-index. It stops new "request resubmission" decisions (a `NOT VALID` check, so
-history is not rewritten) and drops what the console no longer uses:
+index. It drops what the console no longer uses:
 `admin_case_queue_view`, `application_review_context`, `admin_dashboard_counts`,
 `admin_campaign_analytics`, `admin_safe_count`, `admin_safe_rate`,
 `admin_suppression_threshold`, `assign_staff_role_atomic`,

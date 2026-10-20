@@ -152,12 +152,14 @@ test.describe('applications screen', () => {
     await signInAndOpenApplications(page, world.staff.privacyAdmin, world.campaignId);
     expect([...(await listedReferences(page))].sort()).toEqual(AWAITING);
 
+    // The list reloads after each change, so wait for the new rows rather than
+    // reading the ones still on screen.
     await page.getByRole('radio', { name: 'Approved' }).check();
     await expect(page).toHaveURL(/status=approved/);
-    expect(await listedReferences(page)).toEqual(['SC-2026-AAAA0004']);
+    await expect.poll(() => listedReferences(page)).toEqual(['SC-2026-AAAA0004']);
 
     await page.getByRole('radio', { name: 'All' }).check();
-    expect([...(await listedReferences(page))].sort()).toEqual(COMPLETE);
+    await expect.poll(async () => [...(await listedReferences(page))].sort()).toEqual(COMPLETE);
   });
 
   test('the old filters are gone', async ({ page }) => {
@@ -176,11 +178,12 @@ test.describe('applications screen', () => {
   test('searches from one box and keeps the view in the URL', async ({ page }) => {
     await signInAndOpenApplications(page, world.staff.privacyAdmin, world.campaignId, 'status=all');
     await page.getByLabel('Search').fill('Santos');
-    expect(await listedReferences(page)).toEqual(['SC-2026-AAAA0002']);
+    // Typing is debounced and the list then reloads.
+    await expect.poll(() => listedReferences(page)).toEqual(['SC-2026-AAAA0002']);
     await expect(page).toHaveURL(/search=Santos/);
 
     await page.reload();
-    expect(await listedReferences(page)).toEqual(['SC-2026-AAAA0002']);
+    await expect.poll(() => listedReferences(page)).toEqual(['SC-2026-AAAA0002']);
   });
 
   test('the reference is plain text, not a link', async ({ page }) => {

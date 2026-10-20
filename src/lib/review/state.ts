@@ -9,8 +9,8 @@
  * console.
  *
  * `resubmission_requested` stays in the list because the database enum keeps
- * the label for history; the console no longer produces it and the database
- * refuses new ledger rows that carry it.
+ * the label and the member correction flow still serves cases that already
+ * carry it; the console no longer produces it.
  */
 
 export const REVIEW_STATES = [

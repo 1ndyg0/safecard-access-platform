@@ -62,7 +62,9 @@ test.describe('accessibility', () => {
 
   test('targets are at least 44px and keyboard focus is visible', async ({ page }) => {
     await signIn(page, world.staff.privacyAdmin);
-    await page.goto(`/admin/applications?campaign_id=${world.campaignId}`);
+    // Every status, so there are more focusable controls than Tab presses and
+    // focus never runs off the end of the page into the browser's own interface.
+    await page.goto(`/admin/applications?campaign_id=${world.campaignId}&status=all`);
     await expect(page.getByTestId('application-row').first()).toBeVisible();
 
     const review = page.getByRole('button', { name: /review ana reyes/i });

@@ -131,8 +131,11 @@ describe('migration 00023', () => {
     expect(STATEMENTS).toContain('revoke all on function public.admin_application_counts(uuid) from public, anon, authenticated');
   });
 
-  it('stops new resubmission requests without rewriting history', () => {
-    expect(STATEMENTS).toContain('review_decisions_no_new_resubmission_chk');
-    expect(STATEMENTS).toMatch(/not valid/);
+  it('does not forbid the member-correction fixtures: resubmission rows stay insertable', () => {
+    // The member correction flow still serves cases already in correction_needed,
+    // so the ledger keeps accepting that label. No console route produces it.
+    expect(STATEMENTS).not.toContain('resubmission_requested');
+    const reject = readFileSync(join(ROOT, 'src/app/api/admin/cases/[id]/reject/route.ts'), 'utf8');
+    expect(reject).toContain("p_decision: 'rejected'");
   });
 });

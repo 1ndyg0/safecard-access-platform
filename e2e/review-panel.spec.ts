@@ -139,7 +139,7 @@ test.describe('review slide-over', () => {
     });
 
     // Reopening the application shows the stored reason, with no actions.
-    await dialog.getByRole('button', { name: 'Close' }).click();
+    await dialog.getByRole('button', { name: 'Close', exact: true }).click();
     await page.getByRole('button', { name: /review ben santos/i }).click();
     await expect(page.getByRole('dialog').getByTestId('rejection-reason')).toHaveText(REASON);
     await expect(page.getByRole('dialog').getByRole('button', { name: 'Approve' })).toHaveCount(0);
@@ -278,18 +278,5 @@ test.describe('decision API', () => {
       data: { confirm: true, reason: REASON, idempotency_key: 'e2e-support-key-1' },
     });
     expect(response.status()).toBe(403);
-  });
-
-  test('the migration keeps new resubmission requests out of the ledger', async () => {
-    const result = await world.admin.rpc('record_application_review_atomic', {
-      p_case_id: world.cases.awaitingSpare,
-      p_reviewer_id: world.staff.privacyAdmin.userId,
-      p_decision: 'resubmission_requested',
-      p_reason: 'Please correct your birth date.',
-      p_expected_state: 'pending',
-      p_idempotency_key: 'e2e-resubmission-blocked',
-      p_is_reopen: false,
-    });
-    expect(result.error?.message).toContain('review_decisions_no_new_resubmission_chk');
   });
 });
