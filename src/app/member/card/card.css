@@ -1,0 +1,32 @@
+/* Member card: a payment-card-shaped SafeCard with the benefits listed below it. */
+.member-card-view { width: min(520px, calc(100% - 32px)); margin: 28px auto 0; display: grid; gap: 18px; }
+.safecard { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 18px; min-height: 230px; aspect-ratio: 1.586 / 1; padding: clamp(18px, 5vw, 28px); overflow: hidden; border-radius: 20px; color: #fff; background: radial-gradient(120% 90% at 100% 0%, rgba(200,16,46,.55), transparent 55%), linear-gradient(145deg, #1b3150, #0a1424 70%); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 30px 60px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12); }
+.safecard::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.07) 48%, transparent 60%); }
+.safecard-top, .safecard-chip-row, .safecard-bottom { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.safecard-brand { display: inline-flex; align-items: center; gap: 8px; font: 800 1.05rem/1 var(--font-jakarta); }
+.safecard-brand span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--red); font-size: 1.05rem; }
+.safecard-chip { width: 44px; height: 33px; border-radius: 7px; background: linear-gradient(135deg, #f1d58a, #c99a3c 55%, #f1d58a); box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+.safecard-label { color: rgba(255,255,255,.7); font: 700 .66rem/1 var(--font-jakarta); letter-spacing: .14em; text-transform: uppercase; }
+.safecard-ref { position: relative; z-index: 1; margin: 0; font: 600 clamp(1.15rem, 5.4vw, 1.6rem)/1.1 var(--font-ibm-mono); letter-spacing: .06em; overflow-wrap: anywhere; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+.safecard-bottom { align-items: flex-end; flex-wrap: wrap; }
+.safecard-holder { display: grid; gap: 4px; min-width: 0; }
+.safecard-holder span, .safecard-meta dt { color: rgba(255,255,255,.55); font: 700 .58rem/1 var(--font-jakarta); letter-spacing: .1em; text-transform: uppercase; }
+.safecard-holder strong { font: 750 clamp(1rem, 4.6vw, 1.2rem)/1.15 var(--font-jakarta); overflow-wrap: anywhere; }
+.safecard-meta { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; }
+.safecard-meta div { display: grid; gap: 4px; }
+.safecard-meta dd { margin: 0; font: 650 .82rem/1.2 var(--font-jakarta); }
+.safecard-note { margin: 0; text-align: center; color: rgba(255,255,255,.6); font-size: .78rem; line-height: 1.5; }
+.safecard-note strong { color: #fff; }
+.card-benefits { padding: clamp(18px, 5vw, 26px); border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: rgba(255,255,255,.04); }
+.card-benefits h2 { margin: 0 0 14px; font: 750 1rem/1.2 var(--font-jakarta); }
+.card-benefits ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.card-benefits li { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 12px; background: rgba(255,255,255,.05); }
+.card-benefits li > span { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,.1); font-size: 1.1rem; }
+.card-benefits li strong { display: block; font: 700 .92rem/1.25 var(--font-jakarta); }
+.card-benefits li p { margin: 3px 0 0; color: rgba(255,255,255,.72); font-size: .82rem; line-height: 1.5; }
+.card-benefits-note { margin: 14px 0 0; color: rgba(255,255,255,.55); font-size: .72rem; line-height: 1.55; }
+@media (max-width: 520px) { .safecard { aspect-ratio: auto; } }
+
+@media print {
+  .safecard { box-shadow: none; print-color-adjust: exact; }
+}
