@@ -1,0 +1,33 @@
+# Deploys main to Vercel production after a merge.
+# OFF by default: it only runs once the repository variable VERCEL_AUTO_DEPLOY is set to "true"
+# AND these repository secrets exist: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID.
+name: Deploy to Vercel (production)
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ vars.VERCEL_AUTO_DEPLOY == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npx vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - run: npx vercel build --prod --token="$VERCEL_TOKEN"
+      - run: npx vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
