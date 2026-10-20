@@ -42,7 +42,7 @@ create table public.referral_links (
   id              uuid primary key default extensions.uuid_generate_v4(),
   sponsor_id      uuid not null references public.sponsors(id),
   campaign_id     uuid not null references public.pilot_campaigns(id),
-  slug            citext not null unique,
+  slug            extensions.citext not null unique,
   -- The unique slug used in the referral URL
   qr_metadata     jsonb not null default '{}',
   -- QR code generation metadata (not the image itself)
@@ -143,7 +143,7 @@ create table public.recipient_profiles (
   province          text,
   zip_code          text,
   mobile_number     text,
-  email             citext,
+  email             extensions.citext,
   -- Field-level completion tracking
   fields_completed  boolean not null default false,
   created_at        timestamptz not null default now(),
