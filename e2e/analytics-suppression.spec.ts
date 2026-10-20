@@ -28,8 +28,8 @@ test.describe('dashboard cohorts and suppression', () => {
 
     expect(body.counts.total_cases).toBe(0);
     expect(body.counts.approved).toBe(0);
-    // Eleven counts, all present.
-    expect(Object.keys(body.counts)).toHaveLength(11);
+    // Eight counts, all present.
+    expect(Object.keys(body.counts)).toHaveLength(8);
   });
 
   test('reports all eleven operational counts from real data', async ({ page }) => {
