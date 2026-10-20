@@ -47,9 +47,10 @@ describe('fallback content is complete and shippable', () => {
     expect(fallbackStoryboard.approvedBy).toBeNull();
   });
 
-  it('says every scenario is illustrative', () => {
+  it('says every scenario is a sample, not a promise', () => {
     for (const card of fallbackStoryboard.cards) {
-      expect(card.scenario.en.disclaimer.toLowerCase()).toContain('illustrative');
+      expect(card.scenario.en.disclaimer.toLowerCase()).toContain('sample scenario');
+      expect(card.scenario.en.disclaimer.toLowerCase()).toContain('does not');
       expect(card.scenario.fil.disclaimer.toLowerCase()).toContain('halimbawa');
     }
   });

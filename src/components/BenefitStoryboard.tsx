@@ -1,53 +1,37 @@
 "use client";
 
 /**
- * Benefit storyboard accordion.
+ * Benefit guide: a selector list beside a detail panel with an illustration.
  *
- * Presentation is the payment/storyboards branch's: the grid header, the
- * rotating indicator, and the `grid-template-rows` panel transition. Two
- * of its choices are load-bearing and were kept deliberately rather than
- * replaced:
+ * Content arrives validated from the governed loader (or the repository
+ * fallback) and is rendered as given; this component only lays it out.
  *
- *   - The closed panel uses `visibility: hidden`, which removes its
- *     contents from the tab order. A link inside a visually closed panel
- *     that is still tabbable is a keyboard trap mouse users never
- *     encounter and never report. `tabIndex={-1}` on the interactive
- *     elements is a second belt for the same trousers.
- *   - Reduced motion is handled by a global rule, so this component does
- *     not need its own media query.
+ * Accessibility: the selector is a WAI-ARIA tab list with a roving
+ * tabindex, so one Tab stop enters the list and the arrow keys, Home and
+ * End move between benefits. Every panel is a labelled tabpanel; panels
+ * that are not selected are `hidden`, which removes them from the tab
+ * order. Reduced motion is handled by the global rule in globals.css.
  *
- * What this module adds: content arrives validated from the governed
- * loader rather than being imported statically, completion is an
- * explicit action instead of a side effect of opening, provenance is
- * stated, and telemetry goes to the rate-limited backend endpoint
- * instead of a window event with no consumer.
- *
- * Each header is a real <button>, so Enter and Space work because the
- * platform makes them work — not because of a keydown handler that has
- * to be kept in step with the browser.
+ * Telemetry goes to the rate-limited backend endpoint with closed-set
+ * fields only (benefit, event, locale, duration, random visit id).
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { BenefitIcon, BenefitIllustration } from "@/components/BenefitIllustration";
 import type { BenefitCard, StoryboardLocale } from "@/lib/storyboard/schema";
 import type { StoryboardEventName } from "@/lib/storyboard/events";
 import { fallbackStoryboard } from "@/lib/storyboard/fallback";
 
 const COPY = {
-  markAsRead: { fil: "Markahan bilang nabasa", en: "Mark as read" },
-  read: { fil: "Nabasa na", en: "Read" },
-  progress: { fil: "Nabasa", en: "Read" },
+  sample: { fil: "Halimbawang sitwasyon", en: "Sample scenario" },
   situation: { fil: "Sitwasyon", en: "Situation" },
   action: { fil: "Ano ang dapat gawin", en: "What to do" },
   mayProvide: { fil: "Maaaring gawin ng PRC", en: "What PRC may provide" },
-  cost: { fil: "Halimbawa ng gastos", en: "Cost example" },
-  callHotline: { fil: "Tumawag sa Hotline 143", en: "Call Hotline 143" },
-  provisional: {
-    fil: "Provisional na nilalaman. Ang approved PRC content registry ang source of truth bago ang live pilot.",
-    en: "Provisional content. The approved PRC content registry is the source of truth before the live pilot.",
-  },
-  approved: {
-    fil: "Published na controlled-pilot content. Hindi ito final PRC policy; tingnan ang source status bago umasa rito.",
-    en: "Published controlled-pilot content. This is not final PRC policy; check its source status before relying on it.",
+  cost: { fil: "Tungkol sa gastos", en: "About costs" },
+  listLabel: { fil: "Mga benepisyo", en: "Benefits" },
+  footnote: {
+    fil: "Ang mga halimbawa ay para sa pag-unawa lamang. Ang mga benepisyo ay ayon sa mga tuntunin ng PRC; ang PRC lamang ang nagpapasya sa eligibility at claims.",
+    en: "Examples are for understanding only. Benefits are subject to PRC terms; only PRC decides eligibility and claims.",
   },
 } as const;
 
@@ -55,17 +39,9 @@ function say(key: keyof typeof COPY, locale: StoryboardLocale): string {
   return COPY[key][locale];
 }
 
-/**
- * Clock and randomness live at module scope so they are never called
- * during render. A value produced while rendering is an impure render,
- * and React may render more than once.
- */
+/** Clock and randomness live at module scope so they are never called during render. */
 function nowMs(): number {
   return Date.now();
-}
-
-function elapsedSince(start: number): number {
-  return start === 0 ? 0 : nowMs() - start;
 }
 
 function newVisitId(): string {
@@ -74,10 +50,6 @@ function newVisitId(): string {
 }
 
 export function BenefitStoryboard({
-  // Optional so surfaces that only teaser the storyboard (the landing
-  // page) need no server round-trip. They get the repository fallback,
-  // which is labelled provisional — the honest description of content
-  // that has not been through the registry.
   cards = fallbackStoryboard.cards,
   locale,
   provenance = "provisional",
@@ -88,16 +60,13 @@ export function BenefitStoryboard({
   provenance?: "approved" | "provisional";
   compact?: boolean;
 }) {
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [completed, setCompleted] = useState<string[]>([]);
-  const storyboardRoot = useRef<HTMLDivElement>(null);
+  const [selectedId, setSelectedId] = useState<string>(cards[0]?.id ?? "");
+  const root = useRef<HTMLDivElement>(null);
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const visitId = useRef<string>("");
   const openedAt = useRef<number>(0);
+  const hasInteracted = useRef(false);
 
-  /**
-   * Fire-and-forget. `keepalive` lets a final event survive the page
-   * closing without the page ever awaiting the request.
-   */
   const track = useCallback(
     (eventName: StoryboardEventName, benefitId: string, durationMs?: number) => {
       if (!visitId.current) visitId.current = newVisitId();
@@ -106,15 +75,7 @@ export function BenefitStoryboard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          events: [
-            {
-              benefit_id: benefitId,
-              event_name: eventName,
-              locale,
-              duration_ms: durationMs ?? null,
-              visit_id: visitId.current,
-            },
-          ],
+          events: [{ benefit_id: benefitId, event_name: eventName, locale, duration_ms: durationMs ?? null, visit_id: visitId.current }],
         }),
         keepalive: true,
       }).catch(() => {
@@ -124,148 +85,112 @@ export function BenefitStoryboard({
     [locale],
   );
 
-  // Generated after mount so the first paint owes nothing to crypto.
   useEffect(() => {
     if (!visitId.current) visitId.current = newVisitId();
-    // The server-rendered controls can be visible briefly before React has
-    // attached their handlers on a network deployment. Expose the actual
-    // interaction-ready boundary so automation and assistive QA never click
-    // a control during that hydration gap.
-    storyboardRoot.current?.setAttribute("data-hydrated", "true");
+    // Exposes the interaction-ready boundary so automation never clicks a
+    // control during the hydration gap.
+    root.current?.setAttribute("data-hydrated", "true");
   }, []);
 
-  function toggle(benefitId: string) {
-    const closing = openId === benefitId;
-    if (openId && openId !== benefitId) {
-      track("benefit_closed", openId, elapsedSince(openedAt.current));
-    }
-    if (closing) {
-      track("benefit_closed", benefitId, elapsedSince(openedAt.current));
-      setOpenId(null);
+  function select(benefitId: string, { focus = false } = {}) {
+    if (benefitId === selectedId) {
+      if (focus) tabRefs.current[benefitId]?.focus();
       return;
     }
+    if (hasInteracted.current) track("benefit_closed", selectedId, openedAt.current ? nowMs() - openedAt.current : 0);
+    hasInteracted.current = true;
     openedAt.current = nowMs();
-    setOpenId(benefitId);
+    setSelectedId(benefitId);
     track("benefit_opened", benefitId);
+    if (focus) tabRefs.current[benefitId]?.focus();
   }
 
-  /**
-   * Completion is an explicit action, not a side effect of opening.
-   * Auto-completing on open would make the completion rate a second,
-   * noisier copy of the open rate.
-   */
-  function markRead(benefitId: string) {
-    if (completed.includes(benefitId)) return;
-    setCompleted((current) => [...current, benefitId]);
-    track("story_completed", benefitId, elapsedSince(openedAt.current));
+  function onKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const last = cards.length - 1;
+    let next = -1;
+    if (event.key === "ArrowDown" || event.key === "ArrowRight") next = index === last ? 0 : index + 1;
+    else if (event.key === "ArrowUp" || event.key === "ArrowLeft") next = index === 0 ? last : index - 1;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = last;
+    if (next < 0) return;
+    event.preventDefault();
+    select(cards[next].id, { focus: true });
   }
 
   return (
-    <div
-      ref={storyboardRoot}
-      className={`benefit-storyboard ${compact ? "compact" : ""}`}
-      data-hydrated="false"
-      aria-label={locale === "fil" ? "Mga benepisyo at halimbawa" : "Benefits and examples"}
-    >
-      <p className="storyboard-progress" aria-live="polite">
-        {say("progress", locale)}: {completed.length}/{cards.length}
-      </p>
-
-      {cards.map((card, index) => {
-        const panelId = `storyboard-panel-${card.id}`;
-        const headerId = `storyboard-header-${card.id}`;
-        const isOpen = openId === card.id;
-        const isRead = completed.includes(card.id);
-        const story = card.scenario[locale];
-
-        return (
-          <article
-            className={`story-card ${isOpen ? "open" : ""} ${isRead ? "read" : ""}`}
-            key={card.id}
-          >
-            <h3 className="story-heading">
+    <div ref={root} className={`benefit-storyboard ${compact ? "compact" : ""}`} data-hydrated="false">
+      <div className="benefit-layout">
+        <div className="benefit-tabs" role="tablist" aria-label={say("listLabel", locale)} aria-orientation="vertical">
+          {cards.map((card, index) => {
+            const selected = card.id === selectedId;
+            return (
               <button
+                key={card.id}
+                ref={(node) => { tabRefs.current[card.id] = node; }}
                 type="button"
-                id={headerId}
-                className="story-header"
-                aria-expanded={isOpen}
-                aria-controls={panelId}
-                onClick={() => toggle(card.id)}
+                role="tab"
+                id={`storyboard-tab-${card.id}`}
+                className="benefit-tab"
+                aria-selected={selected}
+                aria-controls={`storyboard-panel-${card.id}`}
+                tabIndex={selected ? 0 : -1}
+                onClick={() => select(card.id)}
+                onKeyDown={(event) => onKeyDown(event, index)}
               >
-                <span className="story-number" aria-hidden="true">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <span className="story-icon" aria-hidden="true">
-                  {card.icon}
-                </span>
-                <span className="story-title">
+                <span className="benefit-tab-icon"><BenefitIcon benefitId={card.id} /></span>
+                <span className="benefit-tab-text">
                   <strong>{card.title[locale]}</strong>
                   <small>{card.summary[locale]}</small>
                 </span>
-                <span className="story-indicator" aria-hidden="true" />
               </button>
-            </h3>
+            );
+          })}
+        </div>
 
-            <div
-              className={`story-panel-shell ${isOpen ? "open" : ""}`}
-              id={panelId}
-              aria-hidden={!isOpen}
-            >
-              <div className="story-panel" role="region" aria-labelledby={headerId}>
-                <div className="story-panel-content">
-                  <p className="story-persona">
+        <div className="benefit-stage">
+          {cards.map((card) => {
+            const story = card.scenario[locale];
+            const selected = card.id === selectedId;
+            return (
+              <div
+                key={card.id}
+                role="tabpanel"
+                id={`storyboard-panel-${card.id}`}
+                aria-labelledby={`storyboard-tab-${card.id}`}
+                className="benefit-panel"
+                hidden={!selected}
+                tabIndex={0}
+              >
+                <div className="benefit-side">
+                  <div className="benefit-art">
+                    <BenefitIllustration benefitId={card.id} />
+                  </div>
+                  <h3>{card.title[locale]}</h3>
+                  <p className="benefit-summary">{card.summary[locale]}</p>
+                </div>
+                <div className="benefit-copy">
+                  <p className="benefit-persona">
+                    <span>{say("sample", locale)}</span>
                     <strong>{story.persona}</strong>
                   </p>
-                  <p>
-                    <strong>{say("situation", locale)}.</strong> {story.situation}
-                  </p>
-                  <p>
-                    <strong>{say("action", locale)}.</strong> {story.action}
-                  </p>
-                  <p>
-                    <strong>{say("mayProvide", locale)}.</strong> {story.mayProvide}
-                  </p>
-                  {story.cost && (
-                    <p>
-                      <strong>{say("cost", locale)}.</strong> {story.cost}
-                    </p>
-                  )}
 
-                  <p className="story-disclaimer">{story.disclaimer}</p>
-                  {story.hotlineGuidance && (
-                    <p className="story-hotline-note">{story.hotlineGuidance}</p>
-                  )}
+                  <dl className="benefit-facts">
+                    <div><dt>{say("situation", locale)}</dt><dd>{story.situation}</dd></div>
+                    <div><dt>{say("action", locale)}</dt><dd>{story.action}</dd></div>
+                    <div><dt>{say("mayProvide", locale)}</dt><dd>{story.mayProvide}</dd></div>
+                    {story.cost && <div><dt>{say("cost", locale)}</dt><dd>{story.cost}</dd></div>}
+                  </dl>
 
-                  <div className="story-actions">
-                    <a
-                      className="hotline-action"
-                      href="tel:143"
-                      // Second guard alongside `visibility: hidden`.
-                      tabIndex={isOpen ? undefined : -1}
-                      onClick={() => track("hotline_action_selected", card.id)}
-                    >
-                      ☎ {say("callHotline", locale)}
-                    </a>
-                    <button
-                      type="button"
-                      className="button-quiet story-read-action"
-                      tabIndex={isOpen ? undefined : -1}
-                      onClick={() => markRead(card.id)}
-                      disabled={isRead}
-                    >
-                      {isRead ? say("read", locale) : say("markAsRead", locale)}
-                    </button>
-                  </div>
+                  {story.hotlineGuidance && <p className="benefit-tip">{story.hotlineGuidance}</p>}
+                  <p className="benefit-disclaimer">{story.disclaimer}</p>
                 </div>
               </div>
-            </div>
-          </article>
-        );
-      })}
+            );
+          })}
+        </div>
+      </div>
 
-      <p className="content-footnote" data-provenance={provenance}>
-        {provenance === "approved" ? say("approved", locale) : say("provisional", locale)}
-      </p>
+      <p className="content-footnote" data-provenance={provenance}>{say("footnote", locale)}</p>
     </div>
   );
 }

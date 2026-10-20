@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   APPLICATION_STATES,
+  COMPLETE_PAYMENT_STATES,
   CONSENT_STATES,
+  isCompleteApplication,
   MEMBERSHIP_STATES,
   PAYMENT_STATES,
   PRC_HANDOFF_STATES,
@@ -140,5 +142,24 @@ describe('URL persistence', () => {
     expect(serialized).not.toContain('sort=newest');
     expect(serialized).not.toContain('page=1');
     expect(serialized).toContain('application_state=draft');
+  });
+});
+
+
+describe('complete applications', () => {
+  it('only treats an application as complete once proof of payment is uploaded', () => {
+    // Uploading proof moves a case to verification_pending; anything earlier is still in progress.
+    for (const state of ['not_started', 'official_handoff_opened', 'payer_marked_paid']) {
+      expect(isCompleteApplication(state), state).toBe(false);
+    }
+    for (const state of ['verification_pending', 'verified_by_official_source']) {
+      expect(isCompleteApplication(state), state).toBe(true);
+    }
+  });
+
+  it('lists only real payment states', () => {
+    for (const state of COMPLETE_PAYMENT_STATES) {
+      expect((PAYMENT_STATES as readonly string[]).includes(state)).toBe(true);
+    }
   });
 });

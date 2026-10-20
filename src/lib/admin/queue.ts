@@ -52,6 +52,24 @@ export const PRC_HANDOFF_STATES = [
   'rejected',
 ] as const;
 
+/**
+ * Payment states that mean the applicant finished the whole application:
+ * details submitted AND proof of payment uploaded. Uploading proof is what
+ * moves a case to `verification_pending`, so any case still at
+ * `not_started`, `official_handoff_opened` or `payer_marked_paid` is an
+ * in-progress application and is never shown to staff.
+ */
+export const COMPLETE_PAYMENT_STATES = [
+  'verification_pending',
+  'verified_by_official_source',
+  'failed_or_cancelled',
+  'refunded_or_reversed',
+] as const satisfies ReadonlyArray<(typeof PAYMENT_STATES)[number]>;
+
+export function isCompleteApplication(paymentState: string): boolean {
+  return (COMPLETE_PAYMENT_STATES as readonly string[]).includes(paymentState);
+}
+
 export const MEMBERSHIP_STATES = [
   'not_active',
   'pending_prc_confirmation',

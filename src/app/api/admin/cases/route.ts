@@ -23,7 +23,7 @@ import { getSupabaseAdminClient } from '@/lib/db/client';
 import { assertCampaignAccess, resolveStaffScope, rolesForCampaign } from '@/lib/admin/access';
 import { resolveCaseAccessPolicy } from '@/lib/admin/field-policy';
 import { handleAdminError, PRIVATE_NO_STORE } from '@/lib/admin/respond';
-import { parseQueueQuery, resolveDateRange, reviewBucketStates } from '@/lib/admin/queue';
+import { COMPLETE_PAYMENT_STATES, parseQueueQuery, resolveDateRange, reviewBucketStates } from '@/lib/admin/queue';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +45,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     let builder = admin
       .from('admin_case_queue_view')
       .select(QUEUE_COLUMNS, { count: 'exact' })
-      .eq('campaign_id', query.campaign_id);
+      .eq('campaign_id', query.campaign_id)
+      // Staff only receive complete applications (details and proof of
+      // payment). Applications still in progress are never listed.
+      .in('payment_state', [...COMPLETE_PAYMENT_STATES]);
 
     if (query.search) {
       const policy = resolveCaseAccessPolicy(rolesForCampaign(scope, query.campaign_id));

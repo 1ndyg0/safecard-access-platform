@@ -9,25 +9,15 @@ test.describe('SafeCard public smoke and accessibility', () => {
     expect(overflow).toBe(false);
   });
 
-  test('benefit storyboard supports keyboard expansion and closure', async ({ page }) => {
+  test('benefit guide is keyboard operable and free of pilot wording', async ({ page }) => {
     await page.goto('/benefits');
-    const first = page.getByRole('button', { name: /Libreng Ambulansya/i }).first();
-    const panelId = await first.getAttribute('aria-controls');
-    expect(panelId).toBeTruthy();
-    const panel = page.locator(`#${panelId}`);
-    await expect(panel).not.toHaveClass(/open/);
+    const first = page.getByRole('tab').first();
     await first.focus();
-    await page.keyboard.press('Enter');
-    await expect(first).toHaveAttribute('aria-expanded', 'true');
-    await expect(panel).toHaveClass(/open/);
-    await expect(panel).toHaveCSS('visibility', 'visible');
-    const transitionSeconds = await panel.evaluate((element) => Number.parseFloat(getComputedStyle(element).transitionDuration));
-    expect(transitionSeconds).toBeGreaterThan(0);
-    await expect(page.getByText(/Illustrative only|Halimbawa lamang/i).first()).toBeVisible();
-    await page.keyboard.press('Space');
-    await expect(first).toHaveAttribute('aria-expanded', 'false');
-    await expect(panel).not.toHaveClass(/open/);
-    await expect(panel).toHaveCSS('visibility', 'hidden');
+    await page.keyboard.press('ArrowDown');
+    await expect(page.getByRole('tab').nth(1)).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByText(/sample scenario|Halimbawang sitwasyon/i).first()).toBeVisible();
+    await expect(page.getByText(/pilot|for validation|working baseline/i)).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /back|bumalik/i }).first()).toBeVisible();
   });
 
   test('admin login is a dedicated email/password surface', async ({ page }) => {
@@ -40,7 +30,7 @@ test.describe('SafeCard public smoke and accessibility', () => {
   });
 
   test('public pages have no serious or critical axe violations', async ({ page }) => {
-    for (const route of ['/', '/benefits', '/privacy', '/admin/login']) {
+    for (const route of ['/', '/benefits', '/help', '/privacy', '/apply', '/member', '/admin/login']) {
       await page.goto(route);
       const results = await new AxeBuilder({ page }).analyze();
       const serious = results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''));

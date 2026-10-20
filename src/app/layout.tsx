@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, DM_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { LocaleProvider } from "@/components/LocaleProvider";
+import { NavigationTracker } from "@/components/BackLink";
 
 const jakartaSans = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -22,8 +23,8 @@ const ibmMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SafeCard Access Platform",
-  description: "Consent-first education and application pilot for Safe Card.",
+  title: { default: "SafeCard — Philippine Red Cross membership", template: "%s" },
+  description: "Learn what Safe Card covers, decide privately, and apply for Philippine Red Cross membership.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://safecard-access-platform.vercel.app"),
   robots: { index: false, follow: false },
 };
@@ -39,7 +40,7 @@ export default function RootLayout({ children }: Props) {
       className={`${jakartaSans.variable} ${dmSans.variable} ${ibmMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col" style={{ background: "var(--bg)", color: "var(--text)" }}>
-        <LocaleProvider>{children}</LocaleProvider>
+        <LocaleProvider><NavigationTracker />{children}</LocaleProvider>
       </body>
     </html>
   );
