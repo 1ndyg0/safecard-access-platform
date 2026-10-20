@@ -7,7 +7,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { useLocale } from "@/components/LocaleProvider";
 import { ManualPaymentPanel } from "@/components/application/ManualPaymentPanel";
 
-type Step = "learn" | "check" | "decide" | "consent" | "profile" | "payment" | "review" | "complete" | "declined";
+type Step = "learn" | "check" | "decide" | "consent" | "profile" | "review" | "payment" | "complete" | "declined";
 type PilotConfig = {
   mode: "synthetic" | "live" | "unavailable";
   campaign: { id: string; membership_fee: number } | null;
@@ -26,15 +26,14 @@ const emptyProfile: Profile = { first_name: "", last_name: "", date_of_birth: ""
 
 function key(prefix: string) { return `${prefix}-${crypto.randomUUID()}`; }
 
-const PROGRESS_STEPS: Step[] = ["learn", "check", "decide", "consent", "profile", "payment", "review"];
+const PROGRESS_STEPS: Step[] = ["learn", "check", "decide", "consent", "profile", "review", "payment"];
 
 const prevStep: Partial<Record<Step, Step>> = {
   check: "learn",
   decide: "check",
   consent: "decide",
   profile: "consent",
-  payment: "profile",
-  review: "payment",
+  review: "profile",
 };
 
 export function ApplicationWizard() {
@@ -75,11 +74,10 @@ export function ApplicationWizard() {
         if (!statusResponse.ok) throw new Error(statusBody.error || "Unable to restore the application.");
         setCaseId(storedCaseId);
         setConsentRecordId(statusBody.consentRecordId ?? undefined);
-        // In this flow submission is the last step, so a submitted application is already complete.
+        // Payment follows submission, so a submitted application resumes at the payment step.
         if (["submitted", "resubmitted"].includes(statusBody.states.application)) {
           setReference(statusBody.applicationRef ?? "");
-          window.sessionStorage.removeItem("safecard-case-id");
-          setStep("complete");
+          setStep("payment");
           return;
         }
         if (statusBody.states.consent === "agreed") {
@@ -154,7 +152,7 @@ export function ApplicationWizard() {
     consentEyebrow: "04 · Privacy at pahintulot", consentTitle: "Pahintulot bago ang personal na datos.", minimum: "Minimum na kailangang kolektahin", minimumBody: "Sa live pilot, PRC-approved application fields lamang ang maaaring kolektahin. Hindi makikita ng sponsors ang identity, address, mobile number, application answers, payment evidence, o claims activity ng recipient.", privacyLink: "Basahin ang privacy at rights notice", voluntary: "Kusang-loob ang pagsali at maaari akong umatras.", privacyConsent: "Naiintindihan ko kung bakit kinokolekta at ibinabahagi sa PRC ang approved fields.", boundaryConsent: "Naiintindihan ko na ang bayad at submission ay hindi nag-a-activate ng membership.", continuePrivately: "Magpatuloy nang pribado →",
     profileEyebrow: "05 · Approved fields", profileLiveTitle: "Detalye ng iyong application", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Mase-save lamang ang draft sa protected pilot backend pagkatapos ng consent.", profileSyntheticBody: "Naka-lock ang fields sa reserved synthetic values. Hindi puwedeng gumamit ng totoong impormasyon hanggang makumpleto ang launch gates.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Susunod: Bayad →", clearDevice: "I-clear ang shared device",
     paymentDemoEyebrow: "06 · Bayad (demo)", paymentDemoTitle: "Sa live na app, magbabayad ka dito.", paymentDemoBody: "Kapag live na ang pilot, pipili ka ng payment route (GCash o bank transfer), ilalagay ang iyong payment reference, at mag-uupload ng proof ng bayad. Para sa demo na ito, pindutin ang Magpatuloy.", paymentDemoContinue: "Magpatuloy →",
-    reviewEyebrow: "07 · Review", reviewTitle: "Suriin bago isumite.", name: "Pangalan", dateOfBirth: "Petsa ng kapanganakan", addressLabel: "Address", mobileLabel: "Mobile",
+    reviewEyebrow: "06 · Review", reviewTitle: "Suriin bago isumite.", name: "Pangalan", dateOfBirth: "Petsa ng kapanganakan", addressLabel: "Address", mobileLabel: "Mobile",
     paymentSummaryTitle: "Bayad na naisumite", paymentSummaryRoute: "Route", paymentSummaryReference: "Reference", paymentSummaryStatus: "✓ Nai-upload ang proof — naghihintay ng staff verification",
     submit: "Isumite ang application →", submitting: "Isinusumite…", completeDemo: "Kumpletuhin ang demo →", edit: "I-edit",
     completeLiveEyebrow: "Application submitted", completeSyntheticEyebrow: "Synthetic walkthrough complete",
@@ -170,7 +168,7 @@ export function ApplicationWizard() {
     checkStatus: "Tingnan ang status", returnHome: "Bumalik sa home", print: "I-print ang summary",
     declinedEyebrow: "Pribadong choice na na-record locally", declinedTitle: "Walang application na sinimulan.", declinedBody: "Walang personal na impormasyong hiningi, at hindi sasabihan ang sponsor na tumanggi ka.", reviewAgain: "Suriin ulit",
     backLabel: "← Bumalik", cancelLabel: "I-cancel", cancelConfirm: "Sigurado ka bang gusto mong mag-cancel? Mawawala ang iyong progreso.",
-    labels: ["Matuto", "Suriin", "Magpasya", "Pahintulot", "Form", "Bayad", "Suriin"],
+    labels: ["Matuto", "Suriin", "Magpasya", "Pahintulot", "Form", "Suriin", "Bayad"],
   } : {
     bannerLive: "Controlled live pilot", bannerLiveBody: "Approved data controls are active.", bannerSynthetic: "Synthetic walkthrough", bannerSyntheticBody: "Do not enter real personal information. Nothing here enrolls or charges anyone.",
     learnEyebrow: "01 · Education", learnTitle: "Know what matters before deciding.", learnBody: "The working baseline is ₱1,200 per year for ages 3–85. Only PRC confirms exact benefits, exclusions, eligibility, activation, and claims.",
@@ -189,7 +187,7 @@ export function ApplicationWizard() {
     consentEyebrow: "04 · Privacy and consent", consentTitle: "Consent before personal data.", minimum: "Minimum necessary collection", minimumBody: "The live pilot may collect only PRC-approved application fields. Sponsors cannot see recipient identity, address, mobile number, application answers, payment evidence, or claims activity.", privacyLink: "Read the privacy and rights notice", voluntary: "I am choosing voluntarily and may withdraw.", privacyConsent: "I understand why the approved fields are collected and shared with PRC.", boundaryConsent: "I understand payment and submission do not activate membership.", continuePrivately: "Continue privately →",
     profileEyebrow: "05 · Approved fields", profileLiveTitle: "Your application details", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Your draft is saved only to the protected pilot backend after consent.", profileSyntheticBody: "Fields are locked to reserved synthetic values. Real information is blocked until every launch gate passes.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Next: Payment →", clearDevice: "Clear shared device",
     paymentDemoEyebrow: "06 · Payment (demo)", paymentDemoTitle: "In the live app, you would pay here.", paymentDemoBody: "When the pilot goes live, you will choose a payment route (GCash or bank transfer), enter your payment reference, and upload proof of payment. For this demo, tap Continue.", paymentDemoContinue: "Continue →",
-    reviewEyebrow: "07 · Review", reviewTitle: "Review before submitting.", name: "Name", dateOfBirth: "Date of birth", addressLabel: "Address", mobileLabel: "Mobile",
+    reviewEyebrow: "06 · Review", reviewTitle: "Review before submitting.", name: "Name", dateOfBirth: "Date of birth", addressLabel: "Address", mobileLabel: "Mobile",
     paymentSummaryTitle: "Payment submitted", paymentSummaryRoute: "Route", paymentSummaryReference: "Reference", paymentSummaryStatus: "✓ Proof uploaded — pending staff review",
     submit: "Submit application →", submitting: "Submitting…", completeDemo: "Complete demo →", edit: "Edit",
     completeLiveEyebrow: "Application submitted", completeSyntheticEyebrow: "Synthetic walkthrough complete",
@@ -205,7 +203,7 @@ export function ApplicationWizard() {
     checkStatus: "Check application status →", returnHome: "Return home", print: "Print summary",
     declinedEyebrow: "Private choice recorded locally", declinedTitle: "No application was started.", declinedBody: "No personal information was requested, and the sponsor is not told that you declined.", reviewAgain: "Review again",
     backLabel: "← Back", cancelLabel: "Cancel", cancelConfirm: "Are you sure you want to cancel? Your progress will be lost.",
-    labels: ["Learn", "Check", "Decide", "Consent", "Form", "Payment", "Review"],
+    labels: ["Learn", "Check", "Decide", "Consent", "Form", "Review", "Payment"],
   };
 
   async function api(path: string, body: unknown) {
@@ -280,9 +278,7 @@ export function ApplicationWizard() {
       if (!privacy) throw new Error(isFil ? "Wala ang approved privacy notice." : "Approved privacy notice is missing.");
       const result = await api("/api/intake/submit", { case_id: caseId, consent_record_id: consentRecordId, content_versions_seen: seen, privacy_notice_version_id: privacy.id, profile_data: profile, submitted_by: "recipient", idempotency_key: key("submit"), data_mode: "live" });
       setReference(result.applicationRef);
-      setProfile(emptyProfile);
-      window.sessionStorage.removeItem("safecard-case-id");
-      setStep("complete");
+      setStep("payment");
     } catch (caught) { setError(caught instanceof Error ? caught.message : (isFil ? "Hindi naisumite ang application." : "Submission failed.")); }
     finally { setBusy(false); }
   }
@@ -447,14 +443,14 @@ export function ApplicationWizard() {
             </div>
             {error && <p className="form-message error">{error}</p>}
             <div className="wizard-actions">
-              <button className="button-primary" disabled={!profileValid()} onClick={() => profileValid() ? setStep("payment") : setError(isFil ? "Kumpletuhin ang lahat ng required fields." : "Complete every required field.")}>{ui.reviewBtn}</button>
+              <button className="button-primary" disabled={!profileValid()} onClick={() => profileValid() ? setStep("review") : setError(isFil ? "Kumpletuhin ang lahat ng required fields." : "Complete every required field.")}>{ui.reviewBtn}</button>
               <button className="button-quiet" onClick={goBack}>{ui.backLabel}</button>
               <button className="button-quiet wizard-cancel" onClick={clearSharedDevice}>{ui.clearDevice}</button>
             </div>
           </>
         )}
 
-        {/* ── STEP 6: PAYMENT ── */}
+        {/* ── STEP 7: PAYMENT (after submission; the backend requires a submitted application) ── */}
         {step === "payment" && (
           isLive && !caseId
             ? <p className="form-message error">{isFil ? "Hindi kumpleto ang secure session mo. Magsimula ulit." : "Your secure payment session is incomplete. Start again."}</p>
@@ -462,12 +458,16 @@ export function ApplicationWizard() {
                 caseId={caseId ?? "SYNTHETIC-CASE"}
                 campaignId={config?.campaign?.id ?? "00000000-0000-0000-0000-000000000010"}
                 live={isLive}
-                onBack={goBack}
-                onComplete={(summary) => { setPaymentSummary(summary); setStep("review"); }}
+                onComplete={(summary) => {
+                  setPaymentSummary(summary);
+                  setProfile(emptyProfile);
+                  window.sessionStorage.removeItem("safecard-case-id");
+                  setStep("complete");
+                }}
               />
         )}
 
-        {/* ── STEP 7: REVIEW ── */}
+        {/* ── STEP 6: REVIEW AND SUBMIT ── */}
         {step === "review" && (
           <>
             <p className="eyebrow">{ui.reviewEyebrow}</p>
@@ -478,16 +478,6 @@ export function ApplicationWizard() {
               <div><dt>{ui.mobileLabel}</dt><dd>{profile.mobile_number}</dd></div>
               <div><dt>{ui.addressLabel}</dt><dd>{profile.address_line1}, {profile.city}, {profile.province} {profile.zip_code}</dd></div>
             </dl>
-            {paymentSummary && (
-              <div className="payment-summary-panel">
-                <strong>{ui.paymentSummaryTitle}</strong>
-                <div className="payment-summary-rows">
-                  <div className="payment-summary-row"><span>{ui.paymentSummaryRoute}</span><span>{paymentSummary.routeLabel}</span></div>
-                  <div className="payment-summary-row"><span>{ui.paymentSummaryReference}</span><span>{paymentSummary.reference}</span></div>
-                  <div className="payment-summary-row proof-status"><span>{ui.paymentSummaryStatus}</span></div>
-                </div>
-              </div>
-            )}
             {error && <p className="form-message error">{error}</p>}
             <div className="wizard-actions">
               <button className="button-primary" disabled={busy} onClick={submit}>{busy ? ui.submitting : ui.submit}</button>
@@ -508,6 +498,16 @@ export function ApplicationWizard() {
               <span>{ui.applicationRef}</span>
               <strong>{reference}</strong>
             </div>
+            {paymentSummary && (
+              <div className="payment-summary-panel">
+                <strong>{ui.paymentSummaryTitle}</strong>
+                <div className="payment-summary-rows">
+                  <div className="payment-summary-row"><span>{ui.paymentSummaryRoute}</span><span>{paymentSummary.routeLabel}</span></div>
+                  <div className="payment-summary-row"><span>{ui.paymentSummaryReference}</span><span>{paymentSummary.reference}</span></div>
+                  <div className="payment-summary-row proof-status"><span>{ui.paymentSummaryStatus}</span></div>
+                </div>
+              </div>
+            )}
             <div className="next-steps-panel">
                 <strong>{ui.completeNextStepsTitle}</strong>
                 <ol className="next-steps-list">

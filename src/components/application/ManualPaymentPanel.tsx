@@ -24,55 +24,22 @@ function key(prefix: string) { return `${prefix}-${crypto.randomUUID()}`; }
 
 type PaymentSummary = { routeLabel: string; reference: string };
 
-// Fallback payment configuration used when the /api/payment-config endpoint is unreachable
-// (e.g. Supabase is misconfigured). Kept intentionally short and pointing at the same
-// official PRC details a live campaign row would return so the UI is production-usable
-// end-to-end even before every backend flag is flipped.
-const FALLBACK_PAYMENT_CONFIG: PaymentConfig = {
-  available: true,
-  reason: null,
-  amount: 1200,
-  monthlyEquivalent: 100,
-  currency: "PHP",
-  accountName: "PHILIPPINE RED CROSS",
-  routes: [
-    {
-      id: "gcash-prc",
-      label: "GCash",
-      instructions: "Open GCash, scan the official PRC QR code below, complete the transfer outside SafeCard, then return with your receipt.",
-      accountName: "PHILIPPINE RED CROSS",
-      accountNumber: "0917-000-0143",
-      qrImageUrl: "/payment/prc-gcash-qr.png",
-    },
-    {
-      id: "bank-bpi",
-      label: "Bank Transfer (BPI)",
-      instructions: "Transfer via BPI online banking or branch, save the receipt, then return to upload proof of payment.",
-      accountName: "PHILIPPINE RED CROSS",
-      bank: "Bank of the Philippine Islands",
-      accountNumber: "002963000782B",
-      branch: "Chinese Gen., Blumentritt Branch",
-    },
-  ],
-};
-
 export function ManualPaymentPanel({ caseId, campaignId, live, onBack, onComplete }: { caseId: string; campaignId: string; live: boolean; onBack?: () => void; onComplete: (summary: PaymentSummary) => void }) {
   const { locale } = useLocale();
   const isFil = locale === "fil";
   const ui = isFil ? {
-    unavailable: "Hindi available ang payment configuration.", referenceError: "Hindi ma-record ang payment details.", reference: "Payment reference o transaction number (optional)", referencePlaceholder: "Ilagay ang reference mula sa bank o GCash", paidDate: "Petsa ng bayad", amountPaid: "Halagang binayaran (PHP)", chooseRoute: "Pumili ng approved payment route.", required: "Pumili ng route, ilagay ang petsa at eksaktong halaga, mag-upload ng proof, at kumpirmahin ang payer declaration.", handoffError: "Hindi mabuksan ang payment handoff.", uploadError: "Hindi na-upload ang proof.", completeError: "Hindi nakumpleto ang payment.", received: "Natanggap ang proof. Naka-pending ang staff verification; hindi pa active ang membership.", loading: "Nilo-load ang approved payment routes…", eyebrow: "06 · Bayad at proof", title: "Magbayad sa labas ng SafeCard, pagkatapos ay bumalik kasama ang proof.", fee: "Membership fee:", monthly: "Ang monthly equivalent ay paliwanag lamang at hindi installment offer.", separateTitle: "Hiwalay na state ang payment", separateBody: "Ang payment ay hindi consent, application submission, approval, PRC handoff, o membership activation. PRC lamang ang makakapagkumpirma.", warning: "Babala para sa controlled pilot", parked: "Hindi pa naka-enable ang official payment handoff.", routeLegend: "Pumili ng payment route", accountName: "Account name", bank: "Bank", accountNumber: "Account number", swift: "SWIFT", branch: "Branch", transferHelp: "Kumpletuhin ang transfer sa bank o GCash app. Hindi humahawak, naglilipat, o nagsi-settle ng funds ang SafeCard.", proof: "Proof of payment (JPEG, PNG, WebP, o PDF; max 10 MB)", preview: "Preview ng napiling payment proof", declaration: "Kinukumpirma kong ginawa ang transfer sa labas ng SafeCard at naiintindihan kong hindi ina-activate ng verification ang membership.", uploading: "Secure na ina-upload…", submit: "Isumite ang proof para ma-review →", copied: "Na-copy na", recorded: "Naitala ang proof of payment. Ire-review ng staff ang proof; mananatiling inactive ang membership hanggang kumpirmahin ng PRC.", qrAlt: "Official GCash QR code"
+    unavailable: "Hindi available ang payment configuration.", referenceError: "Hindi ma-record ang payment details.", reference: "Payment reference o transaction number (optional)", referencePlaceholder: "Ilagay ang reference mula sa bank o GCash", paidDate: "Petsa ng bayad", amountPaid: "Halagang binayaran (PHP)", chooseRoute: "Pumili ng approved payment route.", required: "Pumili ng route, ilagay ang petsa at eksaktong halaga, mag-upload ng proof, at kumpirmahin ang payer declaration.", handoffError: "Hindi mabuksan ang payment handoff.", uploadError: "Hindi na-upload ang proof.", completeError: "Hindi nakumpleto ang payment.", received: "Natanggap ang proof. Naka-pending ang staff verification; hindi pa active ang membership.", loading: "Nilo-load ang approved payment routes…", eyebrow: "07 · Bayad at proof", title: "Magbayad sa labas ng SafeCard, pagkatapos ay bumalik kasama ang proof.", fee: "Membership fee:", monthly: "Ang monthly equivalent ay paliwanag lamang at hindi installment offer.", separateTitle: "Hiwalay na state ang payment", separateBody: "Ang payment ay hindi consent, application submission, approval, PRC handoff, o membership activation. PRC lamang ang makakapagkumpirma.", warning: "Babala para sa controlled pilot", parked: "Hindi pa naka-enable ang official payment handoff.", routeLegend: "Pumili ng payment route", accountName: "Account name", bank: "Bank", accountNumber: "Account number", swift: "SWIFT", branch: "Branch", transferHelp: "Kumpletuhin ang transfer sa bank o GCash app. Hindi humahawak, naglilipat, o nagsi-settle ng funds ang SafeCard.", proof: "Proof of payment (JPEG, PNG, WebP, o PDF; max 10 MB)", preview: "Preview ng napiling payment proof", declaration: "Kinukumpirma kong ginawa ang transfer sa labas ng SafeCard at naiintindihan kong hindi ina-activate ng verification ang membership.", uploading: "Secure na ina-upload…", submit: "Isumite ang proof para ma-review →", copied: "Na-copy na", recorded: "Naitala ang proof of payment. Ire-review ng staff ang proof; mananatiling inactive ang membership hanggang kumpirmahin ng PRC.", qrAlt: "Official GCash QR code"
   } : {
-    unavailable: "Payment configuration is unavailable.", referenceError: "Payment details could not be recorded.", reference: "Payment reference or transaction number (optional)", referencePlaceholder: "Enter the reference shown by your bank or GCash", paidDate: "Date paid", amountPaid: "Amount paid (PHP)", chooseRoute: "Choose an approved payment route.", required: "Choose a route, enter the payment date and exact amount, upload proof, and confirm the payer declaration.", handoffError: "Payment handoff could not be opened.", uploadError: "Proof upload failed.", completeError: "Payment could not be completed.", received: "Proof received. Staff verification is pending; membership is not active.", loading: "Loading approved payment routes…", eyebrow: "06 · Payment and proof", title: "Pay outside SafeCard, then return with proof.", fee: "Membership fee:", monthly: "The monthly equivalent is only explanatory and is not an installment offer.", separateTitle: "Payment is a separate state", separateBody: "Payment does not equal consent, application submission, approval, PRC handoff, or membership activation. Only PRC confirmation can activate membership.", warning: "Controlled pilot warning", parked: "Official payment handoff is not yet enabled.", routeLegend: "Choose a payment route", accountName: "Account name", bank: "Bank", accountNumber: "Account number", swift: "SWIFT", branch: "Branch", transferHelp: "Complete the transfer in your bank or GCash app. SafeCard does not hold, move, or settle funds.", proof: "Proof of payment (JPEG, PNG, WebP, or PDF; max 10 MB)", preview: "Selected payment proof preview", declaration: "I confirm this transfer was completed outside SafeCard and understand that verification does not activate membership.", uploading: "Uploading securely…", submit: "Submit proof for review →", copied: "Copied", recorded: "Proof of payment recorded. Staff will review the proof; your membership remains inactive until PRC confirms it.", qrAlt: "Official GCash QR code"
+    unavailable: "Payment configuration is unavailable.", referenceError: "Payment details could not be recorded.", reference: "Payment reference or transaction number (optional)", referencePlaceholder: "Enter the reference shown by your bank or GCash", paidDate: "Date paid", amountPaid: "Amount paid (PHP)", chooseRoute: "Choose an approved payment route.", required: "Choose a route, enter the payment date and exact amount, upload proof, and confirm the payer declaration.", handoffError: "Payment handoff could not be opened.", uploadError: "Proof upload failed.", completeError: "Payment could not be completed.", received: "Proof received. Staff verification is pending; membership is not active.", loading: "Loading approved payment routes…", eyebrow: "07 · Payment and proof", title: "Pay outside SafeCard, then return with proof.", fee: "Membership fee:", monthly: "The monthly equivalent is only explanatory and is not an installment offer.", separateTitle: "Payment is a separate state", separateBody: "Payment does not equal consent, application submission, approval, PRC handoff, or membership activation. Only PRC confirmation can activate membership.", warning: "Controlled pilot warning", parked: "Official payment handoff is not yet enabled.", routeLegend: "Choose a payment route", accountName: "Account name", bank: "Bank", accountNumber: "Account number", swift: "SWIFT", branch: "Branch", transferHelp: "Complete the transfer in your bank or GCash app. SafeCard does not hold, move, or settle funds.", proof: "Proof of payment (JPEG, PNG, WebP, or PDF; max 10 MB)", preview: "Selected payment proof preview", declaration: "I confirm this transfer was completed outside SafeCard and understand that verification does not activate membership.", uploading: "Uploading securely…", submit: "Submit proof for review →", copied: "Copied", recorded: "Proof of payment recorded. Staff will review the proof; your membership remains inactive until PRC confirms it.", qrAlt: "Official GCash QR code"
   };
-  // Seed from the fallback config so the UI is interactive even before the /api/payment-config
-  // fetch resolves (or if it fails). The effect below overwrites with the campaign-specific
-  // config as soon as it arrives.
-  const [config, setConfig] = useState<PaymentConfig>(FALLBACK_PAYMENT_CONFIG);
+  // Payment details come only from the server (approved campaign routes). There is deliberately no
+  // built-in fallback: showing unverified account numbers could send a payer's money to the wrong place.
+  const [config, setConfig] = useState<PaymentConfig | null>(null);
   const [routeId, setRouteId] = useState("");
   const [paymentIntentId, setPaymentIntentId] = useState("");
   const [reference, setReference] = useState("");
   const [paidDate, setPaidDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [amountPaid, setAmountPaid] = useState(() => String(FALLBACK_PAYMENT_CONFIG.amount ?? ""));
+  const [amountPaid, setAmountPaid] = useState("");
   const [declaration, setDeclaration] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -82,15 +49,15 @@ export function ManualPaymentPanel({ caseId, campaignId, live, onBack, onComplet
   const [copied, setCopied] = useState("");
 
   useEffect(() => {
+    const unavailableConfig: PaymentConfig = { available: false, reason: ui.unavailable, amount: null, currency: "PHP", routes: [] };
     fetch(`/api/payment-config?campaign_id=${encodeURIComponent(campaignId)}`, { cache: "no-store" })
       .then((response) => response.json())
       .then((data: PaymentConfig) => {
-        // A server-reported "unavailable" (for example payment parked until PRC sign-off) must win
-        // over the built-in fallback; the fallback only covers an unreachable endpoint.
         if (data?.available && data.routes?.length) { setConfig(data); if (data.amount) setAmountPaid(String(data.amount)); }
-        else if (data && data.available === false) setConfig({ ...data, routes: data.routes ?? [] });
+        else setConfig({ ...unavailableConfig, ...(data ?? {}), available: false, routes: [] });
       })
-      .catch(() => undefined);
+      .catch(() => setConfig(unavailableConfig));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId]);
 
   useEffect(() => {
