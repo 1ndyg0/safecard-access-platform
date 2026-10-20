@@ -20,9 +20,7 @@ const createUserSchema = z.strictObject({
   full_name: z.string().min(2, 'Full name required').max(200),
   role: z.enum([
     'school_admin',
-    'prc_liaison',
     'support_agent',
-    'finance_export',
     'content_approver',
     'privacy_admin_owner',
   ]),

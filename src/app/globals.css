@@ -116,8 +116,6 @@ a, button { -webkit-tap-highlight-color: transparent; }
 .button-primary:hover { background: var(--red-dark); transform: translateY(-1px); }
 .button-quiet { color: var(--navy); background: transparent; border: 1px solid var(--border); }
 .voluntary-line { display: flex; gap: 9px; align-items: flex-start; margin: 22px 0 0; max-width: 600px; color: var(--green); font-size: .78rem; }
-.referral-note { margin: 0 0 18px; padding: 11px 14px; border-left: 3px solid var(--green); background: var(--green-dim); color: var(--green); font-size: .82rem; }
-.referral-warning { margin: 0 0 18px; padding: 11px 14px; border-left: 3px solid var(--amber); background: var(--amber-dim); color: var(--amber); font-size: .82rem; }
 
 .hero-card-stack { position: relative; min-height: 420px; z-index: 1; }
 .programme-card { position: absolute; inset: 0 24px 46px 0; padding: 34px; color: white; border-radius: 20px; background: linear-gradient(150deg, #17283f, #08111f); box-shadow: 0 38px 90px rgba(15,27,45,.25); transform: rotate(2.5deg); }

@@ -3,11 +3,9 @@
 /**
  * Member status.
  *
- * Shows all six things separately — application reference, application
- * state, review outcome, payment, PRC handoff, membership — because the
- * whole product depends on the applicant understanding that they are
- * not the same thing. An approved application that reads as "you're a
- * member" is the failure mode this screen exists to prevent.
+ * Shows the application reference, application state, review outcome and
+ * payment separately. Approval by an administrator also verifies the
+ * payment proof, and the approved card appears once both are done.
  */
 
 import Link from "next/link";
@@ -23,8 +21,6 @@ type StatusData = {
     application_state: string;
     application_review_state: string;
     payment_state: string;
-    prc_handoff_state: string;
-    membership_state: string;
     updated_at: string;
   };
   review: {
@@ -153,8 +149,6 @@ export function MemberStatus() {
           raw: true,
         },
         { label: t("labelPayment", lang), value: status.states.payment_state },
-        { label: t("labelHandoff", lang), value: status.states.prc_handoff_state },
-        { label: t("labelMembership", lang), value: status.states.membership_state },
       ]
     : [];
 
@@ -202,12 +196,12 @@ export function MemberStatus() {
                 </table>
               </div>
 
-              <p className="portal-footnote">{t("separateStates", lang)}</p>
+              <p className="portal-footnote">{t("approvalExplainer", lang)}</p>
 
               {status.states.application_review_state === "approved" && (
                 <div className="notice-panel">
                   <strong>{t("reviewApproved", lang)}</strong>
-                  <span>{t("approvedNotMembership", lang)}</span>
+                  <span>{t("approvedMessage", lang)}</span>
                 </div>
               )}
 

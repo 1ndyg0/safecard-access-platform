@@ -2,7 +2,6 @@
  * POST /api/intake/case
  *
  * Create a new recipient case.
- * Can be linked to a referral (optional attribution).
  * Creates an anonymous Supabase auth session if needed.
  *
  * Journey phase 3: Learn and Decide → creates the case container
@@ -20,7 +19,6 @@ import { enforceRateLimit } from '@/lib/api/rate-limit';
 
 const createCaseSchema = z.object({
   campaign_id: z.string().uuid(),
-  referral_link_id: z.string().uuid().optional(),
   decision: z.enum(['accept', 'ask', 'decline']),
 });
 
@@ -42,7 +40,7 @@ export async function POST(request: NextRequest) {
       return created({
         caseId: null,
         decision: 'decline',
-        message: 'No personal data was collected and the sponsor will not be notified.',
+        message: 'No personal data was collected.',
       });
     }
 
@@ -69,7 +67,6 @@ export async function POST(request: NextRequest) {
 
     const result = await createRecipientCase({
       campaignId: parsed.campaign_id,
-      referralLinkId: parsed.referral_link_id,
       authUserId,
     });
 

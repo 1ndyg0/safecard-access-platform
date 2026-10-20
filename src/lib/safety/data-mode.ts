@@ -127,26 +127,6 @@ export function assertSyntheticText(mode: DataMode, value: string | undefined): 
   }
 }
 
-export function assertSponsorDataAllowed(
-  mode: DataMode,
-  input: { displayName: string; guardianName?: string; guardianContact?: string },
-): void {
-  assertDataModeAllowed(mode);
-  if (mode !== 'synthetic') return;
-  const namesMarked = /\b(test|synthetic|demo)\b/i.test(
-    `${input.displayName} ${input.guardianName ?? ''}`,
-  );
-  const contact = input.guardianContact ?? '';
-  const contactIsSynthetic = !contact
-    || /@(?:example\.com|example\.invalid|test\.invalid)$/i.test(contact)
-    || /^(?:09000000000|09999999999|\+639000000000)$/.test(contact);
-  if (!namesMarked || !contactIsSynthetic) {
-    throw new LaunchGateError(
-      'Synthetic sponsor data requires a TEST/SYNTHETIC name and a reserved contact value.',
-    );
-  }
-}
-
 /**
  * Derive the active data mode on the server.
  *

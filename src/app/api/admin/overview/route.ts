@@ -30,10 +30,7 @@ const DASHBOARD_COUNT_KEYS = [
   'correction_requested',
   'payment_evidence_pending',
   'payment_verified',
-  'ready_for_prc_handoff',
-  'sent_or_acknowledged_by_prc',
-  'prc_confirmed_active',
-  'prc_declined',
+  'approved',
 ] as const;
 
 type DashboardCounts = Record<(typeof DASHBOARD_COUNT_KEYS)[number], number>;

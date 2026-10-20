@@ -3,7 +3,7 @@
  *
  * Immutable audit trail for all sensitive operations.
  * Records: role changes, content approvals, application submit,
- * consent withdrawal, export creation, PRC acknowledgment,
+ * consent withdrawal, payment verification,
  * membership status changes, staff access, and security events.
  */
 

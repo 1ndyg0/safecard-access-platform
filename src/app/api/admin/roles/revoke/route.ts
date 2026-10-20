@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       assignment.campaign_id ? undefined : assignment.organization_id ?? undefined,
     );
     if (!scopedAdmin.allowed) return forbidden('Only administrators for this scope can revoke roles');
-    if (['privacy_admin_owner', 'school_admin', 'prc_liaison'].includes(assignment.role)) {
+    if (['privacy_admin_owner', 'school_admin'].includes(assignment.role)) {
       const privacyAdmin = await requireAnyRole(
         auth.userId,
         ['privacy_admin_owner'],
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         assignment.campaign_id ? undefined : assignment.organization_id ?? undefined,
       );
       if (!privacyAdmin.allowed) {
-        return forbidden('Only a privacy admin can revoke privileged administrator or PRC roles');
+        return forbidden('Only a privacy admin can revoke privileged administrator roles');
       }
     }
 

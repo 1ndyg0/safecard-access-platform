@@ -45,12 +45,10 @@ export const memberCopy = {
   labelApplication: { fil: 'Aplikasyon', en: 'Application' },
   labelReview: { fil: 'Pagsusuri ng aplikasyon', en: 'Application review' },
   labelPayment: { fil: 'Bayad', en: 'Payment' },
-  labelHandoff: { fil: 'Pagpapadala sa PRC', en: 'PRC handoff' },
-  labelMembership: { fil: 'Membership', en: 'Membership' },
 
-  separateStates: {
-    fil: 'Magkahiwalay ang mga hakbang na ito. Ang naaprubahang aplikasyon ay hindi bayad, at ang bayad ay hindi membership. Ang PRC lamang ang makakapagsimula ng membership.',
-    en: 'These steps are separate. An approved application is not a payment, and a payment is not membership. Only PRC can activate membership.',
+  approvalExplainer: {
+    fil: 'Naaprubahan ang aplikasyon kapag sinuri ng administrator ang iyong bayad at inaprubahan ang aplikasyon.',
+    en: 'Your application is approved when an administrator reviews your payment proof and approves the application.',
   },
 
   // Review outcomes.
@@ -59,9 +57,9 @@ export const memberCopy = {
   reviewResubmission: { fil: 'Kailangan ng pagwawasto', en: 'Correction needed' },
   reviewRejected: { fil: 'Hindi naaprubahan', en: 'Not approved' },
 
-  approvedNotMembership: {
-    fil: 'Naaprubahan ang iyong aplikasyon. Hindi pa ito membership — hihintayin pa ang kumpirmasyon ng PRC.',
-    en: 'Your application was approved. This is not membership yet — PRC confirmation is still required.',
+  approvedMessage: {
+    fil: 'Naaprubahan ang iyong aplikasyon at na-verify ang bayad. Handa na ang iyong SafeCard.',
+    en: 'Your application was approved and your payment was verified. Your SafeCard is ready.',
   },
   reasonFromReviewer: { fil: 'Paliwanag mula sa nagsuri', en: 'Reason from the reviewer' },
   rejectedGuidance: {
@@ -82,8 +80,8 @@ export const memberCopy = {
   submitCorrection: { fil: 'Isumite ang pagwawasto', en: 'Submit correction' },
   submitting: { fil: 'Isinusumite…', en: 'Submitting…' },
   correctionSubmitted: {
-    fil: 'Naisumite ang pagwawasto. Isinumite ito para sa panibagong pagsusuri. Hindi nagbago ang bayad, pagpapadala sa PRC, at membership.',
-    en: 'Your correction was submitted for another review. Your payment, PRC handoff and membership are unchanged.',
+    fil: 'Naisumite ang pagwawasto. Isinumite ito para sa panibagong pagsusuri. Hindi nagbago ang bayad.',
+    en: 'Your correction was submitted for another review. Your payment is unchanged.',
   },
   correctionNotRequested: {
     fil: 'Walang hinihinging pagwawasto sa ngayon.',

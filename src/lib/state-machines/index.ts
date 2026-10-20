@@ -9,16 +9,14 @@
  * 1. Consent: not_started → reviewing → agreed → withdrawn | expired_due_to_content_change
  * 2. Application: draft → ready_for_review → submitted → correction_needed → resubmitted → withdrawn
  * 3. Payment: not_started → official_handoff_opened → payer_marked_paid → verification_pending → verified | failed | refunded
- * 4. PRC Handoff: not_ready → ready_for_export → exported → acknowledged → accepted | rejected | correction_requested
- * 5. Membership: not_active → pending_prc_confirmation → active_confirmed → declined | expired | renewed
- * 6. Support: open → waiting_on_* → resolved | closed_no_response
+ * 4. Membership: not_active → pending_prc_confirmation → active_confirmed → declined | expired | renewed
+ * 5. Support: open → waiting_on_* → resolved | closed_no_response
  */
 
 import type {
   ConsentState,
   ApplicationState,
   PaymentState,
-  PrcHandoffState,
   MembershipState,
   SupportState,
 } from '@/types/database';
@@ -66,20 +64,6 @@ const PAYMENT_TRANSITIONS: TransitionMap<PaymentState> = {
   verified_by_official_source: ['refunded_or_reversed'],
   failed_or_cancelled: ['official_handoff_opened'], // Can retry
   refunded_or_reversed: [], // Terminal state
-};
-
-// ============================================================
-// PRC handoff state machine
-// ============================================================
-
-const PRC_HANDOFF_TRANSITIONS: TransitionMap<PrcHandoffState> = {
-  not_ready: ['ready_for_export'],
-  ready_for_export: ['exported'],
-  exported: ['acknowledged', 'correction_requested', 'accepted', 'rejected'],
-  acknowledged: ['accepted', 'rejected', 'correction_requested'],
-  correction_requested: ['ready_for_export'], // Re-export after correction
-  accepted: [], // Terminal state
-  rejected: [], // Terminal state
 };
 
 // ============================================================
@@ -152,10 +136,6 @@ export function validatePaymentTransition(from: PaymentState, to: PaymentState):
   validateTransition('payment', PAYMENT_TRANSITIONS, from, to);
 }
 
-export function validatePrcHandoffTransition(from: PrcHandoffState, to: PrcHandoffState): void {
-  validateTransition('prc_handoff', PRC_HANDOFF_TRANSITIONS, from, to);
-}
-
 export function validateMembershipTransition(from: MembershipState, to: MembershipState): void {
   validateTransition('membership', MEMBERSHIP_TRANSITIONS, from, to);
 }
@@ -185,10 +165,6 @@ export function getApplicationTransitions(from: ApplicationState): ApplicationSt
 
 export function getPaymentTransitions(from: PaymentState): PaymentState[] {
   return getAllowedTransitions(PAYMENT_TRANSITIONS, from);
-}
-
-export function getPrcHandoffTransitions(from: PrcHandoffState): PrcHandoffState[] {
-  return getAllowedTransitions(PRC_HANDOFF_TRANSITIONS, from);
 }
 
 export function getMembershipTransitions(from: MembershipState): MembershipState[] {

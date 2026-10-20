@@ -24,12 +24,12 @@ import { requireAnyRole, requireRole } from './permissions';
 
 describe('legacy permission entrypoints preserve campaign boundaries', () => {
   beforeEach(() => {
-    fixture.assignments = [{ id: 'assignment', role: 'finance_export', campaign_id: 'campaign-a', organization_id: 'org-shared' }];
+    fixture.assignments = [{ id: 'assignment', role: 'school_admin', campaign_id: 'campaign-a', organization_id: 'org-shared' }];
   });
 
   for (const check of [
-    (campaign: string) => requireRole('staff', 'finance_export', campaign),
-    (campaign: string) => requireAnyRole('staff', ['finance_export'], campaign),
+    (campaign: string) => requireRole('staff', 'school_admin', campaign),
+    (campaign: string) => requireAnyRole('staff', ['school_admin'], campaign),
   ]) {
     it('denies a sibling campaign when organization metadata is attached to a campaign role', async () => {
       expect((await check('campaign-b')).allowed).toBe(false);
@@ -44,6 +44,6 @@ describe('legacy permission entrypoints preserve campaign boundaries', () => {
   }
 
   it('does not treat a campaign role as an organization administrator', async () => {
-    expect((await requireAnyRole('staff', ['finance_export'], undefined, 'org-shared')).allowed).toBe(false);
+    expect((await requireAnyRole('staff', ['school_admin'], undefined, 'org-shared')).allowed).toBe(false);
   });
 });

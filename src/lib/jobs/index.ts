@@ -8,13 +8,11 @@
  * - send_notification: Send SMS/email notifications (if approved)
  * - aggregate_metrics: Calculate daily privacy-safe metrics
  * - check_content_expiry: Expire stale content, alert on upcoming expiry
- * - deactivate_expired_referrals: Clean up expired referral links
  * - release_stale_locks: Recover jobs stuck in 'running' state
  */
 
 import { getSupabaseAdminClient } from '@/lib/db/client';
 import { checkContentExpiry } from '@/lib/content';
-import { deactivateExpiredLinks } from '@/lib/referrals';
 import { calculateDailyMetrics } from '@/lib/metrics';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -128,10 +126,6 @@ async function executeJob(
   switch (jobType) {
     case 'check_content_expiry':
       await checkContentExpiry();
-      break;
-
-    case 'deactivate_expired_referrals':
-      await deactivateExpiredLinks();
       break;
 
     case 'release_stale_locks': {

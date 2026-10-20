@@ -39,6 +39,23 @@ test.describe('SafeCard public smoke and accessibility', () => {
     await expect(page.locator('input[type="tel"]')).toHaveCount(0);
   });
 
+  test('removed ambassador, referral, PRC export and MFA surfaces are gone', async ({ request }) => {
+    for (const route of [
+      '/ambassador',
+      '/ambassador/login',
+      '/ambassador/share',
+      '/r/anything',
+      '/api/referrals/validate?slug=anything',
+      '/api/sponsors/me',
+      '/api/export/console',
+      '/admin/export',
+      '/admin/security',
+    ]) {
+      const response = await request.get(route, { maxRedirects: 0 });
+      expect(response.status(), `${route} must not exist`).toBe(404);
+    }
+  });
+
   test('public pages have no serious or critical axe violations', async ({ page }) => {
     for (const route of ['/', '/benefits', '/privacy', '/admin/login']) {
       await page.goto(route);

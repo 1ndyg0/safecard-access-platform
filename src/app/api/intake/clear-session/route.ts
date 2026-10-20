@@ -8,8 +8,7 @@
  * 2. Clears any client-side session indicators
  *
  * Does NOT delete data — the case and profile persist.
- * The recipient can return later with their referral link
- * to resume (a new anonymous session is created, linked by referral).
+ * The recipient can return later and sign in again to resume.
  *
  * This is a privacy feature for the shared-phone context.
  */

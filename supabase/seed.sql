@@ -33,7 +33,7 @@ insert into public.organizations (id, name, slug, org_type) values
 -- ============================================================
 insert into public.pilot_campaigns (
   id, organization_id, name, slug,
-  start_date, end_date, max_applications, max_sponsors,
+  start_date, end_date, max_applications,
   approved_fields, approved_payment_routes, stop_conditions, is_active, membership_fee
 ) values (
   '00000000-0000-0000-0000-000000000010',
@@ -43,7 +43,6 @@ insert into public.pilot_campaigns (
   '2026-09-01',
   '2026-12-31',
   50,
-  30,
   '["first_name","middle_name","last_name","date_of_birth","sex","civil_status","address_line1","address_line2","city","province","zip_code","mobile_number","email"]',
   '[{"type":"gcash","details":{"merchant_name":"PHILIPPINE RED CROSS"},"is_active":true},{"type":"bank_transfer","details":{"account_name":"PHILIPPINE RED CROSS"},"is_active":true},{"type":"manual_prc","details":{"instructions":"Visit nearest PRC chapter"},"is_active":true}]',
   '[{"type":"max_applications","threshold":50,"description":"Pause intake when 50 applications reached"},{"type":"privacy_incident","threshold":1,"description":"Stop immediately on any privacy incident"}]',
@@ -68,9 +67,8 @@ insert into public.users (id, email, full_name, is_active, mfa_enabled) values
 -- ============================================================
 insert into public.role_assignments (user_id, role, organization_id, campaign_id, granted_by) values
   ('00000000-0000-0000-0000-000000000101', 'school_admin', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', null),
-  ('00000000-0000-0000-0000-000000000101', 'finance_export', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', null),
   ('00000000-0000-0000-0000-000000000101', 'content_approver', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', null),
-  ('00000000-0000-0000-0000-000000000102', 'prc_liaison', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000010', null),
+  ('00000000-0000-0000-0000-000000000102', 'content_approver', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000010', null),
   ('00000000-0000-0000-0000-000000000103', 'support_agent', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', null),
   ('00000000-0000-0000-0000-000000000104', 'privacy_admin_owner', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000010', null);
 
@@ -105,14 +103,14 @@ insert into public.content_versions (
 
   -- Privacy notice (Tagalog)
   ('privacy_notice', 'tl', 1, '00000000-0000-0000-0000-000000000102', 'Paunawa sa Privacy',
-   'Ang iyong personal na impormasyon ay:\n\n• Kokolektahin lamang para sa PRC Safe Card application\n• Ipapadala sa Philippine Red Cross para sa opisyal na pagproseso\n• Hindi ibabahagi sa sponsor o nagbayad nang walang pahintulot mo\n• Maaari mong bawiin ang pahintulot anumang oras\n• Maaari mong hilingin na itama o burahin ang iyong datos',
+   'Ang iyong personal na impormasyon ay:\n\n• Kokolektahin lamang para sa PRC Safe Card application\n• Makikita lamang ng mga administrator na nagsusuri ng iyong application\n• Hindi ibabahagi sa iba nang walang pahintulot mo\n• Maaari mong bawiin ang pahintulot anumang oras\n• Maaari mong hilingin na itama o burahin ang iyong datos',
    'Paano namin pinoprotektahan ang iyong impormasyon',
    'approved', '00000000-0000-0000-0000-000000000102', now(), 'SafeCard Privacy Assessment', '2026-09-01', '2027-03-01',
    '["consent_form","privacy_page"]', true, now(), '00000000-0000-0000-0000-000000000101'),
 
   -- Consent text (Tagalog)
   ('consent_text', 'tl', 1, '00000000-0000-0000-0000-000000000102', 'Pahintulot sa Aplikasyon',
-   'Sa pag-click ng "Sumasang-ayon ako":\n\n• Naiintindihan ko ang mga benepisyo at limitasyon ng Safe Card\n• Pumapayag ako na ibigay ang aking impormasyon para sa PRC Safe Card application\n• Naiintindihan ko na ang aking datos ay ipapadala sa PRC\n• Alam ko na maaari akong tumanggi o bawiin ang pahintulot kahit kailan\n• Ang pagbayad ay hindi nangangahulugang aktibo na ang membership — kailangan pa ng PRC confirmation',
+   'Sa pag-click ng "Sumasang-ayon ako":\n\n• Naiintindihan ko ang mga benepisyo at limitasyon ng Safe Card\n• Pumapayag ako na ibigay ang aking impormasyon para sa PRC Safe Card application\n• Naiintindihan ko kung sino ang makakakita ng aking datos\n• Alam ko na maaari akong tumanggi o bawiin ang pahintulot kahit kailan\n• Ang pagbayad ay hindi pa approval — ang administrator ang nag-aapruba ng aplikasyon',
    'Teksto ng pahintulot para sa aplikasyon',
    'approved', '00000000-0000-0000-0000-000000000102', now(), 'SafeCard Consent Framework', '2026-09-01', '2027-03-01',
    '["consent_form"]', true, now(), '00000000-0000-0000-0000-000000000101'),
@@ -122,40 +120,4 @@ insert into public.content_versions (
    'Kung may aksidente:\n\n1. Tumawag sa Hotline 143 para sa ambulansya\n2. I-report sa PRC sa loob ng 30 araw\n3. Isumite ang mga kailangan na dokumento sa loob ng 60 araw\n4. Ang PRC ang magde-desisyon sa claim\n\nMahalaga: Ang SafeCard platform ay hindi nagpo-proseso ng claim. Ang PRC lamang ang may kapangyarihan.',
    'Gabay sa pag-claim — emergency at proseso',
    'approved', '00000000-0000-0000-0000-000000000102', now(), 'PRC Claims Process Guide', '2026-08-15', '2027-02-15',
-   '["claims_guide","membership_card"]', true, now(), '00000000-0000-0000-0000-000000000101'),
-
-  -- Sponsor briefing (English)
-  ('sponsor_briefing', 'en', 1, '00000000-0000-0000-0000-000000000102', 'Sponsor Briefing',
-   'As a sponsor, you:\n\n• Share information about the Safe Card program\n• Invite a known household helper respectfully\n• Pay through official PRC channels\n• See only high-level status (not personal details)\n\nRemember:\n• The helper decides freely — no pressure\n• Payment does not equal activation\n• You cannot see their personal information\n• PRC confirms membership, not the platform',
-   '60-second briefing for student sponsors',
-   'approved', '00000000-0000-0000-0000-000000000102', now(), 'SafeCard Sponsor Guide', '2026-09-01', '2027-03-01',
-   '["sponsor_page","landing_page"]', true, now(), '00000000-0000-0000-0000-000000000101');
-
--- ============================================================
--- Sample sponsor (Bea persona — synthetic)
--- ============================================================
-insert into public.sponsors (
-  id, campaign_id, display_name, is_minor, guardian_name, guardian_approved
-) values (
-  '00000000-0000-0000-0000-000000000201',
-  '00000000-0000-0000-0000-000000000010',
-  'Bea N.',
-  true,
-  'Paolo N.',
-  true
-);
-
--- ============================================================
--- Sample referral link
--- ============================================================
-insert into public.referral_links (
-  id, sponsor_id, campaign_id, slug, is_active, activated_at, expires_at
-) values (
-  '00000000-0000-0000-0000-000000000301',
-  '00000000-0000-0000-0000-000000000201',
-  '00000000-0000-0000-0000-000000000010',
-  'bea26a',
-  true,
-  now(),
-  '2026-12-31T23:59:59Z'
-);
+   '["claims_guide","membership_card"]', true, now(), '00000000-0000-0000-0000-000000000101');

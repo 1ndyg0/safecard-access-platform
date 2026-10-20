@@ -41,7 +41,6 @@ export async function POST(request: NextRequest) {
       campaignId: parsed.data.campaign_id,
       payerType: parsed.data.payer_type,
       payerName: parsed.data.payer_name,
-      payerSponsorId: parsed.data.payer_sponsor_id,
       expectedAmount: parsed.data.expected_amount,
       paymentRoute: parsed.data.payment_route,
       idempotencyKey: parsed.data.idempotency_key,
@@ -52,8 +51,7 @@ export async function POST(request: NextRequest) {
       {
         paymentIntentId: result.paymentIntentId,
         status: result.status,
-        message: 'Use the official PRC payment route. Payment is pending until verified.',
-        warning: 'Payment does not activate membership. PRC confirmation is required.',
+        message: 'Use the official PRC payment route. Payment is pending until an administrator verifies it with your approval.',
       },
       { status: result.status === 'created' ? 201 : 200 }
     );

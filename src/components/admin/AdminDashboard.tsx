@@ -26,7 +26,7 @@ type Overview = {
   counts: Record<string, number>;
 };
 
-/** Order and labels for the eleven operational counts. */
+/** Order and labels for the operational counts. */
 const COUNT_CARDS: Array<{ key: string; label: string }> = [
   { key: "total_cases", label: "Total cases" },
   { key: "draft_or_incomplete", label: "Draft or incomplete" },
@@ -35,10 +35,7 @@ const COUNT_CARDS: Array<{ key: string; label: string }> = [
   { key: "correction_requested", label: "Correction requested" },
   { key: "payment_evidence_pending", label: "Payment evidence pending" },
   { key: "payment_verified", label: "Payment verified" },
-  { key: "ready_for_prc_handoff", label: "Ready for PRC handoff" },
-  { key: "sent_or_acknowledged_by_prc", label: "Sent to or acknowledged by PRC" },
-  { key: "prc_confirmed_active", label: "PRC-confirmed active" },
-  { key: "prc_declined", label: "PRC-declined" },
+  { key: "approved", label: "Approved" },
 ];
 
 export function AdminDashboard() {

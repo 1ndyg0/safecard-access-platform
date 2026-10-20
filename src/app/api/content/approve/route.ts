@@ -1,16 +1,14 @@
 /**
  * POST /api/content/approve
  *
- * PRC liaison approves a content version.
- * Approval is required before school admin can publish.
- *
- * Persona: Elena (PRC liaison) reviews and approves content.
+ * A content approver (or the privacy administrator) approves a content
+ * version. Approval is required before school admin can publish.
  */
 
 import { NextRequest } from 'next/server';
 import { approveContent } from '@/lib/content';
 import { requireStaffAuth } from '@/lib/auth/session';
-import { requireRole } from '@/lib/auth/permissions';
+import { requireAnyRole } from '@/lib/auth/permissions';
 import { success, forbidden, handleApiError } from '@/lib/api/response';
 import { z } from 'zod';
 
@@ -23,8 +21,8 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireStaffAuth();
 
-    const roleCheck = await requireRole(auth.userId, 'prc_liaison');
-    if (!roleCheck.allowed) return forbidden('Only PRC liaison can approve content');
+    const roleCheck = await requireAnyRole(auth.userId, ['content_approver', 'privacy_admin_owner']);
+    if (!roleCheck.allowed) return forbidden('Only a content approver can approve content');
 
     const body = await request.json();
     const parsed = approveContentSchema.parse(body);
@@ -33,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     return success({
       approved: true,
-      message: 'Content approved by PRC — ready for school admin to publish',
+      message: 'Content approved — ready for school admin to publish',
     });
   } catch (error) {
     return handleApiError(error, 'Content approval');

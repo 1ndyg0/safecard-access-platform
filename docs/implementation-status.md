@@ -8,15 +8,15 @@ Assessment date: 12 September 2026. “Implemented” means the capability exist
 |---|---|
 | Strict production mode | Production requires live mode, completed launch gates, payment handoff, validated secrets, and pinned campaign/content identifiers. Invalid production configuration returns an explicit unavailable response and never falls back to synthetic data. |
 | Consent-first application | The decision and comprehension flow precedes consent and profile collection. A case ID resumes the server-backed draft in the same browser without storing PII in browser storage. |
-| Application and payment separation | Submission has a visible payment step. The annual PHP 1,200 payment stays pending until an authorized reviewer verifies it. Payment never activates membership. |
+| Application and payment separation | Submission has a visible payment step. The annual PHP 1,200 payment stays pending until the approving administrator verifies the proof as part of the approval. |
 | Manual official payment routes | The private GCash QR and confirmed bank routes are exposed only for the pinned active campaign. BPI is exactly `002963000782B`. |
 | Receipt evidence | JPEG, PNG, WebP, and constrained PDF evidence up to 10 MiB is signature-validated server-side. Images are decoded and re-encoded to remove metadata; private objects use non-enumerable paths and short-lived reviewer URLs. Replacements preserve immutable versions. |
 | Payment declaration | Payer-reported payment date, exact amount, transaction reference, and declaration are atomically recorded with idempotency checks. |
 | Staff authentication and roles | Supabase Auth, inactive-user checks, organization/campaign-scoped roles, first-administrator invitation bootstrap, user management, and login/logout audit events are present. |
-| Staff review | Dashboard, queue filters, pagination, case detail, correction flow, payment evidence preview, verification, conflict protection, and audit history are present. Search only queries fields allowed by the reviewer’s effective role. |
-| Member experience | A signed 30-minute member session exposes status and the next action. The electronic card and local QR appear only after recorded PRC acceptance. |
+| Staff review | Dashboard, queue filters, pagination, case detail, correction flow, inline payment-proof preview, approval with payment verification in one action, a request for a replacement proof, conflict protection, and audit history are present. Search only queries fields allowed by the reviewer’s effective role. |
+| Member experience | A signed 30-minute member session exposes status and the next action. The approved electronic card and local QR appear once an administrator has approved the application and verified the payment proof. |
 | Content governance | Versioned bilingual content can be created, approved, published, rolled back, and pinned for the pilot. Material changes can expire existing consent. |
-| PRC handoff | MFA-gated immutable exports, checksums, acknowledgements, corrections, and PRC-only activation are implemented. |
+| Removed | Ambassador, sponsor and referral links; PRC export, handoff and acceptance; the `prc_liaison` and `finance_export` roles; the separate payment-verification screen; the MFA enrolment page. Migration `00022` drops their tables and functions. |
 | Privacy and operational controls | RLS/grants, append-only audit protection, rate limiting, minimized DTOs, shared-device clearing, stop conditions, and privacy-safe aggregate metrics are implemented. |
 
 ## Intentionally parked
@@ -24,7 +24,6 @@ Assessment date: 12 September 2026. “Implemented” means the capability exist
 - SMS, email, and push delivery; the member portal is the status channel.
 - Direct GCash/payment-provider APIs and webhook settlement.
 - Direct PRC membership or claims APIs.
-- Production export transfer until PRC approves the schema, recipients, secure channel, retention, and acknowledgement procedure.
 - Cross-device draft recovery without an approved re-identification method.
 
 ## External activation work

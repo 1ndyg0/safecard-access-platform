@@ -22,7 +22,6 @@ import {
   CONSENT_STATES,
   MEMBERSHIP_STATES,
   PAYMENT_STATES,
-  PRC_HANDOFF_STATES,
   REVIEW_BUCKETS,
   SORT_OPTIONS,
 } from "@/lib/admin/queue";
@@ -33,7 +32,6 @@ type CaseRow = {
   consent_state: string;
   application_state: string;
   payment_state: string;
-  prc_handoff_state: string;
   membership_state: string;
   created_at: string;
   review_waiting_since: string | null;
@@ -51,7 +49,6 @@ const FILTER_KEYS = [
   "application_state",
   "review_bucket",
   "payment_state",
-  "prc_handoff_state",
   "membership_state",
   "search",
   "application_ref",
@@ -247,13 +244,6 @@ export function SubmissionsTable() {
           onChange={(value) => setFilter("payment_state", value)}
         />
         <FilterSelect
-          id="filter-handoff"
-          label="PRC handoff"
-          value={filters.prc_handoff_state ?? ""}
-          options={PRC_HANDOFF_STATES}
-          onChange={(value) => setFilter("prc_handoff_state", value)}
-        />
-        <FilterSelect
           id="filter-membership"
           label="Membership"
           value={filters.membership_state ?? ""}
@@ -338,7 +328,6 @@ export function SubmissionsTable() {
                   <th scope="col">Consent</th>
                   <th scope="col">Application</th>
                   <th scope="col">Payment</th>
-                  <th scope="col">PRC handoff</th>
                   <th scope="col">Membership</th>
                   <th scope="col">Waiting on review</th>
                   <th scope="col">Received</th>
@@ -358,7 +347,6 @@ export function SubmissionsTable() {
                     <td>{humanize(row.consent_state)}</td>
                     <td>{humanize(row.application_state)}</td>
                     <td>{humanize(row.payment_state)}</td>
-                    <td>{humanize(row.prc_handoff_state)}</td>
                     <td>{humanize(row.membership_state)}</td>
                     <td>{waitingFor(row.review_waiting_since)}</td>
                     <td>{new Date(row.created_at).toISOString().slice(0, 10)}</td>

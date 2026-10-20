@@ -1,7 +1,7 @@
 /**
  * Support and privacy request service
  *
- * 8 categories from the spec:
+ * 7 categories from the spec:
  * 1. General question
  * 2. Trouble applying
  * 3. Payment handoff issue
@@ -9,7 +9,6 @@
  * 5. Consent withdrawal
  * 6. Privacy request
  * 7. Emergency/claims education (points to PRC, does NOT adjudicate)
- * 8. PRC handoff issue
  *
  * Privacy operations:
  * - Consent withdrawal
@@ -35,7 +34,7 @@ export interface CreateSupportCaseInput {
   category: SupportCategory;
   subject: string;
   description: string;
-  submittedByType: 'recipient' | 'sponsor' | 'guardian' | 'staff' | 'system';
+  submittedByType: 'recipient' | 'guardian' | 'staff' | 'system';
   submittedByUserId?: string;
   contactMethod?: string;
   isPrivacyRequest?: boolean;

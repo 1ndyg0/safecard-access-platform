@@ -12,9 +12,7 @@
 
 export type StaffRole =
   | 'school_admin'
-  | 'prc_liaison'
   | 'support_agent'
-  | 'finance_export'
   | 'content_approver'
   | 'privacy_admin_owner';
 
@@ -42,15 +40,6 @@ export type PaymentState =
   | 'failed_or_cancelled'
   | 'refunded_or_reversed';
 
-export type PrcHandoffState =
-  | 'not_ready'
-  | 'ready_for_export'
-  | 'exported'
-  | 'acknowledged'
-  | 'correction_requested'
-  | 'accepted'
-  | 'rejected';
-
 export type MembershipState =
   | 'not_active'
   | 'pending_prc_confirmation'
@@ -74,8 +63,7 @@ export type SupportCategory =
   | 'correction_request'
   | 'consent_withdrawal'
   | 'privacy_request'
-  | 'emergency_claims_education'
-  | 'prc_handoff_issue';
+  | 'emergency_claims_education';
 
 export type ContentType =
   | 'benefit'
@@ -85,9 +73,7 @@ export type ContentType =
   | 'consent_text'
   | 'support_text'
   | 'claims_education'
-  | 'faq'
-  | 'sponsor_briefing'
-  | 'invitation_script';
+  | 'faq';
 
 export type ContentApprovalStatus =
   | 'draft'
@@ -132,12 +118,6 @@ export type JobStatus =
   | 'failed'
   | 'cancelled';
 
-export type RelationshipType =
-  | 'sponsor'
-  | 'payer'
-  | 'guardian'
-  | 'assisted_entry_helper';
-
 export type NotificationChannel = 'sms' | 'email' | 'in_app';
 export type NotificationStatus = 'pending' | 'sent' | 'delivered' | 'failed' | 'opted_out';
 
@@ -164,7 +144,6 @@ export interface PilotCampaign {
   start_date: string;
   end_date: string | null;
   max_applications: number;
-  max_sponsors: number;
   membership_fee: number;
   approved_fields: string[];
   approved_payment_routes: PaymentRouteConfig[];
@@ -215,45 +194,9 @@ export interface RoleAssignment {
   updated_at: string;
 }
 
-export interface Sponsor {
-  id: string;
-  campaign_id: string;
-  auth_user_id: string | null;
-  display_name: string;
-  is_minor: boolean;
-  guardian_name: string | null;
-  guardian_contact: string | null;
-  guardian_approved: boolean;
-  is_active: boolean;
-  metadata: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ReferralLink {
-  id: string;
-  sponsor_id: string;
-  campaign_id: string;
-  slug: string;
-  qr_metadata: Record<string, unknown>;
-  is_active: boolean;
-  activated_at: string | null;
-  expires_at: string | null;
-  revoked_at: string | null;
-  revoked_by: string | null;
-  revocation_reason: string | null;
-  total_visits: number;
-  total_starts: number;
-  idempotency_key: string | null;
-  metadata: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface RecipientCase {
   id: string;
   campaign_id: string;
-  referral_link_id: string | null;
   application_ref: string | null;
   auth_user_id: string | null;
   decision: 'accept';
@@ -261,7 +204,6 @@ export interface RecipientCase {
   consent_state: ConsentState;
   application_state: ApplicationState;
   payment_state: PaymentState;
-  prc_handoff_state: PrcHandoffState;
   membership_state: MembershipState;
   consent_content_version_id: string | null;
   privacy_notice_version_id: string | null;
@@ -291,19 +233,6 @@ export interface RecipientProfile {
   mobile_number: string | null;
   email: string | null;
   fields_completed: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Relationship {
-  id: string;
-  case_id: string;
-  relationship_type: RelationshipType;
-  sponsor_id: string | null;
-  user_id: string | null;
-  external_name: string | null;
-  is_active: boolean;
-  notes: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -387,9 +316,8 @@ export interface PaymentIntent {
   id: string;
   case_id: string;
   campaign_id: string;
-  payer_type: 'sponsor' | 'guardian' | 'other';
+  payer_type: 'guardian' | 'other';
   payer_name: string | null;
-  payer_sponsor_id: string | null;
   expected_amount: number;
   currency: string;
   payment_route: string;
@@ -416,51 +344,6 @@ export interface PaymentIntent {
   updated_at: string;
 }
 
-export interface PrcExportBatch {
-  id: string;
-  campaign_id: string;
-  batch_ref: string;
-  created_by: string;
-  creation_reason: string;
-  reauth_method: 'password' | 'mfa' | 'session_refresh';
-  reauth_at: string;
-  record_count: number;
-  column_order: string[];
-  checksum: string;
-  format: 'csv' | 'json';
-  transfer_method: string | null;
-  transferred_at: string | null;
-  transfer_evidence: string | null;
-  prc_received_at: string | null;
-  prc_received_by: string | null;
-  prc_acknowledgment: string | null;
-  metadata: Record<string, unknown>;
-  created_at: string;
-}
-
-export interface PrcExportItem {
-  id: string;
-  batch_id: string;
-  case_id: string;
-  submission_id: string;
-  export_order: number;
-  prc_status: 'pending' | 'acknowledged' | 'correction_requested' | 'accepted' | 'rejected';
-  prc_responded_at: string | null;
-  prc_response_by: string | null;
-  prc_notes: string | null;
-  correction_reason: string | null;
-  correction_fields: Record<string, unknown> | null;
-  original_values: Record<string, unknown> | null;
-  corrected_values: Record<string, unknown> | null;
-  prc_membership_id: string | null;
-  prc_effective_date: string | null;
-  prc_expiry_date: string | null;
-  prc_source_timestamp: string | null;
-  metadata: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface MembershipStatusEvent {
   id: string;
   case_id: string;
@@ -468,7 +351,6 @@ export interface MembershipStatusEvent {
   new_state: MembershipState;
   changed_by: string;
   change_source: string;
-  prc_export_item_id: string | null;
   prc_membership_id: string | null;
   prc_effective_date: string | null;
   prc_expiry_date: string | null;
@@ -486,7 +368,7 @@ export interface SupportCase {
   state: SupportState;
   subject: string;
   description: string;
-  submitted_by_type: 'recipient' | 'sponsor' | 'guardian' | 'staff' | 'system';
+  submitted_by_type: 'recipient' | 'guardian' | 'staff' | 'system';
   submitted_by_user_id: string | null;
   contact_method: string | null;
   assigned_to: string | null;

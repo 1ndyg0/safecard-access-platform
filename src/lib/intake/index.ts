@@ -33,12 +33,11 @@ function hashRequest(value: unknown): string {
 }
 
 // ============================================================
-// Create a recipient case (when they arrive via referral or direct)
+// Create a recipient case
 // ============================================================
 
 export interface CreateCaseInput {
   campaignId: string;
-  referralLinkId?: string;
   authUserId?: string;
 }
 
@@ -49,27 +48,13 @@ export async function createRecipientCase(
 
   const caseId = uuidv4();
 
-  if (input.referralLinkId) {
-    const { data: referral } = await admin
-      .from('referral_links')
-      .select('id')
-      .eq('id', input.referralLinkId)
-      .eq('campaign_id', input.campaignId)
-      .eq('is_active', true)
-      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
-      .maybeSingle();
-    if (!referral) throw new Error('Referral link is invalid or expired');
-  }
-
   const { error } = await admin.from('recipient_cases').insert({
     id: caseId,
     campaign_id: input.campaignId,
-    referral_link_id: input.referralLinkId ?? null,
     auth_user_id: input.authUserId ?? null,
     consent_state: 'not_started',
     application_state: 'draft',
     payment_state: 'not_started',
-    prc_handoff_state: 'not_ready',
     membership_state: 'not_active',
     decision: 'accept',
     decision_at: new Date().toISOString(),
@@ -84,25 +69,6 @@ export async function createRecipientCase(
     case_id: caseId,
   });
   if (profileError) throw new Error(`Failed to create recipient profile: ${profileError.message}`);
-
-  // If there's a referral, create the sponsor relationship
-  if (input.referralLinkId) {
-    const { data: link } = await admin
-      .from('referral_links')
-      .select('sponsor_id')
-      .eq('id', input.referralLinkId)
-      .single();
-
-    if (link) {
-      await admin.from('relationships').insert({
-        case_id: caseId,
-        relationship_type: 'sponsor',
-        sponsor_id: link.sponsor_id,
-      });
-
-      await admin.rpc('increment_referral_starts', { p_referral_link_id: input.referralLinkId });
-    }
-  }
 
   return { caseId };
 }

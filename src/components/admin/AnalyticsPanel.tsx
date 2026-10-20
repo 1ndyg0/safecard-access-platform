@@ -43,7 +43,6 @@ export function AnalyticsPanel({ analytics }: { analytics: AdminAnalytics | null
       label: "Submitted → payment verified",
       measure: analytics.funnel.submitted_to_payment_verified,
     },
-    { label: "Submitted → active", measure: analytics.funnel.submitted_to_active },
     { label: "Evidence replacement", measure: analytics.evidence.replacement_rate },
     { label: "Upload success", measure: analytics.evidence.upload_success_rate },
   ];

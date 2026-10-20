@@ -34,7 +34,7 @@ import {
 export const dynamic = 'force-dynamic';
 
 const CASE_COLUMNS =
-  'id,campaign_id,application_ref,consent_state,application_state,application_review_state,payment_state,prc_handoff_state,membership_state,consent_content_version_id,privacy_notice_version_id';
+  'id,campaign_id,application_ref,consent_state,application_state,application_review_state,payment_state,membership_state,consent_content_version_id,privacy_notice_version_id';
 
 function localeOf(request: NextRequest): UiLocale {
   return request.nextUrl.searchParams.get('locale') === 'en' ? 'en' : 'fil';
@@ -66,32 +66,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       .eq('case_id', caseId)
       .maybeSingle();
 
-    const [{ data: decision }, { data: prcCorrection }] = await Promise.all([
-      admin
-        .from('application_review_decisions')
-        .select('reason,decided_at')
-        .eq('case_id', caseId)
-        .order('decided_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      admin
-        .from('prc_export_items')
-        .select('correction_reason,prc_responded_at')
-        .eq('case_id', caseId)
-        .eq('prc_status', 'correction_requested')
-        .order('prc_responded_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
+    const { data: decision } = await admin
+      .from('application_review_decisions')
+      .select('reason,decided_at')
+      .eq('case_id', caseId)
+      .order('decided_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     return NextResponse.json(
       {
         reference: caseRecord.application_ref,
         eligibility,
-        reviewReason:
-          caseRecord.prc_handoff_state === 'correction_requested'
-            ? prcCorrection?.correction_reason ?? decision?.reason ?? null
-            : decision?.reason ?? null,
+        reviewReason: decision?.reason ?? null,
         fields: CORRECTABLE_FIELDS,
         values: profile ?? null,
       },
@@ -187,7 +174,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         reviewState: result.review_state,
         // Restated so nothing can be inferred as having advanced.
         paymentState: result.payment_state,
-        prcHandoffState: result.prc_handoff_state,
         membershipState: result.membership_state,
         membershipChanged: false,
       },

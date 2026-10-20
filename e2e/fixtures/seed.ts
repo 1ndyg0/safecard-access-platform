@@ -29,10 +29,8 @@ export interface SeededWorld {
   otherCampaignId: string;
   staff: {
     privacyAdmin: SeededStaff;
-    finance: SeededStaff;
     support: SeededStaff;
     schoolAdmin: SeededStaff;
-    prcLiaison: SeededStaff;
     /** Holds a role, but only on the other campaign. */
     outsider: SeededStaff;
     /** Authenticates but holds no active role at all. */
@@ -41,7 +39,7 @@ export interface SeededWorld {
   cases: {
     approvedUnverifiedPayment: string;
     verifiedPaymentPendingReview: string;
-    handoffReady: string;
+    approvedVerified: string;
     correctionRequested: string;
     longestWaiting: string;
     recentlyResubmitted: string;
@@ -119,17 +117,12 @@ const TABLES_TO_CLEAR = [
   'payment_evidence',
   'payment_intents',
   'membership_status_events',
-  'prc_export_items',
-  'prc_export_batches',
   'application_submissions',
   'support_cases',
-  'relationships',
   'recipient_profiles',
   'consent_records',
   'recipient_cases',
   'content_versions',
-  'referral_links',
-  'sponsors',
   'role_assignments',
   'pilot_campaigns',
   'organizations',
@@ -191,7 +184,6 @@ async function insertCase(
     application_state?: string;
     application_review_state?: string;
     payment_state?: string;
-    prc_handoff_state?: string;
     membership_state?: string;
   },
   options: {
@@ -212,7 +204,6 @@ async function insertCase(
     application_state: states.application_state ?? 'draft',
     application_review_state: states.application_review_state ?? 'pending',
     payment_state: states.payment_state ?? 'not_started',
-    prc_handoff_state: states.prc_handoff_state ?? 'not_ready',
     membership_state: states.membership_state ?? 'not_active',
     consent_content_version_id: versionId,
     privacy_notice_version_id: versionId,
@@ -373,10 +364,8 @@ export async function seedWorld(): Promise<SeededWorld> {
 
   const staff = {
     privacyAdmin: await createStaff(admin, 'privacy@e2e.safecard.test', 'Privacy Admin'),
-    finance: await createStaff(admin, 'finance@e2e.safecard.test', 'Finance Reviewer'),
     support: await createStaff(admin, 'support@e2e.safecard.test', 'Support Agent'),
     schoolAdmin: await createStaff(admin, 'school@e2e.safecard.test', 'School Admin'),
-    prcLiaison: await createStaff(admin, 'prc@e2e.safecard.test', 'PRC Liaison'),
     outsider: await createStaff(admin, 'outsider@e2e.safecard.test', 'Other Campaign Staff'),
     unassigned: await createStaff(admin, 'unassigned@e2e.safecard.test', 'No Role'),
   };
@@ -384,10 +373,8 @@ export async function seedWorld(): Promise<SeededWorld> {
 
   await admin.from('role_assignments').insert([
     { user_id: staff.privacyAdmin.userId, role: 'privacy_admin_owner', campaign_id: campaignId, is_active: true },
-    { user_id: staff.finance.userId, role: 'finance_export', campaign_id: campaignId, is_active: true },
     { user_id: staff.support.userId, role: 'support_agent', campaign_id: campaignId, is_active: true },
     { user_id: staff.schoolAdmin.userId, role: 'school_admin', campaign_id: campaignId, is_active: true },
-    { user_id: staff.prcLiaison.userId, role: 'prc_liaison', campaign_id: campaignId, is_active: true },
     { user_id: staff.outsider.userId, role: 'school_admin', campaign_id: otherCampaignId, is_active: true },
   ]);
 
@@ -402,7 +389,6 @@ export async function seedWorld(): Promise<SeededWorld> {
       {
         application_state: 'submitted',
         payment_state: 'payer_marked_paid',
-        prc_handoff_state: 'not_ready',
         membership_state: 'not_active',
       },
       { applicationRef: 'SC-2026-AAAA0001', submittedAt: hoursAgo(6) },
@@ -413,19 +399,17 @@ export async function seedWorld(): Promise<SeededWorld> {
       {
         application_state: 'submitted',
         payment_state: 'verified_by_official_source',
-        prc_handoff_state: 'not_ready',
         membership_state: 'not_active',
       },
       { applicationRef: 'SC-2026-AAAA0002', submittedAt: hoursAgo(40) },
     ),
-    handoffReady: await insertCase(
+    approvedVerified: await insertCase(
       admin,
       campaignId,
       {
         application_state: 'submitted',
         application_review_state: 'approved',
         payment_state: 'verified_by_official_source',
-        prc_handoff_state: 'ready_for_export',
         membership_state: 'not_active',
       },
       { applicationRef: 'SC-2026-AAAA0003', submittedAt: hoursAgo(50) },
@@ -472,7 +456,7 @@ export async function seedWorld(): Promise<SeededWorld> {
     ),
   };
 
-  // One payment intent with evidence, for the finance actions.
+  // One payment intent with evidence, for the approve-with-payment actions.
   const paymentIntentId = randomUUID();
   const { error: intentError } = await admin.from('payment_intents').insert({
     id: paymentIntentId,
@@ -517,7 +501,7 @@ export async function seedWorld(): Promise<SeededWorld> {
     image_width: 1,
     image_height: 1,
     state: 'verification_pending',
-    uploaded_by: staff.finance.userId,
+    uploaded_by: staff.privacyAdmin.userId,
   });
   if (versionError) throw new Error(`Failed to insert evidence version: ${versionError.message}`);
 

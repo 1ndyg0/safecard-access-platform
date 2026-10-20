@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { memberNextAction } from "./status";
 
-const baseline = { application_state: "submitted", payment_state: "not_started", prc_handoff_state: "not_ready", membership_state: "not_active" };
+const baseline = { application_state: "submitted", payment_state: "not_started", membership_state: "not_active" };
 
 describe("memberNextAction", () => {
   it("never equates submission with activation", () => {
     expect(memberNextAction(baseline)).toContain("Payment remains a separate step");
   });
 
-  it("reports active only after PRC confirmation", () => {
-    expect(memberNextAction({ ...baseline, membership_state: "active_confirmed" })).toBe("Membership confirmed by PRC.");
+  it("tells a member with verified payment that approval is pending", () => {
+    expect(memberNextAction({ ...baseline, payment_state: "verified_by_official_source" })).toContain("awaiting administrator approval");
   });
 
   it("prioritizes correction instructions", () => {

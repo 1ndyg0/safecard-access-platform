@@ -36,7 +36,7 @@ for (const authenticated of [false, true]) {
 
 test('original submission and evidence object identity remain immutable even through service-role writes', async () => {
   const { data: original, error } = await world.admin.from('application_submissions')
-    .select('id,submitted_data').eq('case_id', world.cases.handoffReady).eq('is_current', true).single();
+    .select('id,submitted_data').eq('case_id', world.cases.approvedVerified).eq('is_current', true).single();
   expect(error).toBeNull();
   const changed = await world.admin.from('application_submissions')
     .update({ submitted_data: { first_name: 'Synthetic overwrite attempt' } }).eq('id', original!.id);
@@ -69,7 +69,7 @@ test('an invalid actor rolls back review state and decision creation atomically'
 });
 
 test('signed receipt access is short-lived and audited without recording the URL', async ({ page }) => {
-  await signIn(page, world.staff.finance);
+  await signIn(page, world.staff.privacyAdmin);
   const response = await page.request.get(`/api/payment/evidence/${world.paymentEvidenceId}`);
   expect(response.status()).toBe(200);
   const body = await response.json();
@@ -78,12 +78,18 @@ test('signed receipt access is short-lived and audited without recording the URL
   const audit = await world.admin.from('audit_events').select('action,details,actor_id')
     .eq('target_id', world.paymentEvidenceId).eq('event_type', 'staff_access');
   expect(audit.error).toBeNull();
-  expect(audit.data?.some((row) => row.actor_id === world.staff.finance.userId && row.action === 'Accessed private payment evidence')).toBe(true);
+  expect(audit.data?.some((row) => row.actor_id === world.staff.privacyAdmin.userId && row.action === 'Accessed private payment evidence')).toBe(true);
   expect(JSON.stringify(audit.data)).not.toContain(body.signedUrl);
 });
 
-test('school application reviewers cannot obtain private receipt URLs', async ({ page }) => {
+test('school administrators approving applications can open the receipt', async ({ page }) => {
   await signIn(page, world.staff.schoolAdmin);
+  const response = await page.request.get(`/api/payment/evidence/${world.paymentEvidenceId}`);
+  expect(response.status()).toBe(200);
+});
+
+test('support agents cannot obtain private receipt URLs', async ({ page }) => {
+  await signIn(page, world.staff.support);
   const response = await page.request.get(`/api/payment/evidence/${world.paymentEvidenceId}`);
   expect(response.status()).toBe(403);
   expect(await response.text()).not.toContain('signedUrl');

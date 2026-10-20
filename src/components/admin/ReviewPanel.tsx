@@ -3,9 +3,10 @@
 /**
  * Staff application review controls.
  *
- * Three decisions, each requiring an explicit confirmation checkbox
- * before the button becomes usable. Requesting a resubmission and
- * rejecting also require a reason, which the applicant reads verbatim —
+ * Approve (which also verifies the payment proof shown above), request a
+ * resubmission, ask for a new payment proof, or reject. Each requires an
+ * explicit confirmation checkbox before the button becomes usable. All but
+ * approving also require a reason, which the applicant reads verbatim —
  * the field is labelled that way so a reviewer knows who the audience is
  * before they start typing.
  *
@@ -18,15 +19,19 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import { newIdempotencyKey } from "@/lib/idempotency";
 
-type Decision = "approved" | "resubmission_requested" | "rejected";
+type Decision = "approved" | "resubmission_requested" | "rejected" | "request_payment_proof";
 
 const DECISION_LABELS: Record<Decision, string> = {
   approved: "Approve application",
   resubmission_requested: "Request resubmission",
   rejected: "Reject application",
+  request_payment_proof: "Ask for a new payment proof",
 };
 
-const REASON_REQUIRED: Decision[] = ["resubmission_requested", "rejected"];
+/** The four buttons, in order. The payment-proof request only exists while a proof is waiting. */
+const DECISION_OPTIONS: Decision[] = ["approved", "resubmission_requested", "request_payment_proof", "rejected"];
+
+const REASON_REQUIRED: Decision[] = ["resubmission_requested", "rejected", "request_payment_proof"];
 
 /** A pending payment proof the signed-in reviewer may verify together with the approval. */
 export type PendingPayment = { intentId: string; paymentState: string; evidenceId: string; contentType: string };
@@ -119,7 +124,19 @@ export function ReviewPanel({
     setMessage("");
     setFailed(false);
     try {
-      const response = withPayment && pendingPayment
+      const response = decision === "request_payment_proof" && pendingPayment
+        ? await fetch(`/api/admin/cases/${caseId}/request-payment-proof`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              confirm: true,
+              payment_intent_id: pendingPayment.intentId,
+              evidence_id: pendingPayment.evidenceId,
+              expected_payment_state: pendingPayment.paymentState,
+              reason: reason.trim(),
+            }),
+          })
+        : withPayment && pendingPayment
         ? await fetch(`/api/admin/cases/${caseId}/approve-with-payment`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -146,9 +163,11 @@ export function ReviewPanel({
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? "The decision could not be recorded.");
       setMessage(
-        withPayment
-          ? "Application approved and payment verified. The member can now sign in and see their approved SafeCard."
-          : "Decision recorded. Payment, PRC handoff and membership are unchanged — only PRC confirmation can activate membership.",
+        decision === "request_payment_proof"
+          ? "The applicant has been asked for a new payment proof. The application is unchanged."
+          : withPayment
+            ? "Application approved and payment verified. The member can now sign in and see their approved SafeCard."
+            : "Decision recorded. Payment is unchanged; it is verified when an application is approved with its payment proof.",
       );
       setDecision(null);
       setConfirmed(false);
@@ -186,11 +205,11 @@ export function ReviewPanel({
         </p>
       ) : !decision ? (
         <div className="decision-actions">
-          {(Object.keys(DECISION_LABELS) as Decision[]).map((option) => (
+          {DECISION_OPTIONS.filter((option) => option !== "request_payment_proof" || Boolean(pendingPayment)).map((option) => (
             <button
               key={option}
               type="button"
-              className={option === "rejected" ? "button-quiet" : "button-primary"}
+              className={option === "rejected" || option === "request_payment_proof" ? "button-quiet" : "button-primary"}
               onClick={() => start(option)}
             >
               {option === "approved" && pendingPayment ? "Approve application and verify payment" : DECISION_LABELS[option]}
@@ -236,8 +255,10 @@ export function ReviewPanel({
             />
             <label htmlFor={`${baseId}-confirm`}>
               {withPayment
-                ? "I confirm this decision. I looked at the payment proof shown above and verify it with this approval. PRC handoff is not required."
-                : "I confirm this decision. It does not verify payment and does not activate membership."}
+                ? "I confirm this decision. I looked at the payment proof shown above and verify it with this approval."
+                : decision === "request_payment_proof"
+                  ? "I confirm I want the applicant to upload a new payment proof. The application stays as it is."
+                  : "I confirm this decision. It does not verify payment."}
             </label>
           </div>
 
