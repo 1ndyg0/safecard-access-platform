@@ -289,8 +289,8 @@ export function ApplicationWizard() {
   }
 
   function requestCancel() {
-    // Before a case exists there is nothing to discard.
-    if (!caseId) { resetLocalState(); router.push("/"); return; }
+    // Until the details step nothing worth keeping has been entered, so there is nothing to confirm or discard.
+    if (!caseId && !["profile", "pay"].includes(step)) { resetLocalState(); router.push("/"); return; }
     setConfirmingCancel(true);
   }
 
@@ -306,35 +306,23 @@ export function ApplicationWizard() {
     if (decision === "ask") { setAsking(true); return; }
     setAsking(false);
     if (decision === "decline") { resetLocalState(); setStep("declined"); return; }
-    if (!isLive) { setStep("consent"); return; }
-    if (!config?.campaign) { setError(ui.notReady); return; }
-    if (caseId) { setStep("consent"); return; }
-    setBusy(true);
-    try {
-      const result = await api("/api/intake/case", { campaign_id: config.campaign.id, decision: "accept" });
-      setCaseId(result.caseId);
-      window.sessionStorage.setItem("safecard-case-id", result.caseId);
-      await api("/api/intake/comprehension", { case_id: result.caseId, answers: { coverage_understanding: true, payment_not_activation: true, can_withdraw_consent: true, claims_contact_correct: true } });
-      setStep("consent");
-    } catch (caught) { setError(caught instanceof Error ? caught.message : ui.notReady); }
-    finally { setBusy(false); }
+    // Nothing is saved yet. The case, consent and details are all created together at the final submit.
+    if (isLive && !config?.campaign) { setError(ui.notReady); return; }
+    setStep("consent");
   }
 
-  async function recordConsent() {
+  function recordConsent() {
     if (!allAgreed) return;
-    if (!isLive) { setStep("profile"); return; }
-    if (consentRecordId) { setStep("profile"); return; }
-    const content = config?.content ?? [];
-    const contentLocale = locale === "fil" ? "tl" : "en";
-    const consent = content.find((item) => item.locale === contentLocale && item.content_type === "consent_text");
-    const privacy = content.find((item) => item.locale === contentLocale && item.content_type === "privacy_notice");
-    if (!caseId || !consent || !privacy) { setError(ui.missingContent); return; }
-    setBusy(true);
-    try {
-      const result = await api("/api/consent/grant", { case_id: caseId, consent_type: "membership_application", consent_content_version_id: consent.id, privacy_notice_version_id: privacy.id, locale: contentLocale, idempotency_key: key("consent") });
-      setConsentRecordId(result.consentRecordId); setStep("profile");
-    } catch (caught) { setError(caught instanceof Error ? caught.message : (isFil ? "Hindi ma-record ang consent." : "Consent could not be recorded.")); }
-    finally { setBusy(false); }
+    if (isLive) {
+      // Fail early if the approved consent text is missing; the consent record itself is written at the final submit.
+      const contentLocale = locale === "fil" ? "tl" : "en";
+      const content = config?.content ?? [];
+      const hasConsent = content.some((item) => item.locale === contentLocale && item.content_type === "consent_text");
+      const hasPrivacy = content.some((item) => item.locale === contentLocale && item.content_type === "privacy_notice");
+      if (!hasConsent || !hasPrivacy) { setError(ui.missingContent); return; }
+    }
+    setError("");
+    setStep("profile");
   }
 
   function profileErrors(): Record<string, string> {
@@ -370,18 +358,44 @@ export function ApplicationWizard() {
     setStep("pay");
   }
 
-  /** Saves the applicant's details. Runs as the first part of the final submit, so staff only ever receive complete applications. */
-  async function saveApplication() {
-    if (applicationSubmitted) return;
-    if (!isLive || !caseId || !consentRecordId || !config?.content) throw new Error(ui.notReady);
+  /**
+   * Creates the application. This is the only moment anything is written: the case, the consent record, the
+   * details and the submission are all created here, as the first part of the final submit. Staff therefore only
+   * ever receive complete applications, and abandoning the flow earlier leaves nothing behind.
+   * Each part is skipped once done, so a retry after a network failure resumes instead of duplicating.
+   */
+  async function createAndSubmitApplication(): Promise<{ caseId: string }> {
+    if (!isLive || !config?.campaign || !config.content) throw new Error(ui.notReady);
     const contentLocale = locale === "fil" ? "tl" : "en";
-    const seen = config.content.filter((item) => item.locale === contentLocale).map((item) => item.id);
-    const privacy = config.content.find((item) => item.locale === contentLocale && item.content_type === "privacy_notice");
-    if (!privacy) throw new Error(isFil ? "Wala ang approved privacy notice." : "Approved privacy notice is missing.");
-    await api("/api/intake/profile", { case_id: caseId, profile_data: profile, data_mode: "live" });
-    const result = await api("/api/intake/submit", { case_id: caseId, consent_record_id: consentRecordId, content_versions_seen: seen, privacy_notice_version_id: privacy.id, profile_data: profile, submitted_by: "recipient", idempotency_key: key("submit"), data_mode: "live" });
-    setReference(result.applicationRef);
-    setApplicationSubmitted(true);
+    const content = config.content;
+    const consent = content.find((item) => item.locale === contentLocale && item.content_type === "consent_text");
+    const privacy = content.find((item) => item.locale === contentLocale && item.content_type === "privacy_notice");
+    if (!consent || !privacy) throw new Error(ui.missingContent);
+
+    let activeCaseId = caseId;
+    if (!activeCaseId) {
+      const created = await api("/api/intake/case", { campaign_id: config.campaign.id, decision: "accept" });
+      activeCaseId = created.caseId as string;
+      setCaseId(activeCaseId);
+      window.sessionStorage.setItem("safecard-case-id", activeCaseId);
+      await api("/api/intake/comprehension", { case_id: activeCaseId, answers: { coverage_understanding: true, payment_not_activation: true, can_withdraw_consent: true, claims_contact_correct: true } });
+    }
+
+    let activeConsentId = consentRecordId;
+    if (!activeConsentId) {
+      const granted = await api("/api/consent/grant", { case_id: activeCaseId, consent_type: "membership_application", consent_content_version_id: consent.id, privacy_notice_version_id: privacy.id, locale: contentLocale, idempotency_key: key("consent") });
+      activeConsentId = granted.consentRecordId as string;
+      setConsentRecordId(activeConsentId);
+    }
+
+    if (!applicationSubmitted) {
+      const seen = content.filter((item) => item.locale === contentLocale).map((item) => item.id);
+      await api("/api/intake/profile", { case_id: activeCaseId, profile_data: profile, data_mode: "live" });
+      const result = await api("/api/intake/submit", { case_id: activeCaseId, consent_record_id: activeConsentId, content_versions_seen: seen, privacy_notice_version_id: privacy.id, profile_data: profile, submitted_by: "recipient", idempotency_key: key("submit"), data_mode: "live" });
+      setReference(result.applicationRef);
+      setApplicationSubmitted(true);
+    }
+    return { caseId: activeCaseId };
   }
 
   const progress = PROGRESS_STEPS.indexOf(step);
@@ -591,9 +605,7 @@ export function ApplicationWizard() {
 
           {/* ── STEP 6: REVIEW, PAY AND SUBMIT ── */}
           {step === "pay" && (
-            isLive && !caseId
-              ? <p className="form-message error" role="alert">{isFil ? "Hindi kumpleto ang secure session mo. Magsimula ulit." : "Your secure session is incomplete. Please start again."}</p>
-              : <>
+            <>
                   <p className="eyebrow">{ui.payEyebrow}</p>
                   <h1 tabIndex={-1}>{ui.payTitle}</h1>
                   <p className="wizard-lede">{ui.payBody}</p>
@@ -610,10 +622,10 @@ export function ApplicationWizard() {
                     </section>
                   )}
                   <ManualPaymentPanel
-                    caseId={caseId ?? "SYNTHETIC-CASE"}
+                    caseId={caseId}
                     campaignId={config?.campaign?.id ?? "00000000-0000-0000-0000-000000000010"}
                     live={isLive}
-                    beforeSubmit={saveApplication}
+                    beforeSubmit={isLive ? createAndSubmitApplication : undefined}
                     onComplete={(summary) => {
                       setPaymentSummary(summary);
                       setProfile(emptyProfile);
@@ -621,7 +633,7 @@ export function ApplicationWizard() {
                       setStep("complete");
                     }}
                   />
-                </>
+            </>
           )}
 
           {/* ── COMPLETE ── */}

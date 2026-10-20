@@ -40,10 +40,11 @@ function formatSize(bytes: number) {
  * so an application is only ever received complete: details plus proof.
  */
 export function ManualPaymentPanel({ caseId, campaignId, live, beforeSubmit, onComplete }: {
-  caseId: string;
+  caseId?: string;
   campaignId: string;
   live: boolean;
-  beforeSubmit?: () => Promise<void>;
+  /** Creates the application and returns its case id. Runs first, once the applicant presses submit. */
+  beforeSubmit?: () => Promise<{ caseId: string }>;
   onComplete: (summary: PaymentSummary) => void;
 }) {
   const { locale } = useLocale();
@@ -178,14 +179,16 @@ export function ManualPaymentPanel({ caseId, campaignId, live, beforeSubmit, onC
     if (!validate() || !file) return;
     setBusy(true);
     try {
-      // Saves the applicant's details first; this is the moment the application is created for staff.
-      if (beforeSubmit) await beforeSubmit();
+      // Creates the application first; this is the moment anything is saved, and the moment staff can first see it.
+      const prepared = beforeSubmit ? await beforeSubmit() : undefined;
+      const activeCaseId = prepared?.caseId ?? caseId;
+      if (live && !activeCaseId) throw new Error(ui.completeError);
       // Live path (works when caseId is a real case). If backend rejects (e.g. env flags off),
       // surface the error rather than silently faking a completion — this is a production flow.
       if (live) {
         let intentId = paymentIntentId;
         if (!intentId) {
-          const handoffPayload = { case_id: caseId, campaign_id: campaignId, payer_type: "other", expected_amount: config.amount, payment_route: selectedPaymentRoute, idempotency_key: key("payment"), data_mode: "live" };
+          const handoffPayload = { case_id: activeCaseId, campaign_id: campaignId, payer_type: "other", expected_amount: config.amount, payment_route: selectedPaymentRoute, idempotency_key: key("payment"), data_mode: "live" };
           const handoff = await fetch("/api/payment/handoff", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(handoffPayload) });
           const handoffBody = await handoff.json(); if (!handoff.ok) throw new Error(handoffBody.error ?? ui.handoffError);
           intentId = handoffBody.paymentIntentId as string; setPaymentIntentId(intentId);
@@ -194,7 +197,7 @@ export function ManualPaymentPanel({ caseId, campaignId, live, beforeSubmit, onC
         const trimmedReference = reference.trim();
         const marked = await fetch("/api/payment/mark-paid", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payment_intent_id: intentId, ...(trimmedReference ? { payment_reference: trimmedReference } : {}), paid_at: paidDate, amount_paid: Number(amountPaid), payer_declaration: declarationText, data_mode: "live" }) });
         const markedBody = await marked.json(); if (!marked.ok) throw new Error(markedBody.error ?? ui.referenceError);
-        const form = new FormData(); form.set("payment_intent_id", intentId); form.set("case_id", caseId); form.set("campaign_id", campaignId); form.set("amount", amountPaid); if (trimmedReference) form.set("reference_number", trimmedReference); form.set("payer_declaration", declarationText); form.set("data_mode", "live"); form.set("file", file);
+        const form = new FormData(); form.set("payment_intent_id", intentId); form.set("case_id", activeCaseId as string); form.set("campaign_id", campaignId); form.set("amount", amountPaid); if (trimmedReference) form.set("reference_number", trimmedReference); form.set("payer_declaration", declarationText); form.set("data_mode", "live"); form.set("file", file);
         const uploaded = await fetch("/api/payment/evidence/upload", { method: "POST", body: form });
         const uploadBody = await uploaded.json(); if (!uploaded.ok) throw new Error(uploadBody.error ?? ui.uploadError);
         onComplete({ routeLabel: selectedRoute.label, reference: trimmedReference || intentId });

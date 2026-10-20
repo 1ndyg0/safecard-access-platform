@@ -3,9 +3,10 @@
  *
  * The applicant cancels an application that is not complete yet.
  *
- * Staff only receive complete applications (details plus proof of payment),
- * and the wizard now sends details and proof together in one final step, so
- * an in-progress case holds no personal data. Cancelling still closes the
+ * Staff only receive complete applications (details plus proof of payment).
+ * The wizard creates the case, consent and details together at the final
+ * submit, so a case only exists here if that submit started and then failed
+ * part-way (for example a dropped connection). Cancelling still closes the
  * case, withdraws its consent record and removes any draft profile row, so
  * nothing about the abandoned attempt remains active.
  *
