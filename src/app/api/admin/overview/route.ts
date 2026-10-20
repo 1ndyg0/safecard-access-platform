@@ -19,6 +19,7 @@ import {
   rolesForCampaign,
 } from '@/lib/admin/access';
 import { handleAdminError, PRIVATE_NO_STORE } from '@/lib/admin/respond';
+import { COMPLETE_PAYMENT_STATES } from '@/lib/admin/queue';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +38,47 @@ type DashboardCounts = Record<(typeof DASHBOARD_COUNT_KEYS)[number], number>;
 
 function emptyCounts(): DashboardCounts {
   return Object.fromEntries(DASHBOARD_COUNT_KEYS.map((key) => [key, 0])) as DashboardCounts;
+}
+
+/**
+ * The database function counts every case, including applications still in
+ * progress. Staff only receive complete applications (details plus proof of
+ * payment), so the buckets that include in-progress cases are recounted
+ * with that restriction.
+ */
+async function restrictToCompleteApplications(
+  admin: ReturnType<typeof getSupabaseAdminClient>,
+  campaignId: string,
+  counts: DashboardCounts,
+): Promise<DashboardCounts> {
+  const count = async (applyFilter?: (query: any) => any): Promise<number> => { // eslint-disable-line @typescript-eslint/no-explicit-any
+    let query = admin
+      .from('recipient_cases')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .eq('is_active', true)
+      .in('payment_state', [...COMPLETE_PAYMENT_STATES]);
+    if (applyFilter) query = applyFilter(query);
+    const { count: total, error } = await query;
+    if (error) throw new Error(`Failed to count complete applications: ${error.message}`);
+    return total ?? 0;
+  };
+  const [total, submitted, awaiting, correction, pending] = await Promise.all([
+    count(),
+    count((q) => q.in('application_state', ['submitted', 'resubmitted'])),
+    count((q) => q.in('application_state', ['ready_for_review', 'submitted', 'resubmitted'])),
+    count((q) => q.eq('application_state', 'correction_needed')),
+    count((q) => q.eq('payment_state', 'verification_pending')),
+  ]);
+  return {
+    ...counts,
+    total_cases: total,
+    draft_or_incomplete: 0,
+    submitted,
+    awaiting_application_review: awaiting,
+    correction_requested: correction,
+    payment_evidence_pending: pending,
+  };
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -70,6 +112,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       counts = Object.fromEntries(
         DASHBOARD_COUNT_KEYS.map((key) => [key, Number((data ?? {})[key] ?? 0)]),
       ) as DashboardCounts;
+      counts = await restrictToCompleteApplications(admin, selectedCampaignId, counts);
     }
 
     return NextResponse.json(

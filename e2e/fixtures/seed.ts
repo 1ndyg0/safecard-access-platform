@@ -417,7 +417,7 @@ export async function seedWorld(): Promise<SeededWorld> {
     correctionRequested: await insertCase(
       admin,
       campaignId,
-      { application_state: 'correction_needed', payment_state: 'not_started' },
+      { application_state: 'correction_needed', payment_state: 'verification_pending' },
       {
         applicationRef: 'SC-2026-AAAA0004',
         submittedAt: hoursAgo(100),
@@ -428,7 +428,7 @@ export async function seedWorld(): Promise<SeededWorld> {
     longestWaiting: await insertCase(
       admin,
       campaignId,
-      { application_state: 'submitted' },
+      { application_state: 'submitted', payment_state: 'verification_pending' },
       {
         applicationRef: 'SC-2026-AAAA0005',
         submittedAt: hoursAgo(200),
@@ -440,7 +440,7 @@ export async function seedWorld(): Promise<SeededWorld> {
     recentlyResubmitted: await insertCase(
       admin,
       campaignId,
-      { application_state: 'resubmitted' },
+      { application_state: 'resubmitted', payment_state: 'verification_pending' },
       {
         applicationRef: 'SC-2026-AAAA0006',
         submittedAt: hoursAgo(1),

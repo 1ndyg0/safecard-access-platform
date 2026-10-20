@@ -11,6 +11,7 @@
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { BackLink } from "@/components/BackLink";
 import { BrandMark } from "@/components/BrandMark";
 import { useLocale } from "@/components/LocaleProvider";
 import { reviewStateLabel, t, type Locale } from "@/lib/member/copy";
@@ -163,6 +164,7 @@ export function MemberStatus() {
             {lang === "fil" ? "Electronic card" : "Electronic card"}
           </Link>
         </header>
+        <div className="portal-toolbar"><BackLink fallbackHref="/member/card" /></div>
 
         <section className="portal-card">
           <p className="eyebrow">{t("statusTitle", lang)}</p>
