@@ -209,7 +209,11 @@ export function ApplicationWizard() {
   async function api(path: string, body: unknown) {
     const response = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || (isFil ? "Hindi makumpleto ang request." : "The request could not be completed."));
+    if (!response.ok) {
+      // Surface which field failed instead of a bare "Validation failed".
+      const fieldMessages = data.details && typeof data.details === "object" ? Object.values(data.details as Record<string, string[]>).flat().filter(Boolean) : [];
+      throw new Error(fieldMessages.length ? fieldMessages.join(" · ") : data.error || (isFil ? "Hindi makumpleto ang request." : "The request could not be completed."));
+    }
     return data;
   }
 
