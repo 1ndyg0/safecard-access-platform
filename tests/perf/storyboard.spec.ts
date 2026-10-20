@@ -28,13 +28,13 @@ test('renders the storyboard even when content and analytics never answer', asyn
   const start = Date.now();
   await page.goto('/benefits');
   await expect(page.locator('.benefit-storyboard')).toBeVisible();
-  await expect(page.locator('#storyboard-header-ambulance')).toBeVisible();
+  await expect(page.locator('#storyboard-tab-ambulance')).toBeVisible();
   const elapsed = Date.now() - start;
   test.info().annotations.push({ type: 'metric', description: `fallback_ready_ms=${elapsed}` });
   expect(elapsed).toBeLessThan(LCP_BUDGET_MS * 2);
 
   // And still interactive.
-  await page.locator('#storyboard-header-ambulance').click();
+  await page.locator('#storyboard-tab-ambulance').click();
   await expect(page.locator('#storyboard-panel-ambulance')).toBeVisible();
 });
 
@@ -77,9 +77,9 @@ test('stays within the CLS budget while opening a scenario', async ({ page }) =>
     }).observe({ type: 'layout-shift', buffered: true });
   });
 
-  await page.locator('#storyboard-header-ambulance').click();
+  await page.locator('#storyboard-tab-ambulance').click();
   await expect(page.locator('#storyboard-panel-ambulance')).toBeVisible();
-  await page.locator('#storyboard-header-blood').click();
+  await page.locator('#storyboard-tab-blood').click();
   await expect(page.locator('#storyboard-panel-blood')).toBeVisible();
 
   const cls = await page.evaluate(() => (window as unknown as { __cls: number }).__cls);
@@ -110,9 +110,9 @@ test('telemetry does not block interaction', async ({ page }) => {
   await expect(page.locator('.benefit-storyboard')).toBeVisible();
 
   const start = Date.now();
-  await page.locator('#storyboard-header-ambulance').click();
+  await page.locator('#storyboard-tab-ambulance').click();
   await expect(page.locator('#storyboard-panel-ambulance')).toBeVisible();
-  await page.locator('#storyboard-header-blood').click();
+  await page.locator('#storyboard-tab-blood').click();
   await expect(page.locator('#storyboard-panel-blood')).toBeVisible();
 
   // Two interactions, both while a telemetry request is still hanging.
