@@ -1,11 +1,13 @@
 /**
  * GET /api/admin/overview?campaign_id=<uuid>
  *
- * Operations dashboard: the caller's identity, the campaigns they may
- * select, and the eleven operational counts for the selected campaign.
+ * Dashboard: the caller's identity, the campaigns they may select, and
+ * the application counts (awaiting review, approved, rejected, total) for the
+ * selected campaign.
  *
- * Counts come from public.admin_dashboard_counts, which aggregates in
- * the database. The route never loads case rows to count them.
+ * Counts come from public.admin_application_counts, which aggregates over
+ * admin_applications_view in the database. Only complete applications are
+ * counted. The route never loads case rows to count them.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -22,16 +24,7 @@ import { handleAdminError, PRIVATE_NO_STORE } from '@/lib/admin/respond';
 
 export const dynamic = 'force-dynamic';
 
-const DASHBOARD_COUNT_KEYS = [
-  'total_cases',
-  'draft_or_incomplete',
-  'submitted',
-  'awaiting_application_review',
-  'correction_requested',
-  'payment_evidence_pending',
-  'payment_verified',
-  'approved',
-] as const;
+const DASHBOARD_COUNT_KEYS = ['awaiting_review', 'approved', 'rejected', 'total'] as const;
 
 type DashboardCounts = Record<(typeof DASHBOARD_COUNT_KEYS)[number], number>;
 
@@ -62,7 +55,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     let counts = emptyCounts();
     if (selectedCampaignId) {
-      const { data, error } = await admin.rpc('admin_dashboard_counts', {
+      const { data, error } = await admin.rpc('admin_application_counts', {
         p_campaign_id: selectedCampaignId,
       });
       if (error) throw new Error(`Failed to load dashboard counts: ${error.message}`);

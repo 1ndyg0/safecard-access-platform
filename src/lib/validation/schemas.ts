@@ -224,27 +224,3 @@ export const publishContentSchema = z.object({
   content_version_id: uuidSchema,
 });
 
-// ============================================================
-// Role assignment (admin)
-// ============================================================
-
-export const assignRoleSchema = z.strictObject({
-  user_id: uuidSchema,
-  role: z.enum([
-    'school_admin',
-    'support_agent',
-    'content_approver',
-    'privacy_admin_owner',
-  ]),
-  organization_id: uuidSchema.optional(),
-  campaign_id: uuidSchema.optional(),
-  reason: z.string().trim().min(10, 'A clear audit reason is required').max(500),
-}).refine((value) => Boolean(value.organization_id) !== Boolean(value.campaign_id), {
-  message: 'Exactly one of organization_id or campaign_id is required',
-  path: ['organization_id'],
-});
-
-export const revokeRoleSchema = z.strictObject({
-  role_assignment_id: uuidSchema,
-  reason: z.string().trim().min(10, 'A clear audit reason is required').max(500),
-});

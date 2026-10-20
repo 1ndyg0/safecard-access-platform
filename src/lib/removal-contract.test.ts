@@ -40,10 +40,9 @@ describe('ambassador, PRC export, finance role and MFA enrolment are removed', (
     expect(existsSync(join(ROOT, path))).toBe(false);
   });
 
-  it('keeps the approval route, the proof request route and the member card', () => {
+  it('keeps the approval route and the member card', () => {
     for (const path of [
       'src/app/api/admin/cases/[id]/approve-with-payment/route.ts',
-      'src/app/api/admin/cases/[id]/request-payment-proof/route.ts',
       'src/app/api/payment/evidence/[id]/route.ts',
       'src/app/api/member/card/route.ts',
       'src/app/member/card/page.tsx',

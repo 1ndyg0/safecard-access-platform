@@ -94,10 +94,10 @@ END $$;
 -- ─────────────────────────────────────────────────────────────
 -- 3. public.users (staff directory)
 -- ─────────────────────────────────────────────────────────────
-INSERT INTO public.users (id, email, full_name, is_active, mfa_enabled)
+INSERT INTO public.users (id, email, full_name, is_active)
 VALUES
-  ('00000000-0000-0000-0000-000000001001', 'ivvuriarte@gmail.com', 'Ian Vince', true, false),
-  ('00000000-0000-0000-0000-000000001002', 'tigparagas@gmail.com', 'Indy',      true, false)
+  ('00000000-0000-0000-0000-000000001001', 'ivvuriarte@gmail.com', 'Ian Vince', true),
+  ('00000000-0000-0000-0000-000000001002', 'tigparagas@gmail.com', 'Indy',      true)
 ON CONFLICT (id) DO UPDATE SET
   email     = EXCLUDED.email,
   full_name = EXCLUDED.full_name,

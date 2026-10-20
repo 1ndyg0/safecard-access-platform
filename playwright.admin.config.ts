@@ -32,7 +32,7 @@ export default defineConfig({
     {
       name: 'mobile',
       use: { ...devices['Pixel 7'] },
-      testMatch: /(queue|case-detail|accessibility)\.spec\.ts/,
+      testMatch: /(applications|review-panel|accessibility)\.spec\.ts/,
     },
   ],
   webServer: process.env.E2E_BASE_URL

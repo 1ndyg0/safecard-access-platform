@@ -171,7 +171,6 @@ export interface User {
   email: string;
   full_name: string;
   is_active: boolean;
-  mfa_enabled: boolean;
   last_login_at: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
@@ -210,10 +209,32 @@ export interface RecipientCase {
   comprehension_score: number | null;
   comprehension_passed: boolean | null;
   comprehension_checked_at: string | null;
+  application_review_state: 'pending' | 'approved' | 'resubmission_requested' | 'rejected';
+  /** Reason the administrator gave when rejecting; read by the applicant. */
+  rejection_reason: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
   is_active: boolean;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+}
+
+/** One row of public.admin_applications_view: a complete application. */
+export interface AdminApplication {
+  id: string;
+  campaign_id: string;
+  application_ref: string | null;
+  status: 'awaiting_review' | 'approved' | 'rejected';
+  first_name: string | null;
+  middle_name: string | null;
+  last_name: string | null;
+  mobile_number: string | null;
+  received_at: string;
+  has_payment_proof: boolean;
+  rejection_reason: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
 }
 
 export interface RecipientProfile {

@@ -2,76 +2,32 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  InvalidReviewTransitionError,
+  REASON_MAX,
+  REASON_MIN,
   REVIEW_STATES,
   STATES_A_REVIEW_MUST_NOT_CHANGE,
-  allowedDecisions,
-  assertTransition,
-  canReopen,
-  canTransition,
-  isFinal,
-  requiresReason,
-  validateReason,
+  awaitsDecision,
 } from './state';
 
-describe('review state machine', () => {
-  it('lets a pending application go to any of the three decisions', () => {
-    expect(allowedDecisions('pending')).toEqual([
-      'approved',
-      'resubmission_requested',
-      'rejected',
-    ]);
-  });
-
-  it('treats rejection as final', () => {
-    expect(isFinal('rejected')).toBe(true);
-    expect(allowedDecisions('rejected')).toEqual([]);
-    expect(canTransition('rejected', 'pending')).toBe(false);
-    expect(canTransition('rejected', 'approved')).toBe(false);
-    expect(() => assertTransition('rejected', 'pending')).toThrow(InvalidReviewTransitionError);
-  });
-
-  it('offers reopening only from rejected, and only as a separate action', () => {
-    expect(canReopen('rejected')).toBe(true);
-    for (const state of REVIEW_STATES.filter((value) => value !== 'rejected')) {
-      expect(canReopen(state)).toBe(false);
+describe('review state', () => {
+  it('only an undecided application awaits a decision', () => {
+    expect(awaitsDecision('pending')).toBe(true);
+    for (const state of ['approved', 'rejected', 'resubmission_requested'] as const) {
+      expect(awaitsDecision(state)).toBe(false);
     }
   });
 
-  it('returns a requested resubmission to pending once corrected', () => {
-    expect(canTransition('resubmission_requested', 'pending')).toBe(true);
+  it('keeps every enum label the database still holds', () => {
+    expect([...REVIEW_STATES]).toEqual(['pending', 'approved', 'resubmission_requested', 'rejected']);
   });
 
-  it('lets an approved application be pulled back before handoff', () => {
-    expect(canTransition('approved', 'resubmission_requested')).toBe(true);
-    expect(canTransition('approved', 'rejected')).toBe(true);
+  it('asks for a reason of 10 to 500 characters', () => {
+    expect(REASON_MIN).toBe(10);
+    expect(REASON_MAX).toBe(500);
   });
 
-  it('requires a reason for everything except approval', () => {
-    expect(requiresReason('approved')).toBe(false);
-    expect(requiresReason('resubmission_requested')).toBe(true);
-    expect(requiresReason('rejected')).toBe(true);
-  });
-
-  it('rejects a reason too short to explain anything', () => {
-    expect(validateReason('no')).toBeNull();
-    expect(validateReason('   ')).toBeNull();
-    expect(validateReason(undefined)).toBeNull();
-    expect(validateReason('Your birth date does not match the document.')).toBe(
-      'Your birth date does not match the document.',
-    );
-  });
-
-  it('rejects a reason long enough to be a case file', () => {
-    expect(validateReason('x'.repeat(501))).toBeNull();
-    expect(validateReason('x'.repeat(500))).toBe('x'.repeat(500));
-  });
-
-  it('names the states a review must never move', () => {
-    expect(STATES_A_REVIEW_MUST_NOT_CHANGE).toEqual([
-      'payment_state',
-      'membership_state',
-    ]);
+  it('names the states a decision must not change', () => {
+    expect([...STATES_A_REVIEW_MUST_NOT_CHANGE]).toEqual(['payment_state', 'membership_state']);
   });
 });
 
@@ -82,7 +38,7 @@ describe('review state machine', () => {
  */
 describe('a review decision touches nothing else', () => {
   const REVIEW_ROUTE = readFileSync(
-    join(process.cwd(), 'src/app/api/admin/cases/[id]/review/route.ts'),
+    join(process.cwd(), 'src/app/api/admin/cases/[id]/reject/route.ts'),
     'utf8',
   );
   const CORRECTION_ROUTE = readFileSync(
@@ -112,6 +68,11 @@ describe('a review decision touches nothing else', () => {
     expect(REVIEW_ROUTE).not.toContain('verified_by_official_source');
   });
 
+  it('reads the applicant-facing reason from the request, never from the case', () => {
+    expect(REVIEW_ROUTE).toContain('reason: z.string().trim().min(REASON_MIN).max(REASON_MAX)');
+    expect(REVIEW_ROUTE).toContain('p_reason: body.reason');
+  });
+
   it('no longer has any PRC handoff coordination in the review transaction', () => {
     expect(REVIEW_ROUTE).not.toMatch(/prc_handoff_state/);
     expect(REVIEW_ROUTE).not.toContain('ready_for_export');
@@ -128,13 +89,15 @@ describe('a review decision touches nothing else', () => {
     expect(CORRECTION_ROUTE).not.toMatch(/payment_state:\s*['"]/);
   });
 
-  it('requires an explicit confirmation on every staff decision', () => {
+  it('requires an explicit confirmation on the staff decision', () => {
     expect(REVIEW_ROUTE).toContain('confirm: z.literal(true)');
   });
 
   it('requires the state the reviewer saw, so a stale screen is refused', () => {
-    expect(REVIEW_ROUTE).toContain('expected_review_state');
-    expect(REVIEW_ROUTE).toContain('p_expected_state: body.expected_review_state');
+    // Rejecting acts only on an application still awaiting review, in the
+    // route and again in the database function.
+    expect(REVIEW_ROUTE).toContain("application.status !== 'awaiting_review'");
+    expect(REVIEW_ROUTE).toContain("p_expected_state: 'pending'");
     expect(ATOMIC_REVIEW_MIGRATION).toContain('if v_prior <> p_expected_state then');
   });
 

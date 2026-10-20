@@ -24,7 +24,7 @@ for (const authenticated of [false, true]) {
       const signedIn = await browser.auth.signInWithPassword(world.staff.privacyAdmin);
       expect(signedIn.error).toBeNull();
     }
-    for (const table of ['recipient_profiles', 'application_submissions', 'payment_evidence_versions', 'application_review_decisions', 'admin_case_queue_view', 'application_review_context']) {
+    for (const table of ['recipient_profiles', 'application_submissions', 'payment_evidence_versions', 'application_review_decisions', 'admin_applications_view']) {
       const { data, error } = await browser.from(table).select('*').limit(1);
       expect(error, `${table} must be denied to a raw browser client`).not.toBeNull();
       expect(data).toBeNull();
@@ -36,7 +36,7 @@ for (const authenticated of [false, true]) {
 
 test('original submission and evidence object identity remain immutable even through service-role writes', async () => {
   const { data: original, error } = await world.admin.from('application_submissions')
-    .select('id,submitted_data').eq('case_id', world.cases.approvedVerified).eq('is_current', true).single();
+    .select('id,submitted_data').eq('case_id', world.cases.approved).eq('is_current', true).single();
   expect(error).toBeNull();
   const changed = await world.admin.from('application_submissions')
     .update({ submitted_data: { first_name: 'Synthetic overwrite attempt' } }).eq('id', original!.id);
@@ -52,16 +52,16 @@ test('original submission and evidence object identity remain immutable even thr
 
 test('an invalid actor rolls back review state and decision creation atomically', async () => {
   const before = await world.admin.from('recipient_cases').select('application_review_state,payment_state,membership_state')
-    .eq('id', world.cases.verifiedPaymentPendingReview).single();
+    .eq('id', world.cases.awaitingSpare).single();
   const result = await world.admin.rpc('record_application_review_atomic', {
-    p_case_id: world.cases.verifiedPaymentPendingReview,
+    p_case_id: world.cases.awaitingSpare,
     p_reviewer_id: '00000000-0000-0000-0000-000000000001',
     p_decision: 'approved', p_reason: null, p_expected_state: 'pending',
     p_idempotency_key: 'synthetic-rollback-test', p_is_reopen: false,
   });
   expect(result.error).not.toBeNull();
   const after = await world.admin.from('recipient_cases').select('application_review_state,payment_state,membership_state')
-    .eq('id', world.cases.verifiedPaymentPendingReview).single();
+    .eq('id', world.cases.awaitingSpare).single();
   expect(after.data).toEqual(before.data);
   const ledger = await world.admin.from('application_review_decisions').select('id')
     .eq('idempotency_key', 'synthetic-rollback-test');
@@ -98,9 +98,9 @@ test('support agents cannot obtain private receipt URLs', async ({ page }) => {
 test('repeated member payment declarations are idempotent and cannot rewind verification', async ({ page }) => {
   const prepared = await world.admin.from('payment_intents').update({ state: 'official_handoff_opened', payer_marked_paid_at: null, payer_declared_at: null, payment_reference: null, payer_declaration: null }).eq('id', world.paymentIntentId);
   expect(prepared.error).toBeNull();
-  const record = await world.admin.from('recipient_cases').select('application_ref').eq('id', world.cases.approvedUnverifiedPayment).single();
+  const record = await world.admin.from('recipient_cases').select('application_ref').eq('id', world.cases.awaitingApproval).single();
   expect(record.error).toBeNull();
-  const login = await page.request.post('/api/member/auth', { data: { referenceNumber: record.data!.application_ref, mobileNumber: '+639000000000' } });
+  const login = await page.request.post('/api/member/auth', { data: { referenceNumber: record.data!.application_ref, mobileNumber: world.applicants[world.cases.awaitingApproval].mobile } });
   expect(login.status()).toBe(200);
   const declaration = {
     payment_reference: 'TEST IDEMPOTENT REFERENCE',
@@ -123,6 +123,6 @@ test('repeated member payment declarations are idempotent and cannot rewind veri
   const audit = await world.admin.from('audit_events').select('id').eq('target_id', world.paymentIntentId).eq('action', 'Payment marked as paid');
   expect(audit.error).toBeNull();
   expect(audit.data).toHaveLength(1);
-  const membership = await world.admin.from('recipient_cases').select('membership_state').eq('id', world.cases.approvedUnverifiedPayment).single();
+  const membership = await world.admin.from('recipient_cases').select('membership_state').eq('id', world.cases.awaitingApproval).single();
   expect(membership.data?.membership_state).toBe('not_active');
 });

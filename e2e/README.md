@@ -9,13 +9,14 @@ that a mocked route cannot reach:
 
 - **Campaign scoping.** Whether a case from another campaign returns 403
   is decided by a server query, not by a component.
-- **Enum typing.** The five workflow states are distinct PostgreSQL enum
-  types. Comparing a value against the wrong column raises
-  `invalid input value for enum` at execution time. A stub returns
-  whatever it was told to return and proves nothing.
-- **Suppression.** Small-cohort suppression, including the complement
-  rule, runs inside `admin_campaign_analytics`. The 4-versus-5 boundary
-  is only meaningful against real rows.
+- **What counts as complete.** Which applications the administrator may
+  see (details submitted and proof of payment uploaded) is decided by the
+  SQL view `admin_applications_view`. Drafts, applications without a
+  proof of payment, and the retired correction workflow must never
+  appear, and only real rows can show that.
+- **The decision.** Approve verifies the payment and reject stores its
+  reason through atomic database functions and an append-only ledger; a
+  stub cannot prove either.
 
 ## Running
 
@@ -23,7 +24,7 @@ Requires a disposable database. The seed refuses any other target.
 
 ```bash
 npx supabase start
-npx supabase db reset          # applies migrations, including 00011
+npx supabase db reset          # applies migrations, including 00023
 npm run build
 npm run test:e2e:install       # once, downloads Chromium
 E2E_SUPABASE_URL=http://127.0.0.1:54321 \
@@ -31,10 +32,14 @@ E2E_SERVICE_ROLE_KEY=<local service role key> \
 npm run test:e2e
 ```
 
-`npm run test:performance` runs the scale suite, which seeds several
-hundred cases and asserts that dashboard and analytics responses stay
-constant-size — the observable signature of aggregating in SQL rather
-than in the application server.
+`npm run test:performance:admin` runs the scale suite, which seeds several
+hundred complete applications and asserts that the dashboard response stays
+constant-size and the list returns one page — the observable signature of
+aggregating in SQL rather than in the application server.
+
+Specs: `applications.spec.ts` (list, search, status, dashboard),
+`review-panel.spec.ts` (the slide-over and the approve/reject routes),
+`accessibility.spec.ts`, `database-security.spec.ts`.
 
 ## Against a hosted branch database
 

@@ -1,14 +1,14 @@
 /**
  * GET /api/admin/cases/[id]
  *
- * One case, projected to what the caller's role may see.
+ * One complete application, for the review slide-over: who applied, what they
+ * submitted, and the proof of payment.
  *
  * The profile query selects an explicit column list derived from the
- * caller's roles. A finance reviewer's response body contains no
- * address and no date of birth because those columns were never
- * selected, not because the browser hides them.
+ * caller's roles. A field the role may not read is never selected, so it
+ * cannot appear in the response body.
  *
- * Opening a case is recorded in the audit trail with the field names
+ * Opening an application is recorded in the audit trail with the field names
  * disclosed — never their values.
  */
 
@@ -27,14 +27,6 @@ import { profileSelectClause, resolveCaseAccessPolicy } from '@/lib/admin/field-
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Explicit column list. Written as a literal rather than joined at
- * runtime so the client keeps its row typing — and so a reader can see
- * exactly which columns leave the database.
- */
-const CASE_COLUMNS =
-  'id,campaign_id,application_ref,consent_state,application_state,application_review_state,payment_state,membership_state,created_at,updated_at';
-
 export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
@@ -42,134 +34,123 @@ export async function GET(
   try {
     const scope = await resolveStaffScope();
     const { id } = await context.params;
-    if (!z.string().uuid().safeParse(id).success) return badRequest('Case id must be a UUID.');
+    if (!z.string().uuid().safeParse(id).success) return badRequest('Application id must be a UUID.');
 
     const admin = getSupabaseAdminClient();
-    const { data: caseRecord, error: caseError } = await admin
-      .from('recipient_cases')
-      .select(CASE_COLUMNS)
+
+    // The view is the only place "complete application" is defined.
+    const { data: application, error: applicationError } = await admin
+      .from('admin_applications_view')
+      .select('id,campaign_id,application_ref,status,received_at,rejection_reason,reviewed_at')
       .eq('id', id)
       .maybeSingle();
-    if (caseError) throw new Error(`Failed to load case: ${caseError.message}`);
-    if (!caseRecord) return notFound('Case not found.');
+    if (applicationError) throw new Error(`Failed to load application: ${applicationError.message}`);
+    if (!application) return notFound('Application not found.');
 
+    const campaignId = application.campaign_id as string;
     // Cross-campaign access is a 403, not an empty body.
-    assertCampaignAccess(scope, caseRecord.campaign_id as string);
-    const policy = resolveCaseAccessPolicy(
-      rolesForCampaign(scope, caseRecord.campaign_id as string),
-    );
-    if (!policy) return forbidden('Your role cannot open individual cases.');
+    assertCampaignAccess(scope, campaignId);
+    const policy = resolveCaseAccessPolicy(rolesForCampaign(scope, campaignId));
+    if (!policy) return forbidden('Your role cannot open applications.');
+
+    const { data: caseRecord, error: caseError } = await admin
+      .from('recipient_cases')
+      .select('application_review_state')
+      .eq('id', id)
+      .maybeSingle();
+    if (caseError) throw new Error(`Failed to load application: ${caseError.message}`);
 
     const profileColumns = profileSelectClause(policy);
-    let profile: Record<string, unknown> | null = null;
+    let applicant: Record<string, unknown> | null = null;
     if (profileColumns) {
       const { data, error } = await admin
         .from('recipient_profiles')
         .select(profileColumns)
         .eq('case_id', id)
         .maybeSingle();
-      if (error) throw new Error(`Failed to load profile: ${error.message}`);
-      profile = (data as Record<string, unknown> | null) ?? null;
+      if (error) throw new Error(`Failed to load applicant: ${error.message}`);
+      applicant = (data as Record<string, unknown> | null) ?? null;
     }
 
-    // The current submission drives the review panel and the wait clock.
-    const { data: submission, error: submissionError } = await admin
-      .from('application_submissions')
-      .select('id,application_ref,submitted_at,submitted_by,correction_reason,original_submission_id,is_current')
-      .eq('case_id', id)
-      .eq('is_current', true)
-      .maybeSingle();
-    if (submissionError) {
-      throw new Error(`Failed to load submission: ${submissionError.message}`);
-    }
-
-    let payments: Array<Record<string, unknown>> = [];
+    let payment: Record<string, unknown> | null = null;
     if (policy.canViewPayments) {
-      const { data, error } = await admin
+      const { data: intent, error: intentError } = await admin
         .from('payment_intents')
         .select(
-          'id,expected_amount,currency,payment_route,state,payment_reference,created_at,updated_at',
+          'id,state,expected_amount,currency,payment_route,payment_reference,payer_reported_paid_on,payer_reported_amount',
         )
         .eq('case_id', id)
-        .order('created_at', { ascending: false });
-      if (error) throw new Error(`Failed to load payments: ${error.message}`);
-      payments = (data ?? []) as Array<Record<string, unknown>>;
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (intentError) throw new Error(`Failed to load payment: ${intentError.message}`);
 
-      // Evidence is versioned by insertion: every submission is a new
-      // row and older rows are kept, so the reviewer sees what was
-      // replaced rather than only what is current.
-      const intentIds = payments.map((payment) => payment.id as string);
-      if (intentIds.length > 0) {
-        const { data: evidence, error: evidenceError } = await admin
+      if (intent) {
+        const { data: version, error: versionError } = await admin
           .from('payment_evidence_versions')
           .select(
-            'id,payment_evidence_id,payment_intent_id,version_number,content_type,file_size_bytes,sha256,state,uploaded_at,reviewed_at,payment_evidence!inner(evidence_type,reference_number,amount_confirmed,currency,source,is_verified,confirmed_at,created_at)',
+            'id,content_type,uploaded_at,state,payment_evidence!inner(reference_number,amount_confirmed,currency,is_verified)',
           )
-          .in('payment_intent_id', intentIds)
-          .order('uploaded_at', { ascending: false });
-        if (evidenceError) {
-          throw new Error(`Failed to load payment evidence: ${evidenceError.message}`);
-        }
-        const byIntent = new Map<string, Array<Record<string, unknown>>>();
-        (evidence ?? []).forEach((row) => {
-          const key = row.payment_intent_id as string;
-          if (!byIntent.has(key)) byIntent.set(key, []);
-          const parent = Array.isArray(row.payment_evidence)
-            ? row.payment_evidence[0]
-            : row.payment_evidence;
-          byIntent.get(key)?.push({
-            id: row.id,
-            version_number: row.version_number,
-            content_type: row.content_type,
-            file_size_bytes: row.file_size_bytes,
-            sha256: row.sha256,
-            state: row.state,
-            uploaded_at: row.uploaded_at,
-            reviewed_at: row.reviewed_at,
-            evidence_type: parent?.evidence_type,
-            reference_number: parent?.reference_number,
-            amount_confirmed: parent?.amount_confirmed,
-            currency: parent?.currency,
-            source: parent?.source,
-            is_verified: parent?.is_verified,
-            confirmed_at: parent?.confirmed_at,
-            created_at: parent?.created_at,
-          });
-        });
-        payments = payments.map((payment, index) => ({
-          ...payment,
-          payment_state: payment.state,
-          evidence: byIntent.get(payment.id as string) ?? [],
-          // The newest row is current; anything after it was superseded.
-          isLatestIntent: index === 0,
-        }));
+          .eq('payment_intent_id', intent.id)
+          .order('version_number', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (versionError) throw new Error(`Failed to load payment proof: ${versionError.message}`);
+        const parent = version
+          ? Array.isArray(version.payment_evidence)
+            ? version.payment_evidence[0]
+            : version.payment_evidence
+          : null;
+
+        payment = {
+          intent_id: intent.id,
+          state: intent.state,
+          route: intent.payment_route,
+          reference: intent.payment_reference ?? parent?.reference_number ?? null,
+          amount: parent?.amount_confirmed ?? intent.payer_reported_amount ?? intent.expected_amount,
+          currency: parent?.currency ?? intent.currency,
+          paid_on: intent.payer_reported_paid_on,
+          proof: version
+            ? {
+                evidence_id: version.id,
+                content_type: version.content_type,
+                uploaded_at: version.uploaded_at,
+                verified: Boolean(parent?.is_verified),
+              }
+            : null,
+        };
       }
     }
 
     await logCaseAccess({
       scope,
       caseId: id,
-      campaignId: caseRecord.campaign_id as string,
+      campaignId,
       fieldsDisclosed: policy.profileFields as unknown as string[],
     });
 
     return NextResponse.json(
       {
-        case: caseRecord,
-        profile,
-        submission: submission ?? null,
-        payments,
+        application: {
+          id: application.id,
+          application_ref: application.application_ref,
+          status: application.status,
+          review_state: caseRecord?.application_review_state ?? 'pending',
+          received_at: application.received_at,
+          rejection_reason: application.rejection_reason,
+          reviewed_at: application.reviewed_at,
+        },
+        applicant,
+        payment,
         capabilities: {
-          canViewPayments: policy.canViewPayments,
-          canActOnPayments: policy.canActOnPayments,
-          canViewAudit: policy.canViewAudit,
-          canReviewApplication: policy.canReviewApplication,
+          canDecide: policy.canReviewApplication,
+          canApprove: policy.canReviewApplication && policy.canActOnPayments,
           profileFields: policy.profileFields,
         },
       },
       { headers: PRIVATE_NO_STORE },
     );
   } catch (error) {
-    return handleAdminError(error, 'Admin case detail');
+    return handleAdminError(error, 'Admin application detail');
   }
 }
