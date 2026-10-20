@@ -15,7 +15,7 @@ test.describe('SafeCard public smoke and accessibility', () => {
     await first.focus();
     await page.keyboard.press('ArrowDown');
     await expect(page.getByRole('tab').nth(1)).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByText(/sample scenario|Halimbawang sitwasyon/i).first()).toBeVisible();
+    await expect(page.locator('.benefit-panel:not([hidden]) .benefit-persona span')).toBeVisible();
     await expect(page.getByText(/pilot|for validation|working baseline/i)).toHaveCount(0);
     await expect(page.getByRole('link', { name: /back|bumalik/i }).first()).toBeVisible();
   });

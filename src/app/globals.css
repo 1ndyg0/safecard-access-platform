@@ -682,7 +682,7 @@ h1[tabindex="-1"]:focus { outline: none; }
 
 .reveal { animation: reveal .65s cubic-bezier(.2,.7,.2,1) both; }
 .delay-1 { animation-delay: .12s; }
-@keyframes reveal { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes reveal { from { transform: translateY(14px); } to { transform: translateY(0); } }
 
 .hero-grid { width: min(1180px, calc(100% - 48px)); margin: auto; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr); align-items: center; gap: clamp(40px, 7vw, 96px); padding: 56px 0 104px; position: relative; }
 .hero-grid::before { content: ""; position: absolute; width: 560px; height: 560px; right: -200px; top: 10px; border-radius: 50%; background: radial-gradient(circle, rgba(200,16,46,.13), transparent 68%); pointer-events: none; }
@@ -740,7 +740,8 @@ h1[tabindex="-1"]:focus { outline: none; }
 .benefit-panel { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(24px, 3.4vw, 44px); padding: clamp(20px, 3vw, 32px); animation: panel-in .35s cubic-bezier(.22,1,.36,1) both; }
 .benefit-panel[hidden] { display: none; }
 .benefit-panel:focus-visible { outline-offset: -4px; }
-@keyframes panel-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+/* Transform only: text stays at full opacity, so contrast is never measured mid-fade. */
+@keyframes panel-in { from { transform: translateY(6px); } to { transform: none; } }
 .benefit-side { display: grid; gap: 18px; align-content: start; }
 .benefit-art { aspect-ratio: 16 / 10; overflow: hidden; border-radius: 16px; background: #0A1322; border: 1px solid var(--border); }
 .benefit-art svg { display: block; width: 100%; height: 100%; }
