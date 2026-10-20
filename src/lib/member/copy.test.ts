@@ -57,15 +57,14 @@ describe('member copy is complete in both languages', () => {
     }
   });
 
-  it('tells an approved applicant they are not yet a member', () => {
-    // The single most dangerous misreading this screen can produce.
-    expect(t('approvedNotMembership', 'en')).toMatch(/not membership yet/i);
-    expect(t('approvedNotMembership', 'fil')).toMatch(/hindi pa ito membership/i);
+  it('tells an approved applicant their SafeCard is ready', () => {
+    expect(t('approvedMessage', 'en')).toMatch(/SafeCard is ready/i);
+    expect(t('approvedMessage', 'fil')).toMatch(/Handa na ang iyong SafeCard/i);
   });
 
-  it('states that the workflow steps are separate', () => {
-    expect(t('separateStates', 'en')).toMatch(/only prc/i);
-    expect(t('separateStates', 'fil')).toMatch(/PRC lamang/i);
+  it('explains that an administrator verifies the payment when approving', () => {
+    expect(t('approvalExplainer', 'en')).toMatch(/administrator/i);
+    expect(t('approvalExplainer', 'fil')).toMatch(/administrator/i);
   });
 
   it('offers Hotline 143 in both languages', () => {

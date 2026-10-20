@@ -33,7 +33,7 @@ export const dynamic = 'force-dynamic';
  * appears here: the queue shows states, never people.
  */
 const QUEUE_COLUMNS =
-  'id,campaign_id,application_ref,consent_state,application_state,payment_state,prc_handoff_state,membership_state,created_at,updated_at,review_waiting_since,is_resubmission';
+  'id,campaign_id,application_ref,consent_state,application_state,payment_state,membership_state,created_at,updated_at,review_waiting_since,is_resubmission';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
@@ -128,9 +128,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       builder = builder.in('application_state', [...reviewBucketStates(query.review_bucket)]);
     }
     if (query.payment_state) builder = builder.eq('payment_state', query.payment_state);
-    if (query.prc_handoff_state) {
-      builder = builder.eq('prc_handoff_state', query.prc_handoff_state);
-    }
     if (query.membership_state) {
       builder = builder.eq('membership_state', query.membership_state);
     }
@@ -178,7 +175,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           application_state: query.application_state ?? null,
           review_bucket: query.review_bucket ?? null,
           payment_state: query.payment_state ?? null,
-          prc_handoff_state: query.prc_handoff_state ?? null,
           membership_state: query.membership_state ?? null,
           application_ref: query.application_ref ?? null,
           search: query.search ?? null,

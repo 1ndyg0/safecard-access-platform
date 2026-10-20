@@ -65,17 +65,12 @@ const TABLES_TO_CLEAR = [
   'payment_evidence',
   'payment_intents',
   'membership_status_events',
-  'prc_export_items',
-  'prc_export_batches',
   'application_submissions',
   'support_cases',
-  'relationships',
   'recipient_profiles',
   'consent_records',
   'recipient_cases',
   'content_versions',
-  'referral_links',
-  'sponsors',
   'role_assignments',
   'pilot_campaigns',
   'organizations',
@@ -97,7 +92,7 @@ export interface SeededWorld {
     pendingReview: SeededCase;
     /** payment verified, review still pending */
     paidPendingReview: SeededCase;
-    /** approved + payment verified: handoff-ready, still not a member */
+    /** approved + payment verified */
     approvedAndPaid: SeededCase;
     /** resubmission requested, with a reason */
     correctionRequested: SeededCase;
@@ -191,7 +186,6 @@ async function insertCase(
     application_state: states.application_state ?? 'submitted',
     application_review_state: states.application_review_state ?? 'pending',
     payment_state: states.payment_state ?? 'not_started',
-    prc_handoff_state: states.prc_handoff_state ?? 'not_ready',
     membership_state: states.membership_state ?? 'not_active',
     consent_content_version_id: options.consentVersionOverride ?? content.consentVersionId,
     privacy_notice_version_id: content.privacyVersionId,
@@ -309,7 +303,6 @@ export async function seedWorld(): Promise<SeededWorld> {
     approvedAndPaid: await insertCase(admin, campaignId, content, 3, {
       application_review_state: 'approved',
       payment_state: 'verified_by_official_source',
-      prc_handoff_state: 'ready_for_export',
     }),
     correctionRequested: await insertCase(
       admin,

@@ -28,49 +28,6 @@ export const paginationSchema = z.object({
 });
 
 // ============================================================
-// Referral link
-// ============================================================
-
-export const createReferralLinkSchema = z.object({
-  sponsor_id: uuidSchema,
-  campaign_id: uuidSchema,
-  expires_at: z.string().datetime().optional(),
-  idempotency_key: idempotencyKeySchema,
-});
-
-export const validateReferralSlugSchema = z.object({
-  slug: z
-    .string()
-    .min(4, 'Referral code is too short')
-    .max(32, 'Referral code is too long')
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid referral code format'),
-});
-
-// ============================================================
-// Sponsor
-// ============================================================
-
-export const createSponsorSchema = z.object({
-  campaign_id: uuidSchema,
-  display_name: z
-    .string()
-    .min(2, 'Name must be at least 2 characters')
-    .max(100, 'Name must be at most 100 characters'),
-  is_minor: z.boolean(),
-  guardian_name: z.string().max(100).optional(),
-  guardian_contact: z.string().max(100).optional(),
-  data_mode: dataModeSchema,
-}).superRefine((value, context) => {
-  if (value.is_minor && (!value.guardian_name || !value.guardian_contact)) {
-    context.addIssue({
-      code: 'custom',
-      path: ['guardian_name'],
-      message: 'Guardian name and contact are required for a minor sponsor',
-    });
-  }
-});
-
-// ============================================================
 // Recipient application (approved fields only)
 // ============================================================
 
@@ -177,9 +134,8 @@ export const submitApplicationSchema = z.object({
 export const createPaymentIntentSchema = z.object({
   case_id: uuidSchema,
   campaign_id: uuidSchema,
-  payer_type: z.enum(['sponsor', 'guardian', 'other']),
+  payer_type: z.enum(['guardian', 'other']),
   payer_name: z.string().max(100).optional(),
-  payer_sponsor_id: uuidSchema.optional(),
   expected_amount: z.number().positive(),
   payment_route: z.string().min(1).max(50),
   idempotency_key: idempotencyKeySchema,
@@ -199,51 +155,6 @@ export const markPaymentPaidSchema = z.object({
 });
 
 // ============================================================
-// PRC export
-// ============================================================
-
-export const createExportBatchSchema = z.strictObject({
-  campaign_id: uuidSchema,
-  creation_reason: z
-    .string()
-    .min(10, 'Please provide a detailed reason for this export')
-    .max(500),
-  case_ids: z.array(uuidSchema).min(1).max(100),
-  format: z.enum(['csv', 'json']).default('csv'),
-});
-
-export const acknowledgePrcItemSchema = z.strictObject({
-  export_item_id: uuidSchema,
-  prc_status: z.enum([
-    'acknowledged',
-    'correction_requested',
-    'accepted',
-    'rejected',
-  ]),
-  prc_notes: z.string().trim().max(1000).optional(),
-  correction_reason: z.string().trim().min(10).max(500).optional(),
-  correction_fields: z.record(z.string(), z.unknown()).optional(),
-  prc_membership_id: z.string().max(50).optional(),
-  prc_effective_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  prc_expiry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-}).superRefine((value, context) => {
-  if (value.prc_status === 'accepted' && (!value.prc_membership_id || !value.prc_effective_date)) {
-    context.addIssue({
-      code: 'custom',
-      path: ['prc_membership_id'],
-      message: 'Accepted records require a PRC membership ID and effective date',
-    });
-  }
-  if (value.prc_status === 'correction_requested' && !value.correction_reason) {
-    context.addIssue({
-      code: 'custom',
-      path: ['correction_reason'],
-      message: 'A correction reason is required',
-    });
-  }
-});
-
-// ============================================================
 // Support case
 // ============================================================
 
@@ -258,7 +169,6 @@ export const createSupportCaseSchema = z.object({
     'consent_withdrawal',
     'privacy_request',
     'emergency_claims_education',
-    'prc_handoff_issue',
   ]),
   subject: z
     .string()
@@ -291,7 +201,6 @@ export const createContentVersionSchema = z.object({
   content_type: z.enum([
     'benefit', 'exclusion', 'eligibility', 'privacy_notice',
     'consent_text', 'support_text', 'claims_education', 'faq',
-    'sponsor_briefing', 'invitation_script',
   ]),
   locale: localeSchema,
   title: z.string().min(1).max(200),
@@ -323,9 +232,7 @@ export const assignRoleSchema = z.strictObject({
   user_id: uuidSchema,
   role: z.enum([
     'school_admin',
-    'prc_liaison',
     'support_agent',
-    'finance_export',
     'content_approver',
     'privacy_admin_owner',
   ]),

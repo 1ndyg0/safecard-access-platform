@@ -24,7 +24,6 @@ const createCampaignSchema = z.object({
   start_date: z.string().date(),
   end_date: z.string().date().nullable().optional(),
   max_applications: z.number().int().positive().max(10000).default(50),
-  max_sponsors: z.number().int().positive().max(500),
   membership_fee: z.number().positive().max(100000),
   approved_fields: z.array(z.string().min(1)).max(50),
   approved_payment_routes: z.array(z.record(z.string(), z.unknown())).max(10),
@@ -38,7 +37,6 @@ const updateCampaignSchema = z.object({
   start_date: z.string().date().optional(),
   end_date: z.string().date().nullable().optional(),
   max_applications: z.number().int().positive().max(10000).optional(),
-  max_sponsors: z.number().int().positive().max(500).optional(),
   membership_fee: z.number().positive().max(100000).optional(),
   approved_fields: z.array(z.string().min(1)).max(50).optional(),
   approved_payment_routes: z.array(z.record(z.string(), z.unknown())).max(10).optional(),
@@ -52,7 +50,7 @@ export async function GET(request: NextRequest) {
     const auth = await requireStaffAuth();
     const orgId = request.nextUrl.searchParams.get('org_id');
     if (!orgId) return badRequest('org_id is required');
-    const roleCheck = await requireAnyRole(auth.userId, ['privacy_admin_owner', 'school_admin', 'prc_liaison'], undefined, orgId);
+    const roleCheck = await requireAnyRole(auth.userId, ['privacy_admin_owner', 'school_admin'], undefined, orgId);
     if (!roleCheck.allowed) return forbidden(roleCheck.reason);
 
     const admin = getSupabaseAdminClient();
@@ -61,7 +59,7 @@ export async function GET(request: NextRequest) {
       .from('pilot_campaigns')
       .select(`
         id, organization_id, name, slug, start_date, end_date,
-        max_applications, max_sponsors, membership_fee, approved_fields,
+        max_applications, membership_fee, approved_fields,
         approved_payment_routes, stop_conditions, is_active, metadata,
         created_at, updated_at
       `)
@@ -111,7 +109,6 @@ export async function POST(request: NextRequest) {
         start_date: parsed.start_date,
         end_date: parsed.end_date ?? null,
         max_applications: parsed.max_applications,
-        max_sponsors: parsed.max_sponsors,
         membership_fee: parsed.membership_fee,
         approved_fields: parsed.approved_fields,
         approved_payment_routes: parsed.approved_payment_routes,
@@ -132,7 +129,6 @@ export async function POST(request: NextRequest) {
       target_type: 'pilot_campaign',
       target_id: data.id,
       details: {
-        max_sponsors: parsed.max_sponsors,
         max_applications: parsed.max_applications,
         start_date: parsed.start_date,
         end_date: parsed.end_date,
@@ -162,7 +158,7 @@ export async function PATCH(request: NextRequest) {
       .from('pilot_campaigns')
       .select(`
         id, organization_id, name, start_date, end_date, max_applications,
-        max_sponsors, membership_fee, approved_fields, approved_payment_routes,
+        membership_fee, approved_fields, approved_payment_routes,
         stop_conditions, is_active, metadata
       `)
       .eq('id', parsed.campaign_id)
@@ -177,7 +173,7 @@ export async function PATCH(request: NextRequest) {
     const changes: Record<string, { from: unknown; to: unknown }> = {};
 
     const fields = [
-      'name', 'start_date', 'end_date', 'max_applications', 'max_sponsors',
+      'name', 'start_date', 'end_date', 'max_applications',
       'membership_fee', 'approved_fields', 'approved_payment_routes',
       'stop_conditions', 'is_active', 'metadata',
     ] as const;

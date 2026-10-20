@@ -20,9 +20,18 @@ test.describe('staff role management', () => {
       .update({ organization_id: campaign!.organization_id }).eq('user_id', world.staff.outsider.userId);
     expect(assignment.error).toBeNull();
     await signIn(page, world.staff.outsider);
-    const response = await page.request.post('/api/payment/evidence/request-reupload', {
-      data: { evidence_version_id: world.paymentEvidenceId, reason: 'Synthetic cross-campaign access attempt.' },
-    });
+    const response = await page.request.post(
+      `/api/admin/cases/${world.cases.approvedUnverifiedPayment}/request-payment-proof`,
+      {
+        data: {
+          confirm: true,
+          payment_intent_id: world.paymentIntentId,
+          evidence_id: world.paymentEvidenceId,
+          expected_payment_state: 'verification_pending',
+          reason: 'Synthetic cross-campaign access attempt.',
+        },
+      },
+    );
     expect(response.status()).toBe(403);
     const { data: unchanged } = await world.admin.from('payment_evidence_versions')
       .select('state').eq('id', world.paymentEvidenceId).single();
@@ -81,17 +90,35 @@ test.describe('staff role management', () => {
     ]);
   });
 
-  test('prevents a school admin from granting a privileged PRC role', async ({ page }) => {
+  test('prevents a school admin from granting a privileged administrator role', async ({ page }) => {
     await signIn(page, world.staff.schoolAdmin);
     const response = await page.request.post('/api/admin/roles/assign', {
       data: {
         user_id: world.staff.unassigned.userId,
-        role: 'prc_liaison',
+        role: 'school_admin',
         campaign_id: world.campaignId,
-        reason: 'Requested liaison coverage for the current pilot.',
+        reason: 'Requested reviewer coverage for the current pilot.',
       },
     });
     expect(response.status()).toBe(403);
+  });
+
+  test('refuses to assign the retired PRC liaison and finance roles', async ({ page }) => {
+    await signIn(page, world.staff.privacyAdmin);
+    for (const role of ['prc_liaison', 'finance_export']) {
+      const response = await page.request.post('/api/admin/roles/assign', {
+        data: {
+          user_id: world.staff.unassigned.userId,
+          role,
+          campaign_id: world.campaignId,
+          reason: 'Attempt to use a role that no longer exists.',
+        },
+      });
+      expect(response.status()).toBe(400);
+    }
+    const { data } = await world.admin.from('role_assignments')
+      .select('id').eq('user_id', world.staff.unassigned.userId);
+    expect(data).toEqual([]);
   });
 
   test('does not allow an administrator to revoke their own role', async ({ page }) => {
@@ -115,7 +142,7 @@ test.describe('staff role management', () => {
     await signIn(page, world.staff.privacyAdmin);
     await page.goto(`/admin/users?campaign_id=${world.campaignId}`);
     await expect(page.getByRole('heading', { name: 'Staff and roles' })).toBeVisible();
-    await expect(page.getByText('Finance Reviewer', { exact: true })).toBeVisible();
-    await expect(page.getByText('PRC Liaison', { exact: true })).toBeVisible();
+    await expect(page.getByText('Support Agent', { exact: true })).toBeVisible();
+    await expect(page.getByText('School Admin', { exact: true })).toBeVisible();
   });
 });

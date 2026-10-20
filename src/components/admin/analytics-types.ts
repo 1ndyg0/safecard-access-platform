@@ -31,7 +31,6 @@ export interface AdminAnalytics {
     started_to_submitted: RateMeasure;
     submitted_to_approved: RateMeasure;
     submitted_to_payment_verified: RateMeasure;
-    submitted_to_active: RateMeasure;
   };
   review_aging: {
     under_24h: CountMeasure;

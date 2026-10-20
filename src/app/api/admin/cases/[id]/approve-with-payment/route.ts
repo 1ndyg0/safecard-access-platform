@@ -1,15 +1,12 @@
 /**
  * POST /api/admin/cases/[id]/approve-with-payment
  *
- * Super-admin approval: approve the application AND verify the payment
- * proof the reviewer looked at, in one confirmed action.
+ * Administrator approval: approve the application AND verify the payment
+ * proof the reviewer looked at, in one confirmed action. This is the only
+ * place a payment is verified.
  *
- * What this route keeps from the two separate routes:
- *
- *   - It needs BOTH capabilities on the campaign: a reviewer role
- *     (privacy_admin_owner or school_admin) and a payment role
- *     (finance_export). A reviewer without payment rights is refused;
- *     this never grants anything the separate routes would not.
+ *   - It needs a reviewer role on the campaign (privacy_admin_owner or
+ *     school_admin). No separate finance role exists.
  *   - It names the exact payment intent and evidence row the reviewer
  *     looked at, and refuses a stale screen for both the review state
  *     and the payment state.
@@ -20,7 +17,6 @@
  * Both steps are separate transactions. If verifying the payment fails
  * after the approval was recorded, the response says exactly that and
  * the application simply stays approved with payment still pending.
- * PRC handoff and PRC confirmation are not touched.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -79,7 +75,7 @@ export async function POST(
       return forbidden('Your role cannot decide applications for this campaign.');
     }
     if (!policy?.canActOnPayments) {
-      return forbidden('Approving with payment verification also needs the finance role on this campaign.');
+      return forbidden('Your role cannot verify payments for this campaign.');
     }
 
     // The intent must belong to this case and be in the state the reviewer saw.
@@ -145,7 +141,6 @@ export async function POST(
         reviewState: 'approved',
         paymentState: result?.payment_state ?? 'verified_by_official_source',
         paymentVerified: true,
-        prcHandoffChanged: false,
       },
       { headers: PRIVATE_NO_STORE },
     );

@@ -2,7 +2,6 @@
  * Privacy-safe aggregate metrics service
  *
  * Allowed metrics (from spec):
- * - Referral visits
  * - Start rate
  * - Comprehension completion and pass rate
  * - Consent-to-submit rate
@@ -26,7 +25,6 @@ const SUPPRESSION_THRESHOLD = 5;
 export interface CampaignMetrics {
   campaignId: string;
   date: string;
-  referralVisits: number | null;
   casesStarted: number | null;
   comprehensionPassRate: number | null;
   consentToSubmitRate: number | null;
@@ -41,16 +39,6 @@ export interface CampaignMetrics {
 export async function calculateDailyMetrics(campaignId: string): Promise<void> {
   const admin = getSupabaseAdminClient();
   const today = new Date().toISOString().split('T')[0];
-
-  // Total referral visits
-  const { data: referralData } = await admin
-    .from('referral_links')
-    .select('total_visits')
-    .eq('campaign_id', campaignId);
-
-  const totalVisits = referralData?.reduce((sum, r) => sum + (r.total_visits ?? 0), 0) ?? 0;
-
-  await upsertMetric(admin, campaignId, today, 'referral_visits', totalVisits);
 
   // Cases started (all cases created)
   const { count: casesStarted } = await admin

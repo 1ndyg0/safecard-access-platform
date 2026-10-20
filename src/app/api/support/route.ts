@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const auth = await requireAuth();
     const admin = getSupabaseAdminClient();
     let campaignId = parsed.data.campaign_id;
-    let submittedByType: 'recipient' | 'sponsor' | 'staff' = 'recipient';
+    let submittedByType: 'recipient' | 'staff' = 'recipient';
     if (parsed.data.case_id) {
       const ownership = await requireCaseOwnership(auth.userId, parsed.data.case_id);
       if (!ownership.allowed) {
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       campaignId = ownedCase?.campaign_id;
     } else if (!auth.isAnonymous) {
       const { data: staff } = await admin.from('users').select('id').eq('id', auth.userId).maybeSingle();
-      submittedByType = staff ? 'staff' : 'sponsor';
+      if (staff) submittedByType = 'staff';
     }
     assertSyntheticText(
       parsed.data.data_mode,

@@ -7,14 +7,12 @@ import {
   validateConsentTransition,
   validateMembershipTransition,
   validatePaymentTransition,
-  validatePrcHandoffTransition,
 } from './state-machines';
 
 describe('state-machine safety contracts', () => {
-  it('keeps submission, payment, PRC acceptance, and activation separate', () => {
+  it('keeps submission, payment and membership state separate', () => {
     validateApplicationTransition('ready_for_review', 'submitted');
     validatePaymentTransition('verification_pending', 'verified_by_official_source');
-    validatePrcHandoffTransition('exported', 'accepted');
     validateMembershipTransition('pending_prc_confirmation', 'active_confirmed');
   });
 

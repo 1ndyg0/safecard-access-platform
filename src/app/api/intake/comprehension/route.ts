@@ -106,8 +106,8 @@ export async function POST(request: NextRequest) {
             en: 'Thank you! You understand the key points.',
           }
         : {
-            tl: 'Mangyaring suriin muli ang mga impormasyon. Maaari kang magtanong sa iyong sponsor o sa support.',
-            en: 'Please review the information again. You can ask your sponsor or contact support.',
+            tl: 'Mangyaring suriin muli ang mga impormasyon. Maaari kang magtanong sa support.',
+            en: 'Please review the information again. You can contact support.',
           },
     });
   } catch (error) {

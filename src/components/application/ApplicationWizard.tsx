@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
 import { useLocale } from "@/components/LocaleProvider";
 import { ManualPaymentPanel } from "@/components/application/ManualPaymentPanel";
@@ -39,11 +39,8 @@ const prevStep: Partial<Record<Step, Step>> = {
 export function ApplicationWizard() {
   const { locale, setLocale } = useLocale();
   const router = useRouter();
-  const params = useSearchParams();
-  const referralSlug = params.get("ref");
   const [step, setStep] = useState<Step>("learn");
   const [config, setConfig] = useState<PilotConfig | null>(null);
-  const [referralLinkId, setReferralLinkId] = useState<string>();
   const [caseId, setCaseId] = useState<string>();
   const [consentRecordId, setConsentRecordId] = useState<string>();
   const [answers, setAnswers] = useState({ cost: "", activation: "", choice: "", emergency: "" });
@@ -123,13 +120,6 @@ export function ApplicationWizard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!referralSlug) return;
-    fetch(`/api/referrals/validate?slug=${encodeURIComponent(referralSlug)}`).then((r) => r.json()).then((data) => {
-      if (data.valid) setReferralLinkId(data.referralLinkId);
-    }).catch(() => undefined);
-  }, [referralSlug]);
-
   const allAgreed = agreed.voluntary && agreed.privacy && agreed.boundaries;
   const isLive = config?.mode === "live";
   const isFil = locale === "fil";
@@ -137,19 +127,19 @@ export function ApplicationWizard() {
   const ui = isFil ? {
     bannerLive: "Live pilot na kontrolado", bannerLiveBody: "Aktibo ang mga approved data control.", bannerSynthetic: "Synthetic na walkthrough", bannerSyntheticBody: "Huwag maglagay ng totoong personal na impormasyon. Walang mae-enroll o sisingilin dito.",
     learnEyebrow: "01 · Impormasyon", learnTitle: "Alamin ang mahalaga bago magpasya.", learnBody: "Ang working baseline ay ₱1,200 bawat taon para sa edad 3–85. Ang eksaktong benepisyo, exclusions, eligibility, activation, at claims ay PRC lamang ang nagkukumpirma.",
-    paymentBoundary: "Bayad ≠ pahintulot", paymentBoundaryBody: "Hindi maaaring magpasya ang sponsor o payer para sa recipient.", submissionBoundary: "Submission ≠ activation", submissionBoundaryBody: "PRC lamang ang makakapagkumpirma ng membership.", claimsBoundary: "PRC ang nagdedesisyon sa claims", claimsBoundaryBody: "Hindi nagdedesisyon ang project team kung covered o approved ang claim.", fullGuide: "Buong gabay",
+    paymentBoundary: "Bayad ≠ pahintulot", paymentBoundaryBody: "Hindi maaaring magpasya ang nagbabayad para sa recipient.", submissionBoundary: "Submission ≠ approval", submissionBoundaryBody: "Ang administrator ang nag-aapruba ng application at nagve-verify ng proof ng bayad.", claimsBoundary: "PRC ang nagdedesisyon sa claims", claimsBoundaryBody: "Hindi nagdedesisyon ang project team kung covered o approved ang claim.", fullGuide: "Buong gabay",
     checkEyebrow: "02 · Pag-check", checkTitle: "Apat na bagay na dapat malinaw.",
     feeQuestion: "Magkano ang working annual fee?", feeCorrect: "₱1,200 / year", feeWrong: "₱100 total",
     feeExplain: "Ang taunang bayad ng membership ay ₱1,200 bawat taon. Isang beses ito bayad bawat taon, hindi ₱100 lang sa kabuuan.",
-    activationQuestion: "Sino ang nagkukumpirma ng activation?", activationCorrect: "Philippine Red Cross", activationWrong: "Ang sponsor",
-    activationExplain: "Ang Philippine Red Cross (PRC) lamang ang makakapagkumpirma at makapag-activate ng iyong membership. Hindi ito magagawa ng iyong sponsor.",
+    activationQuestion: "Sino ang nag-aapruba ng iyong application?", activationCorrect: "Ang SafeCard administrator", activationWrong: "Ang nagbabayad",
+    activationExplain: "Ang SafeCard administrator ang nagsusuri ng iyong application at proof ng bayad, at siya ang nag-aapruba. Hindi ito magagawa ng nagbabayad para sa iyo.",
     choiceQuestion: "Sino ang nagpapasyang sumali?", choiceCorrect: "Ang recipient", choiceWrong: "Ang payer",
-    choiceExplain: "Ikaw bilang recipient ang dapat magpasyang sumali nang kusang-loob. Hindi pwedeng magpasya para sa iyo ang payer o sponsor.",
+    choiceExplain: "Ikaw bilang recipient ang dapat magpasyang sumali nang kusang-loob. Hindi pwedeng magpasya para sa iyo ang payer.",
     hotlineQuestion: "Emergency hotline sa working guide", hotlineExplain: "Ang emergency hotline ng Philippine Red Cross ay 143. Maaari kang tumawag anumang oras para sa ambulansya o mga katanungan tungkol sa iyong membership.",
     quizCorrectLabel: "✓ Tama", quizWrongLabel: "✗ Mali — tamang sagot:",
     continue: "Magpatuloy →", reviewGuide: "Balikan ang gabay",
-    decideEyebrow: "03 · Pribadong desisyon", decideTitle: "Ang iyong sagot ay sa iyo lamang.", decideBody: "Hindi makakatanggap ng notification ang sponsor kung ikaw ay magtatanong o tatanggi.", accept: "Accept / Mag-apply", acceptBody: "Magpatuloy sa privacy at consent step.", ask: "Ask / Magtanong", askBody: "Buksan ang Hotline 143 nang hindi nagsisimula ng application.", decline: "Not now / Hindi ngayon", declineBody: "Umalis nang pribado nang walang ibibigay na personal na impormasyon.", busy: "Gumagawa ng pribadong session…",
-    consentEyebrow: "04 · Privacy at pahintulot", consentTitle: "Pahintulot bago ang personal na datos.", minimum: "Minimum na kailangang kolektahin", minimumBody: "Sa live pilot, PRC-approved application fields lamang ang maaaring kolektahin. Hindi makikita ng sponsors ang identity, address, mobile number, application answers, payment evidence, o claims activity ng recipient.", privacyLink: "Basahin ang privacy at rights notice", voluntary: "Kusang-loob ang pagsali at maaari akong umatras.", privacyConsent: "Naiintindihan ko kung bakit kinokolekta at ibinabahagi sa PRC ang approved fields.", boundaryConsent: "Naiintindihan ko na ang bayad at submission ay hindi nag-a-activate ng membership.", continuePrivately: "Magpatuloy nang pribado →",
+    decideEyebrow: "03 · Pribadong desisyon", decideTitle: "Ang iyong sagot ay sa iyo lamang.", decideBody: "Walang ibang aabisuhan kung ikaw ay magtatanong o tatanggi.", accept: "Accept / Mag-apply", acceptBody: "Magpatuloy sa privacy at consent step.", ask: "Ask / Magtanong", askBody: "Buksan ang Hotline 143 nang hindi nagsisimula ng application.", decline: "Not now / Hindi ngayon", declineBody: "Umalis nang pribado nang walang ibibigay na personal na impormasyon.", busy: "Gumagawa ng pribadong session…",
+    consentEyebrow: "04 · Privacy at pahintulot", consentTitle: "Pahintulot bago ang personal na datos.", minimum: "Minimum na kailangang kolektahin", minimumBody: "Sa live pilot, PRC-approved application fields lamang ang maaaring kolektahin. Hindi ito ibinabahagi sa ibang tao maliban sa mga administrator na nagsusuri ng iyong application.", privacyLink: "Basahin ang privacy at rights notice", voluntary: "Kusang-loob ang pagsali at maaari akong umatras.", privacyConsent: "Naiintindihan ko kung bakit kinokolekta ang approved fields at kung sino ang makakakita nito.", boundaryConsent: "Naiintindihan ko na ang bayad at submission ay hindi pa approval; ang administrator ang nag-aapruba.", continuePrivately: "Magpatuloy nang pribado →",
     profileEyebrow: "05 · Approved fields", profileLiveTitle: "Detalye ng iyong application", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Mase-save lamang ang draft sa protected pilot backend pagkatapos ng consent.", profileSyntheticBody: "Naka-lock ang fields sa reserved synthetic values. Hindi puwedeng gumamit ng totoong impormasyon hanggang makumpleto ang launch gates.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Susunod: Bayad →", clearDevice: "I-clear ang shared device",
     paymentDemoEyebrow: "06 · Bayad (demo)", paymentDemoTitle: "Sa live na app, magbabayad ka dito.", paymentDemoBody: "Kapag live na ang pilot, pipili ka ng payment route (GCash o bank transfer), ilalagay ang iyong payment reference, at mag-uupload ng proof ng bayad. Para sa demo na ito, pindutin ang Magpatuloy.", paymentDemoContinue: "Magpatuloy →",
     reviewEyebrow: "06 · Review", reviewTitle: "Suriin bago isumite.", name: "Pangalan", dateOfBirth: "Petsa ng kapanganakan", addressLabel: "Address", mobileLabel: "Mobile",
@@ -161,30 +151,30 @@ export function ApplicationWizard() {
     applicationRef: "Application reference", demoRef: "Demo reference",
     completeNextStepsTitle: "Susunod na mangyayari",
     completeStep1: "Susuriin ng staff ang iyong proof ng bayad",
-    completeStep2: "Ipapasa ang application sa Philippine Red Cross (PRC)",
-    completeStep3: "Kukumpirmahin ng PRC ang iyong membership",
+    completeStep2: "Aaprubahan ng administrator ang application at ive-verify ang bayad",
+    completeStep3: "Lalabas ang iyong approved SafeCard sa member login",
     completeStep4: "Mag-log in gamit ang iyong application reference at mobile number para ma-check ang status",
     completeHotlineNote: "Para sa mga katanungan, tumawag sa Philippine Red Cross Hotline",
     checkStatus: "Tingnan ang status", returnHome: "Bumalik sa home", print: "I-print ang summary",
-    declinedEyebrow: "Pribadong choice na na-record locally", declinedTitle: "Walang application na sinimulan.", declinedBody: "Walang personal na impormasyong hiningi, at hindi sasabihan ang sponsor na tumanggi ka.", reviewAgain: "Suriin ulit",
+    declinedEyebrow: "Pribadong choice na na-record locally", declinedTitle: "Walang application na sinimulan.", declinedBody: "Walang personal na impormasyong hiningi, at walang aabisuhan na tumanggi ka.", reviewAgain: "Suriin ulit",
     backLabel: "← Bumalik", cancelLabel: "I-cancel", cancelConfirm: "Sigurado ka bang gusto mong mag-cancel? Mawawala ang iyong progreso.",
     labels: ["Matuto", "Suriin", "Magpasya", "Pahintulot", "Form", "Suriin", "Bayad"],
   } : {
     bannerLive: "Controlled live pilot", bannerLiveBody: "Approved data controls are active.", bannerSynthetic: "Synthetic walkthrough", bannerSyntheticBody: "Do not enter real personal information. Nothing here enrolls or charges anyone.",
     learnEyebrow: "01 · Education", learnTitle: "Know what matters before deciding.", learnBody: "The working baseline is ₱1,200 per year for ages 3–85. Only PRC confirms exact benefits, exclusions, eligibility, activation, and claims.",
-    paymentBoundary: "Payment ≠ consent", paymentBoundaryBody: "A sponsor or payer cannot decide for the recipient.", submissionBoundary: "Submission ≠ activation", submissionBoundaryBody: "Only a PRC confirmation activates membership.", claimsBoundary: "Claims stay with PRC", claimsBoundaryBody: "The project team never decides coverage or outcomes.", fullGuide: "Full guide",
+    paymentBoundary: "Payment ≠ consent", paymentBoundaryBody: "A payer cannot decide for the recipient.", submissionBoundary: "Submission ≠ approval", submissionBoundaryBody: "An administrator approves your application and verifies your payment proof.", claimsBoundary: "Claims stay with PRC", claimsBoundaryBody: "The project team never decides coverage or outcomes.", fullGuide: "Full guide",
     checkEyebrow: "02 · Comprehension", checkTitle: "Four things that must be clear.",
     feeQuestion: "Working annual fee", feeCorrect: "₱1,200 / year", feeWrong: "₱100 total",
     feeExplain: "The annual membership fee is ₱1,200 per year. This is paid once a year, not ₱100 in total.",
-    activationQuestion: "Who confirms activation?", activationCorrect: "Philippine Red Cross", activationWrong: "The sponsor",
-    activationExplain: "Only the Philippine Red Cross (PRC) can officially confirm and activate your membership. Your sponsor cannot do this for you.",
+    activationQuestion: "Who approves your application?", activationCorrect: "The SafeCard administrator", activationWrong: "The payer",
+    activationExplain: "The SafeCard administrator reviews your application and payment proof and approves it. A payer cannot do this for you.",
     choiceQuestion: "Who decides to participate?", choiceCorrect: "The recipient", choiceWrong: "The payer",
-    choiceExplain: "The person receiving the membership (you, the recipient) must freely decide to join. A payer or sponsor cannot make this choice on your behalf.",
+    choiceExplain: "The person receiving the membership (you, the recipient) must freely decide to join. A payer cannot make this choice on your behalf.",
     hotlineQuestion: "Emergency hotline in the working guide", hotlineExplain: "The Philippine Red Cross emergency hotline is 143. Call anytime for ambulance assistance or questions about your membership.",
     quizCorrectLabel: "✓ Correct", quizWrongLabel: "✗ Incorrect — correct answer:",
     continue: "Continue →", reviewGuide: "Review guide",
-    decideEyebrow: "03 · Private decision", decideTitle: "Your answer belongs to you.", decideBody: "The sponsor receives no notification about an 'ask' or 'decline' choice.", accept: "Accept / Mag-apply", acceptBody: "Continue to the privacy and consent step.", ask: "Ask / Magtanong", askBody: "Open Hotline 143 without starting an application.", decline: "Not now / Hindi ngayon", declineBody: "Leave privately without providing personal information.", busy: "Creating a private session…",
-    consentEyebrow: "04 · Privacy and consent", consentTitle: "Consent before personal data.", minimum: "Minimum necessary collection", minimumBody: "The live pilot may collect only PRC-approved application fields. Sponsors cannot see recipient identity, address, mobile number, application answers, payment evidence, or claims activity.", privacyLink: "Read the privacy and rights notice", voluntary: "I am choosing voluntarily and may withdraw.", privacyConsent: "I understand why the approved fields are collected and shared with PRC.", boundaryConsent: "I understand payment and submission do not activate membership.", continuePrivately: "Continue privately →",
+    decideEyebrow: "03 · Private decision", decideTitle: "Your answer belongs to you.", decideBody: "Nobody is notified if you choose to ask or decline.", accept: "Accept / Mag-apply", acceptBody: "Continue to the privacy and consent step.", ask: "Ask / Magtanong", askBody: "Open Hotline 143 without starting an application.", decline: "Not now / Hindi ngayon", declineBody: "Leave privately without providing personal information.", busy: "Creating a private session…",
+    consentEyebrow: "04 · Privacy and consent", consentTitle: "Consent before personal data.", minimum: "Minimum necessary collection", minimumBody: "The live pilot may collect only PRC-approved application fields. Only the administrators who review your application can see it.", privacyLink: "Read the privacy and rights notice", voluntary: "I am choosing voluntarily and may withdraw.", privacyConsent: "I understand why the approved fields are collected and who can see them.", boundaryConsent: "I understand payment and submission are not an approval; an administrator approves the application.", continuePrivately: "Continue privately →",
     profileEyebrow: "05 · Approved fields", profileLiveTitle: "Your application details", profileSyntheticTitle: "Synthetic form demonstration", profileLiveBody: "Your draft is saved only to the protected pilot backend after consent.", profileSyntheticBody: "Fields are locked to reserved synthetic values. Real information is blocked until every launch gate passes.", firstName: "First name", lastName: "Last name", dob: "Date of birth", sex: "Sex", female: "Female", male: "Male", mobile: "Mobile number", email: "Email (optional)", address: "Address", city: "City", province: "Province", zip: "ZIP code", reviewBtn: "Next: Payment →", clearDevice: "Clear shared device",
     paymentDemoEyebrow: "06 · Payment (demo)", paymentDemoTitle: "In the live app, you would pay here.", paymentDemoBody: "When the pilot goes live, you will choose a payment route (GCash or bank transfer), enter your payment reference, and upload proof of payment. For this demo, tap Continue.", paymentDemoContinue: "Continue →",
     reviewEyebrow: "06 · Review", reviewTitle: "Review before submitting.", name: "Name", dateOfBirth: "Date of birth", addressLabel: "Address", mobileLabel: "Mobile",
@@ -196,12 +186,12 @@ export function ApplicationWizard() {
     applicationRef: "Application reference", demoRef: "Demo reference",
     completeNextStepsTitle: "What happens next",
     completeStep1: "Staff reviews your payment proof",
-    completeStep2: "Application is forwarded to Philippine Red Cross (PRC)",
-    completeStep3: "PRC confirms your membership",
+    completeStep2: "An administrator approves the application and verifies the payment",
+    completeStep3: "Your approved SafeCard appears when you sign in as a member",
     completeStep4: "Log in with your application reference and mobile number to check your status",
     completeHotlineNote: "For questions, call Philippine Red Cross Hotline",
     checkStatus: "Check application status →", returnHome: "Return home", print: "Print summary",
-    declinedEyebrow: "Private choice recorded locally", declinedTitle: "No application was started.", declinedBody: "No personal information was requested, and the sponsor is not told that you declined.", reviewAgain: "Review again",
+    declinedEyebrow: "Private choice recorded locally", declinedTitle: "No application was started.", declinedBody: "No personal information was requested, and nobody is told that you declined.", reviewAgain: "Review again",
     backLabel: "← Back", cancelLabel: "Cancel", cancelConfirm: "Are you sure you want to cancel? Your progress will be lost.",
     labels: ["Learn", "Check", "Decide", "Consent", "Form", "Review", "Payment"],
   };
@@ -236,7 +226,7 @@ export function ApplicationWizard() {
     if (!config?.campaign) { setError(isFil ? "Hindi pa naka-configure ang live pilot." : "The live pilot is not configured."); return; }
     setBusy(true);
     try {
-      const result = await api("/api/intake/case", { campaign_id: config.campaign.id, referral_link_id: referralLinkId, decision: "accept" });
+      const result = await api("/api/intake/case", { campaign_id: config.campaign.id, decision: "accept" });
       setCaseId(result.caseId);
       window.sessionStorage.setItem("safecard-case-id", result.caseId);
       await api("/api/intake/comprehension", { case_id: result.caseId, answers: { coverage_understanding: true, payment_not_activation: true, can_withdraw_consent: true, claims_contact_correct: true } });
@@ -353,8 +343,8 @@ export function ApplicationWizard() {
             <Quiz
               label={ui.activationQuestion} name="activation" value={answers.activation}
               onChange={(v) => setAnswers({ ...answers, activation: v })}
-              options={[["prc", ui.activationCorrect], ["sponsor", ui.activationWrong]]}
-              correctValue="prc" explanation={ui.activationExplain} correctLabel={ui.quizCorrectLabel} wrongLabel={ui.quizWrongLabel}
+              options={[["admin", ui.activationCorrect], ["payer", ui.activationWrong]]}
+              correctValue="admin" explanation={ui.activationExplain} correctLabel={ui.quizCorrectLabel} wrongLabel={ui.quizWrongLabel}
             />
             <Quiz
               label={ui.choiceQuestion} name="choice" value={answers.choice}
@@ -365,7 +355,7 @@ export function ApplicationWizard() {
             <Quiz
               label={ui.hotlineQuestion} name="emergency" value={answers.emergency}
               onChange={(v) => setAnswers({ ...answers, emergency: v })}
-              options={[["143", "Hotline 143"], ["sponsor", ui.activationWrong]]}
+              options={[["143", "Hotline 143"], ["payer", ui.activationWrong]]}
               correctValue="143" explanation={ui.hotlineExplain} correctLabel={ui.quizCorrectLabel} wrongLabel={ui.quizWrongLabel}
             />
             <div className="wizard-actions">

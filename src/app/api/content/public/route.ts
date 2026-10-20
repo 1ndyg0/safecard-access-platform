@@ -19,7 +19,6 @@ import { handleApiError } from '@/lib/api/response';
 const VALID_TYPES: ContentType[] = [
   'benefit', 'exclusion', 'eligibility', 'privacy_notice',
   'consent_text', 'support_text', 'claims_education', 'faq',
-  'sponsor_briefing', 'invitation_script',
 ];
 
 const VALID_LOCALES = ['en', 'tl', 'ceb'] as const;

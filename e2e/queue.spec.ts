@@ -47,7 +47,6 @@ test.describe('submission queue', () => {
       { param: 'application_state=submitted', expectSome: true },
       { param: 'review_bucket=correction_requested', expectSome: true },
       { param: 'payment_state=verified_by_official_source', expectSome: true },
-      { param: 'prc_handoff_state=ready_for_export', expectSome: true },
       { param: 'membership_state=active_confirmed', expectSome: false },
     ];
 
@@ -157,14 +156,14 @@ test.describe('submission queue', () => {
 
   test('keeps filters in the URL so a view can be shared', async ({ page }) => {
     await signInAndOpenQueue(page, world.staff.privacyAdmin, world.campaignId);
-    await page.getByLabel('PRC handoff').selectOption('ready_for_export');
+    await page.getByLabel('Payment', { exact: true }).selectOption('verified_by_official_source');
     await page.getByRole('button', { name: 'Apply' }).click();
 
-    await expect(page).toHaveURL(/prc_handoff_state=ready_for_export/);
+    await expect(page).toHaveURL(/payment_state=verified_by_official_source/);
 
     // Reloading the shared URL reproduces the same view.
     await page.reload();
-    expect(await queueReferences(page)).toEqual(['SC-2026-AAAA0003']);
+    expect([...(await queueReferences(page))].sort()).toEqual(['SC-2026-AAAA0002', 'SC-2026-AAAA0003']);
   });
 
   test('shows an empty state rather than a blank table', async ({ page }) => {

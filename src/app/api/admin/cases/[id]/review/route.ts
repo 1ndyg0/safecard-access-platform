@@ -7,9 +7,9 @@
  * What this route guarantees:
  *
  *   - It changes the review decision and, for a correction request, the
- *     applicant-facing application state. Payment and membership are never
- *     advanced here. Handoff readiness is derived transactionally only when
- *     both application approval and verified payment are present.
+ *     applicant-facing application state. Payment is never verified here;
+ *     approving together with the payment proof goes through
+ *     approve-with-payment.
  *   - It requires an explicit confirmation flag, so a decision cannot be
  *     made by a stray click.
  *   - It requires the review state the reviewer was looking at. If
@@ -37,7 +37,7 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-/** Roles that may decide an application. Finance is deliberately absent. */
+/** Roles that may decide an application. */
 const REVIEWER_ROLES = ['privacy_admin_owner', 'school_admin'] as const;
 
 const bodySchema = z.object({
@@ -78,7 +78,7 @@ export async function POST(
     const { data: caseRecord, error: caseError } = await admin
       .from('recipient_cases')
       .select(
-        'id,campaign_id,application_review_state,application_state,payment_state,prc_handoff_state,membership_state',
+        'id,campaign_id,application_review_state,application_state,payment_state,membership_state',
       )
       .eq('id', id)
       .maybeSingle();
@@ -123,7 +123,6 @@ export async function POST(
         priorState: result.prior_state,
         // Restated so no client can infer that a decision moved anything else.
         paymentState: result.payment_state,
-        prcHandoffState: result.prc_handoff_state,
         membershipState: result.membership_state,
         membershipChanged: false,
         paymentChanged: false,

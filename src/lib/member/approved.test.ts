@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isAdministratorApproved, maskMobile } from './approved';
+import { formatFullName, isAdministratorApproved, maskMobile } from './approved';
 
 describe('isAdministratorApproved', () => {
   it('needs both approval and verified payment', () => {
@@ -23,5 +23,21 @@ describe('maskMobile', () => {
     expect(maskMobile('')).toBe('');
     expect(maskMobile(null)).toBe('');
     expect(maskMobile('123')).toBe('•••');
+  });
+});
+
+describe('formatFullName', () => {
+  it('joins first and last name with a single space', () => {
+    expect(formatFullName('Ana', 'Reyes')).toBe('Ana Reyes');
+  });
+
+  it('trims a trailing space on the first name instead of doubling it', () => {
+    expect(formatFullName('Ana ', 'Reyes')).toBe('Ana Reyes');
+    expect(formatFullName('  Ana  Maria ', ' Reyes ')).toBe('Ana Maria Reyes');
+  });
+
+  it('skips missing parts', () => {
+    expect(formatFullName('Ana', null)).toBe('Ana');
+    expect(formatFullName(undefined, undefined)).toBe('');
   });
 });

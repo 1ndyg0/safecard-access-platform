@@ -97,8 +97,8 @@ describe('a review decision touches nothing else', () => {
     join(process.cwd(), 'supabase/migrations/00016_atomic_member_correction.sql'),
     'utf8',
   );
-  const ATOMIC_HANDOFF_MIGRATION = readFileSync(
-    join(process.cwd(), 'supabase/migrations/00015_atomic_prc_handoff.sql'),
+  const REMOVAL_MIGRATION = readFileSync(
+    join(process.cwd(), 'supabase/migrations/00022_remove_ambassador_prc_finance.sql'),
     'utf8',
   );
 
@@ -112,24 +112,20 @@ describe('a review decision touches nothing else', () => {
     expect(REVIEW_ROUTE).not.toContain('verified_by_official_source');
   });
 
-  it('keeps handoff coordination inside the locked database transaction', () => {
-    expect(REVIEW_ROUTE).not.toMatch(/prc_handoff_state:\s*['"]/);
+  it('no longer has any PRC handoff coordination in the review transaction', () => {
+    expect(REVIEW_ROUTE).not.toMatch(/prc_handoff_state/);
     expect(REVIEW_ROUTE).not.toContain('ready_for_export');
-    expect(ATOMIC_REVIEW_MIGRATION).toContain(
-      "and c.payment_state = 'verified_by_official_source'",
-    );
-    expect(ATOMIC_REVIEW_MIGRATION).toContain(
-      "then 'ready_for_export'::public.prc_handoff_state",
-    );
-    expect(ATOMIC_REVIEW_MIGRATION).not.toContain(
-      "then 'exported'::public.prc_handoff_state",
-    );
+    const start = REMOVAL_MIGRATION.indexOf('create or replace function public.record_application_review_atomic');
+    const end = REMOVAL_MIGRATION.indexOf('\n$$;\n', start);
+    const fn = REMOVAL_MIGRATION.slice(start, end);
+    expect(fn).not.toContain('prc_handoff_state');
+    expect(fn).toContain('insert into public.application_review_decisions');
+    expect(fn).toMatch(/where id = p_case_id\s+for update;/);
   });
 
-  it('never writes membership, payment or handoff from a correction', () => {
+  it('never writes membership or payment from a correction', () => {
     expect(CORRECTION_ROUTE).not.toMatch(/membership_state:\s*['"]/);
     expect(CORRECTION_ROUTE).not.toMatch(/payment_state:\s*['"]/);
-    expect(CORRECTION_ROUTE).not.toMatch(/prc_handoff_state:\s*['"]/);
   });
 
   it('requires an explicit confirmation on every staff decision', () => {
@@ -159,14 +155,9 @@ describe('a review decision touches nothing else', () => {
     expect(ATOMIC_CORRECTION_MIGRATION).toContain('from public, anon, authenticated');
   });
 
-  it('makes a PRC-requested correction eligible for a new reviewed export cycle', () => {
-    expect(ATOMIC_HANDOFF_MIGRATION).toContain(
-      "when p_prc_status = 'correction_requested' then 'not_active'::public.membership_state",
-    );
+  it('returns an applicant to review after a correction', () => {
     expect(ATOMIC_CORRECTION_MIGRATION).toContain("application_state = 'resubmitted'");
-    expect(ATOMIC_REVIEW_MIGRATION).toContain(
-      "prc_handoff_state in ('not_ready', 'correction_requested')",
-    );
+    expect(REMOVAL_MIGRATION).toContain("application_review_state = 'pending'");
   });
 
   it('takes the member case id only from the session', () => {

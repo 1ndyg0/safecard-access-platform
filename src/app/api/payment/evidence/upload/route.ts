@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       evidenceId: result.evidenceId,
       state: result.state,
-      message: 'Proof received for staff verification. Payment does not activate membership.',
+      message: 'Proof received. An administrator verifies it when approving your application.',
     }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     return handleApiError(error, 'Payment proof upload');

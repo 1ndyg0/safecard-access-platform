@@ -27,9 +27,9 @@ test.describe('dashboard cohorts and suppression', () => {
     ).json();
 
     expect(body.counts.total_cases).toBe(0);
-    expect(body.counts.prc_confirmed_active).toBe(0);
-    // Eleven counts, all present.
-    expect(Object.keys(body.counts)).toHaveLength(11);
+    expect(body.counts.approved).toBe(0);
+    // Eight counts, all present.
+    expect(Object.keys(body.counts)).toHaveLength(8);
   });
 
   test('reports all eleven operational counts from real data', async ({ page }) => {
@@ -41,9 +41,8 @@ test.describe('dashboard cohorts and suppression', () => {
     expect(body.counts.total_cases).toBe(6);
     expect(body.counts.correction_requested).toBe(1);
     expect(body.counts.payment_verified).toBe(2);
-    expect(body.counts.ready_for_prc_handoff).toBe(1);
+    expect(body.counts.approved).toBe(1);
     expect(body.counts.awaiting_application_review).toBe(5);
-    expect(body.counts.prc_confirmed_active).toBe(0);
   });
 
   test('suppresses a cohort of four and discloses at five', async ({ page }) => {

@@ -33,8 +33,8 @@ export async function POST(request: NextRequest) {
       parsed.campaign_id,
       parsed.campaign_id ? undefined : parsed.organization_id,
     );
-    if (!privacyAdmin.allowed && ['privacy_admin_owner', 'school_admin', 'prc_liaison'].includes(parsed.role)) {
-      return forbidden('Only a privacy admin can assign privileged administrator or PRC roles');
+    if (!privacyAdmin.allowed && ['privacy_admin_owner', 'school_admin'].includes(parsed.role)) {
+      return forbidden('Only a privacy admin can assign privileged administrator roles');
     }
 
     const admin = getSupabaseAdminClient();

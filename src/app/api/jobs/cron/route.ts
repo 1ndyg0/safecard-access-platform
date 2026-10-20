@@ -33,11 +33,6 @@ export async function GET(request: NextRequest) {
     });
 
     await enqueueJob({
-      jobType: 'deactivate_expired_referrals',
-      idempotencyKey: `expired-referrals-${today}`,
-    });
-
-    await enqueueJob({
       jobType: 'release_stale_locks',
       idempotencyKey: `stale-locks-${today}-${now.getHours()}`,
     });

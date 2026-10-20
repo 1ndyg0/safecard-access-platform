@@ -3,8 +3,9 @@
  *
  * Deliberately separate from every other state machine in the platform.
  * A review decision answers one question — does this application, as
- * submitted, meet the criteria — and answers nothing about money, about
- * the PRC handoff, or about membership.
+ * submitted, meet the criteria — and answers nothing about money or
+ * about membership. (Approving together with the payment proof is a
+ * separate route that verifies the payment in its own transaction.)
  *
  * Rejection is final. A rejected application does not drift back into
  * review because someone clicked the wrong control; reopening it is a
@@ -30,8 +31,8 @@ export type ReviewDecision = (typeof REVIEW_DECISIONS)[number];
  * Transitions a normal staff decision may make.
  *
  * `approved` is not terminal: a later correction round can legitimately
- * send an approved application back if new information arrives before
- * the PRC handoff. `rejected` is terminal here by design.
+ * send an approved application back if new information arrives.
+ * `rejected` is terminal here by design.
  */
 const REVIEW_TRANSITIONS: Record<ReviewState, ReadonlyArray<ReviewState>> = {
   pending: ['approved', 'resubmission_requested', 'rejected'],
@@ -96,9 +97,7 @@ export function validateReason(reason: string | undefined): string | null {
 }
 
 /**
- * A review decision never changes payment or membership. PRC handoff
- * readiness is the one derived coordination state: approval may make an
- * already-paid case ready, and withdrawing approval removes that readiness.
+ * A review decision never changes payment or membership.
  */
 export const STATES_A_REVIEW_MUST_NOT_CHANGE = [
   'payment_state',

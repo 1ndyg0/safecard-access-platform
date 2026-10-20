@@ -32,14 +32,13 @@ test.describe('staff application review', () => {
 
     const { data } = await world.admin
       .from('recipient_cases')
-      .select('application_review_state,payment_state,prc_handoff_state,membership_state')
+      .select('application_review_state,payment_state,membership_state')
       .eq('id', world.cases.pendingReview.id)
       .single();
 
     expect(data?.application_review_state).toBe('approved');
     // Approval verified nothing and activated nothing.
     expect(data?.payment_state).toBe('not_started');
-    expect(data?.prc_handoff_state).toBe('not_ready');
     expect(data?.membership_state).toBe('not_active');
   });
 
@@ -56,17 +55,15 @@ test.describe('staff application review', () => {
     expect(data?.membership_state).toBe('not_active');
   });
 
-  test('approval plus verified payment is handoff-ready and still not membership', async () => {
+  test('approval plus verified payment is the end state of the review', async () => {
     const { data } = await world.admin
       .from('recipient_cases')
-      .select('application_review_state,payment_state,prc_handoff_state,membership_state')
+      .select('application_review_state,payment_state,membership_state')
       .eq('id', world.cases.approvedAndPaid.id)
       .single();
 
     expect(data?.application_review_state).toBe('approved');
     expect(data?.payment_state).toBe('verified_by_official_source');
-    expect(data?.prc_handoff_state).toBe('ready_for_export');
-    // The whole point: ready for PRC is not membership.
     expect(data?.membership_state).toBe('not_active');
   });
 

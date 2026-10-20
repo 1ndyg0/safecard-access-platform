@@ -22,8 +22,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <Link href="/admin">Overview</Link>
           <Link href="/admin/submissions">Submissions</Link>
           <Link href="/admin/users">Staff &amp; roles</Link>
-          <Link href="/admin/export">PRC export</Link>
-          <Link href="/admin/security">Security</Link>
         </nav>
         <button type="button" onClick={signOut}>Sign out</button>
       </aside>

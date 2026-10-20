@@ -16,17 +16,18 @@ const SENSITIVE_PROFILE_FIELDS = [
 ] as const;
 
 describe('role-scoped case access', () => {
-  it('gives finance reviewers payment access without unrelated profile fields', () => {
-    const policy = resolveCaseAccessPolicy(['finance_export']);
-    expect(policy).not.toBeNull();
-    expect(policy?.canViewPayments).toBe(true);
-    expect(policy?.canActOnPayments).toBe(true);
-
-    for (const field of SENSITIVE_PROFILE_FIELDS) {
-      expect(policy?.profileFields).not.toContain(field);
+  it('gives administrator reviewers payment access with identity fields only', () => {
+    for (const role of ['privacy_admin_owner', 'school_admin'] as const) {
+      const policy = resolveCaseAccessPolicy([role]);
+      expect(policy?.canReviewApplication).toBe(true);
+      expect(policy?.canViewPayments).toBe(true);
+      expect(policy?.canActOnPayments).toBe(true);
     }
-    // Only enough to match a name against a receipt.
-    expect(policy?.profileFields).toEqual(['first_name', 'last_name']);
+    // A school administrator sees who the applicant is, not where they live.
+    const school = resolveCaseAccessPolicy(['school_admin']);
+    for (const field of SENSITIVE_PROFILE_FIELDS.filter((f) => f !== 'date_of_birth' && f !== 'sex')) {
+      expect(school?.profileFields).not.toContain(field);
+    }
   });
 
   it('limits support agents to callback details and no payment access', () => {
@@ -38,18 +39,20 @@ describe('role-scoped case access', () => {
     expect(policy?.profileFields).not.toContain('address_line1');
   });
 
-  it('does not let a school admin reach payment evidence', () => {
-    const policy = resolveCaseAccessPolicy(['school_admin']);
-    expect(policy?.canReviewApplication).toBe(true);
-    expect(policy?.canViewPayments).toBe(false);
-    expect(policy?.canActOnPayments).toBe(false);
+  it('never grants payment actions to support or content roles', () => {
+    for (const role of ['support_agent', 'content_approver'] as const) {
+      expect(CASE_ACCESS_POLICY_BY_ROLE[role].canActOnPayments).toBe(false);
+      expect(CASE_ACCESS_POLICY_BY_ROLE[role].canViewPayments).toBe(false);
+    }
   });
 
-  it('never grants payment actions to a role other than finance', () => {
-    for (const [role, policy] of Object.entries(CASE_ACCESS_POLICY_BY_ROLE)) {
-      if (role === 'finance_export') continue;
-      expect(policy.canActOnPayments).toBe(false);
-    }
+  it('has no policy for the retired PRC liaison and finance roles', () => {
+    expect(Object.keys(CASE_ACCESS_POLICY_BY_ROLE).sort()).toEqual([
+      'content_approver',
+      'privacy_admin_owner',
+      'school_admin',
+      'support_agent',
+    ]);
   });
 
   it('returns no policy for a content approver, who has no case business', () => {
@@ -61,7 +64,7 @@ describe('role-scoped case access', () => {
   });
 
   it('unions the policies of multiple roles', () => {
-    const policy = resolveCaseAccessPolicy(['support_agent', 'finance_export']);
+    const policy = resolveCaseAccessPolicy(['support_agent', 'school_admin']);
     expect(policy?.canActOnPayments).toBe(true);
     expect(policy?.profileFields).toContain('mobile_number');
     // The union is still narrower than the full profile.
@@ -69,14 +72,14 @@ describe('role-scoped case access', () => {
   });
 
   it('builds an explicit select clause and never a wildcard', () => {
-    const policy = resolveCaseAccessPolicy(['finance_export']);
+    const policy = resolveCaseAccessPolicy(['support_agent']);
     const clause = profileSelectClause(policy!);
-    expect(clause).toBe('first_name,last_name');
+    expect(clause).toBe('first_name,last_name,mobile_number,email,fields_completed,updated_at');
     expect(clause).not.toContain('*');
   });
 
   it('signals "do not query the profile table" when no field is readable', () => {
-    const policy = resolveCaseAccessPolicy(['prc_liaison']);
+    const policy = resolveCaseAccessPolicy(['support_agent']);
     expect(profileSelectClause({ ...policy!, profileFields: [] })).toBeNull();
   });
 });

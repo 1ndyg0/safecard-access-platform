@@ -4,7 +4,6 @@
  * RLS handles row-level access at the database layer.
  * These functions add application-level authorization:
  * - Role verification before sensitive operations
- * - MFA verification for export operations
  * - Reauthentication checks
  *
  * All checks happen server-side. Never trust the client.
@@ -12,7 +11,6 @@
 
 import { getSupabaseAdminClient } from '@/lib/db/client';
 import { writeAuditEvent } from '@/lib/audit';
-import { getSessionClient } from '@/lib/auth/session';
 import type { StaffRole } from '@/types/database';
 
 export interface AuthContext {
@@ -107,23 +105,6 @@ export async function requireAnyRole(
 }
 
 /**
- * Verify the user has MFA enabled (required for export operations).
- */
-export async function requireMfa(): Promise<PermissionCheckResult> {
-  const supabase = await getSessionClient();
-  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-
-  if (error || !data || data.currentLevel !== 'aal2') {
-    return {
-      allowed: false,
-      reason: 'MFA is required for this operation. Please enable MFA in your account settings.',
-    };
-  }
-
-  return { allowed: true };
-}
-
-/**
  * Log a permission denial in the audit trail.
  */
 export async function logPermissionDenial(
@@ -214,29 +195,13 @@ export async function requireActiveCampaign(
   return { allowed: true };
 }
 
-export async function requireSponsorOwnership(
-  authUserId: string,
-  sponsorId: string,
-): Promise<PermissionCheckResult> {
-  const { data, error } = await getSupabaseAdminClient()
-    .from('sponsors')
-    .select('id')
-    .eq('id', sponsorId)
-    .eq('auth_user_id', authUserId)
-    .eq('is_active', true)
-    .maybeSingle();
-  return error || !data
-    ? { allowed: false, reason: 'You do not have access to this sponsor' }
-    : { allowed: true };
-}
-
 export async function requirePaymentAccess(
   authUserId: string,
   paymentIntentId: string,
 ): Promise<PermissionCheckResult> {
   const { data, error } = await getSupabaseAdminClient()
     .from('payment_intents')
-    .select('case_id, payer_sponsor_id, recipient_cases!inner(auth_user_id), sponsors(auth_user_id)')
+    .select('case_id, recipient_cases!inner(auth_user_id)')
     .eq('id', paymentIntentId)
     .maybeSingle();
 
@@ -244,8 +209,7 @@ export async function requirePaymentAccess(
   const recipient = Array.isArray(data.recipient_cases)
     ? data.recipient_cases[0]
     : data.recipient_cases;
-  const sponsor = Array.isArray(data.sponsors) ? data.sponsors[0] : data.sponsors;
-  return recipient?.auth_user_id === authUserId || sponsor?.auth_user_id === authUserId
+  return recipient?.auth_user_id === authUserId
     ? { allowed: true }
     : { allowed: false, reason: 'You do not have access to this payment' };
 }

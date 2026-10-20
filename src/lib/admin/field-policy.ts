@@ -8,8 +8,8 @@
  * payload or a devtools inspection.
  *
  * Two consequences worth stating plainly:
- *   - A finance reviewer verifying a payment does not receive an
- *     address, a date of birth or a guardian relationship.
+ *   - A school administrator approving an application (which also
+ *     verifies the payment proof) does not receive an address.
  *   - A support agent receives the contact details needed to call
  *     someone back and nothing that would let them profile a recipient.
  *
@@ -53,7 +53,7 @@ export interface CaseAccessPolicy {
   profileFields: readonly ProfileField[];
   /** May read payment intents and evidence. */
   canViewPayments: boolean;
-  /** May verify a payment or request replacement evidence. */
+  /** May verify a payment (as part of approving) or request replacement evidence. */
   canActOnPayments: boolean;
   /** May read the case audit timeline. */
   canViewAudit: boolean;
@@ -76,29 +76,21 @@ const POLICY: Record<StaffRole, CaseAccessPolicy> = {
       ...PROGRESS_FIELDS,
     ],
     canViewPayments: true,
-    canActOnPayments: false,
+    canActOnPayments: true,
     canViewAudit: true,
     canReviewApplication: true,
   },
 
   // Reviews applications against school policy: needs to know who the
   // applicant is and whether the form is complete, not where they live.
+  // Approving an application also verifies the payment proof, so this
+  // role may view the proof and act on it through the approval.
   school_admin: {
     profileFields: [...IDENTITY_FIELDS, ...PROGRESS_FIELDS],
-    canViewPayments: false,
-    canActOnPayments: false,
+    canViewPayments: true,
+    canActOnPayments: true,
     canViewAudit: true,
     canReviewApplication: true,
-  },
-
-  // Owns official handoff and confirmation. Needs the identity that PRC
-  // will match against, and the handoff trail.
-  prc_liaison: {
-    profileFields: [...IDENTITY_FIELDS, ...PROGRESS_FIELDS],
-    canViewPayments: true,
-    canActOnPayments: false,
-    canViewAudit: true,
-    canReviewApplication: false,
   },
 
   // Calls people back. Needs a name and a contact method; nothing else.
@@ -110,15 +102,6 @@ const POLICY: Record<StaffRole, CaseAccessPolicy> = {
     canReviewApplication: false,
   },
 
-  // Verifies money against evidence. Needs the name on the receipt to
-  // match it, and no other profile field whatsoever.
-  finance_export: {
-    profileFields: ['first_name', 'last_name'],
-    canViewPayments: true,
-    canActOnPayments: true,
-    canViewAudit: true,
-    canReviewApplication: false,
-  },
 
   // Approves published content. Has no business on an individual case.
   content_approver: {

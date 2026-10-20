@@ -4,7 +4,6 @@ import {
   CONSENT_STATES,
   MEMBERSHIP_STATES,
   PAYMENT_STATES,
-  PRC_HANDOFF_STATES,
   parseQueueQuery,
   resolveDateRange,
   reviewBucketStates,
@@ -23,14 +22,12 @@ describe('queue filters', () => {
       consent_state: 'agreed',
       application_state: 'submitted',
       payment_state: 'verification_pending',
-      prc_handoff_state: 'ready_for_export',
       membership_state: 'not_active',
     });
 
     expect(parsed.consent_state).toBe('agreed');
     expect(parsed.application_state).toBe('submitted');
     expect(parsed.payment_state).toBe('verification_pending');
-    expect(parsed.prc_handoff_state).toBe('ready_for_export');
     expect(parsed.membership_state).toBe('not_active');
   });
 
@@ -42,15 +39,14 @@ describe('queue filters', () => {
     expect(() => query({ application_state: 'verified_by_official_source' })).toThrow();
   });
 
-  it('keeps the five enums disjoint enough that a shared value cannot exist', () => {
+  it('keeps the enums disjoint enough that a shared value cannot exist', () => {
     // Any label shared across two enums would let a cross-column filter
     // look correct in testing and fail in production on other values.
     const membershipOnly = MEMBERSHIP_STATES.filter(
       (state) =>
         !(CONSENT_STATES as readonly string[]).includes(state) &&
         !(APPLICATION_STATES as readonly string[]).includes(state) &&
-        !(PAYMENT_STATES as readonly string[]).includes(state) &&
-        !(PRC_HANDOFF_STATES as readonly string[]).includes(state),
+        !(PAYMENT_STATES as readonly string[]).includes(state),
     );
     expect(membershipOnly).toContain('active_confirmed');
   });

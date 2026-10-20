@@ -14,7 +14,7 @@ The candidate on `codex/safecard-controlled-pilot` adds strict fail-closed produ
 
 Live activation remains blocked until the production campaign, pinned bilingual content, and real named staff assignments are created and reviewed. Follow [the controlled production pilot runbook](controlled-production-pilot.md). A build or preview alone is not approval to enable real data.
 
-Payment declaration, payment verification, application approval, and PRC export cannot activate membership. Only an accepted PRC response with recorded confirmation evidence can produce `active_confirmed`.
+Application approval and payment verification happen in one administrator action. There is no PRC export, handoff or acceptance step.
 
 ## Verification and recovery
 

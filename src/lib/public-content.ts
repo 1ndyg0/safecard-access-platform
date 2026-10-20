@@ -9,7 +9,7 @@ export const benefits = [
 
 export const copy = {
   fil: {
-    navBenefits: "Mga benepisyo", navProcess: "Proseso", memberLogin: "Member login", ambassadorLogin: "Ambassador", adminLogin: "Admin",
+    navBenefits: "Mga benepisyo", navProcess: "Proseso", memberLogin: "Member login", adminLogin: "Admin",
     badge: "Controlled pilot · content for validation", heroTitle: "Unawain muna. Ikaw ang magpasya.",
     heroBody: "Isang consent-first na paraan para matutunan ang Safe Card, pumili nang pribado, at isumite ang application kapag handa ka.",
     primaryCta: "Simulan ang pribadong walkthrough", secondaryCta: "Basahin ang mga benepisyo",
@@ -18,7 +18,7 @@ export const copy = {
     processTitle: "Isang proseso na inuuna ang iyong kontrol", footerNote: "School-project pilot. Hindi ito opisyal na PRC enrollment portal.",
   },
   en: {
-    navBenefits: "Benefits", navProcess: "How it works", memberLogin: "Member login", ambassadorLogin: "Ambassador", adminLogin: "Admin",
+    navBenefits: "Benefits", navProcess: "How it works", memberLogin: "Member login", adminLogin: "Admin",
     badge: "Controlled pilot · content for validation", heroTitle: "Understand first. Decide for yourself.",
     heroBody: "A consent-first way to learn about Safe Card, decide privately, and submit an application only when you are ready.",
     primaryCta: "Start the private walkthrough", secondaryCta: "Read the benefits",

@@ -7,10 +7,8 @@ import { readJson } from "@/components/admin/use-async-load";
 
 const roles = [
   "support_agent",
-  "finance_export",
   "content_approver",
   "school_admin",
-  "prc_liaison",
   "privacy_admin_owner",
 ] as const;
 

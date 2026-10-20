@@ -62,13 +62,11 @@ Use the smallest campaign-scoped role that supports each duty:
 | Pilot duty | Role |
 |---|---|
 | Accountable administrator and user management | `privacy_admin_owner` |
-| Application review | `school_admin` |
-| Payment review | `finance_export` |
+| Application review, including payment-proof verification | `school_admin` (or `privacy_admin_owner`) |
 | Read-only contact support | `support_agent` |
-| PRC handoff and acknowledgement | `prc_liaison` |
 | Content-only work | `content_approver` |
 
-Require an actual AAL2 session for export-capable staff. Confirm login and logout events appear in the audit timeline. Review every role with a separate test account before admitting applicants.
+Confirm login and logout events appear in the audit timeline. Review every role with a separate test account before admitting applicants.
 
 ## Activation check
 
@@ -78,9 +76,9 @@ Before activating the campaign:
 2. Confirm the private bucket accepts JPEG, PNG, WebP, and PDF up to 10 MiB; unsigned object access must fail.
 3. Confirm a signed URL for `official/gcash-qr.webp` returns the expected asset.
 4. Review the pinned campaign, approved fields, PHP 1,200 fee, payment routes, stop conditions, and bilingual content in the admin console.
-5. Provision and test the required campaign roles, including one administrator, one application reviewer, one payment reviewer, one support/read-only user, and one PRC liaison.
-6. Run one isolated real applicant journey with explicit consent: resume, submit, open payment, report date/amount/reference, upload an image or PDF receipt, review evidence, verify payment, and inspect member status. Use an authorized pilot participant; do not create fake production applicants.
-7. Confirm payment verification does not activate membership. Confirm only a PRC acceptance with official evidence changes membership to `active_confirmed` and exposes the electronic card.
+5. Provision and test the required campaign roles, including one administrator, one application reviewer, and one support/read-only user.
+6. Run one isolated real applicant journey with explicit consent: resume, submit, open payment, report date/amount/reference, upload an image or PDF receipt, review the proof, approve with payment verification, and inspect member status and the approved card. Use an authorized pilot participant; do not create fake production applicants.
+7. Confirm the approved card appears for the member only after the administrator has approved the application with the payment proof.
 8. Check Vercel and Supabase logs for errors and confirm no secrets, receipt URLs, or unnecessary personal fields appear.
 
 Activate the campaign only after those checks pass. Keep external notifications disabled; users receive status through the member portal until a provider and consented delivery workflow are separately approved.

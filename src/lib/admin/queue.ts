@@ -1,7 +1,7 @@
 /**
  * Submission queue filtering, sorting and pagination
  *
- * The five workflow states are independent state machines backed by five
+ * The workflow states are independent state machines backed by
  * distinct PostgreSQL enum types. Each filter therefore targets exactly
  * one column with a value drawn from that column's own enum.
  *
@@ -40,16 +40,6 @@ export const PAYMENT_STATES = [
   'verified_by_official_source',
   'failed_or_cancelled',
   'refunded_or_reversed',
-] as const;
-
-export const PRC_HANDOFF_STATES = [
-  'not_ready',
-  'ready_for_export',
-  'exported',
-  'acknowledged',
-  'correction_requested',
-  'accepted',
-  'rejected',
 ] as const;
 
 export const MEMBERSHIP_STATES = [
@@ -103,7 +93,6 @@ export const queueQuerySchema = z.object({
   application_state: z.enum(APPLICATION_STATES).optional(),
   review_bucket: z.enum(REVIEW_BUCKETS).optional(),
   payment_state: z.enum(PAYMENT_STATES).optional(),
-  prc_handoff_state: z.enum(PRC_HANDOFF_STATES).optional(),
   membership_state: z.enum(MEMBERSHIP_STATES).optional(),
   from: z.string().date().optional(),
   to: z.string().date().optional(),

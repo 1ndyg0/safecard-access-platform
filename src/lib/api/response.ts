@@ -98,7 +98,7 @@ export function handleApiError(error: unknown, context: string): NextResponse {
     if (msg.includes('not found') || msg.includes('Not found')) {
       return notFound(msg);
     }
-    if (msg.includes('Permission denied') || msg.includes('MFA')) {
+    if (msg.includes('Permission denied')) {
       return forbidden(msg);
     }
     if (msg.includes('consent must be') || msg.includes('application must be')) {

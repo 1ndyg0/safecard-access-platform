@@ -28,7 +28,7 @@ export async function GET() {
     const { data, error } = await admin
       .from('recipient_cases')
       .select(
-        'application_ref, application_state, application_review_state, payment_state, prc_handoff_state, membership_state, updated_at',
+        'application_ref, application_state, application_review_state, payment_state, membership_state, updated_at',
       )
       .eq('id', caseId)
       .maybeSingle();
@@ -44,23 +44,13 @@ export async function GET() {
       .limit(1)
       .maybeSingle();
 
-    const [{ data: paymentIntent }, { data: prcCorrection }] = await Promise.all([
-      admin
+    const { data: paymentIntent } = await admin
       .from('payment_intents')
       .select('id,state')
       .eq('case_id', caseId)
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle(),
-      admin
-        .from('prc_export_items')
-        .select('correction_reason,prc_responded_at')
-        .eq('case_id', caseId)
-        .eq('prc_status', 'correction_requested')
-        .order('prc_responded_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
+      .maybeSingle();
     const { data: evidence } = paymentIntent
       ? await admin
           .from('payment_evidence_versions')
@@ -83,17 +73,13 @@ export async function GET() {
           application_state: data.application_state,
           application_review_state: data.application_review_state,
           payment_state: data.payment_state,
-          prc_handoff_state: data.prc_handoff_state,
           membership_state: data.membership_state,
           updated_at: data.updated_at,
         },
         review: {
           state: data.application_review_state,
           // Applicant-safe text written by the reviewer.
-          reason:
-            data.prc_handoff_state === 'correction_requested'
-              ? prcCorrection?.correction_reason ?? decision?.reason ?? null
-              : decision?.reason ?? null,
+          reason: decision?.reason ?? null,
           decidedAt: decision?.decided_at ?? null,
           correctionRequested: data.application_review_state === 'resubmission_requested',
           rejected: data.application_review_state === 'rejected',

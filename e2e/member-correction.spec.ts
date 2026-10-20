@@ -24,7 +24,7 @@ function correction(overrides: Record<string, unknown> = {}) {
 }
 
 test.describe('member status', () => {
-  test('shows all six things separately', async ({ page }) => {
+  test('shows the application, review and payment separately', async ({ page }) => {
     await signInMember(page, world.cases.correctionRequested);
     const response = await page.request.get('/api/member/status');
     expect(response.status()).toBe(200);
@@ -34,7 +34,6 @@ test.describe('member status', () => {
     expect(body.states.application_state).toBe('correction_needed');
     expect(body.states.application_review_state).toBe('resubmission_requested');
     expect(body.states.payment_state).toBeTruthy();
-    expect(body.states.prc_handoff_state).toBeTruthy();
     expect(body.states.membership_state).toBe('not_active');
     expect(body.review.reason).toContain('birth date');
   });
@@ -134,14 +133,13 @@ test.describe('corrections', () => {
 
     const { data: caseRow } = await world.admin
       .from('recipient_cases')
-      .select('application_state,application_review_state,payment_state,prc_handoff_state,membership_state')
+      .select('application_state,application_review_state,payment_state,membership_state')
       .eq('id', world.cases.correctionRequested.id)
       .single();
     expect(caseRow?.application_state).toBe('resubmitted');
     expect(caseRow?.application_review_state).toBe('pending');
     // Untouched by a correction.
     expect(caseRow?.payment_state).toBe('not_started');
-    expect(caseRow?.prc_handoff_state).toBe('not_ready');
     expect(caseRow?.membership_state).toBe('not_active');
   });
 

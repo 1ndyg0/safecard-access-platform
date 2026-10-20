@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       marked: true,
       message: 'Payment marked as paid. Verification is pending.',
       message_tl: 'Na-mark na bilang bayad. Naghihintay pa ng verification.',
-      warning: 'Your membership is not yet active. PRC must confirm it.',
+      warning: 'Your payment is verified by an administrator when your application is approved.',
     });
   } catch (error) {
     return handleApiError(error, 'Mark payment paid');

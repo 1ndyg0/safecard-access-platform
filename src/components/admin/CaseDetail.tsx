@@ -8,16 +8,14 @@
  * selected, so a role that cannot see an address does not receive one.
  * Nothing here is hidden with CSS.
  *
- * Application review decisions are displayed but not committed here:
- * approve, request resubmission and reject belong to the
- * application-review module, which owns those states.
+ * Approving an application also verifies the payment proof shown with it;
+ * there is no separate payment-verification screen.
  */
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/admin/AdminShell";
-import { PaymentActions } from "@/components/admin/PaymentActions";
 import { AuditTimeline } from "@/components/admin/AuditTimeline";
 import { ReviewPanel, type PendingPayment, type ProofRef } from "@/components/admin/ReviewPanel";
 import { readJson, useAsyncLoad } from "@/components/admin/use-async-load";
@@ -70,7 +68,6 @@ const STATE_KEYS = [
   ["application_state", "Application"],
   ["application_review_state", "Application review"],
   ["payment_state", "Payment"],
-  ["prc_handoff_state", "PRC handoff"],
   ["membership_state", "Membership"],
 ] as const;
 
@@ -175,8 +172,8 @@ export function CaseDetail({ id }: { id: string }) {
             ))}
           </div>
           <p className="muted-note">
-            These advance independently. A verified payment is not an approved application,
-            and neither one activates membership.
+            These advance independently. Approving an application verifies the payment proof
+            shown with it in the same action.
           </p>
 
           <section className="admin-panel stack">
@@ -229,22 +226,6 @@ export function CaseDetail({ id }: { id: string }) {
                         {payment.currency}
                       </span>
                     </div>
-                    {data.capabilities.canActOnPayments && payment.payment_state !== "verification_pending" && (
-                      <p className="muted-note">
-                        {payment.payment_state === "verified_by_official_source"
-                          ? "Payment verified. Nothing more to verify."
-                          : "No payment action is available in this state."}
-                      </p>
-                    )}
-                    {data.capabilities.canActOnPayments && payment.payment_state === "verification_pending" && (
-                      <PaymentActions
-                        caseId={id}
-                        paymentIntentId={payment.id}
-                        paymentState={payment.payment_state}
-                        evidence={payment.evidence ?? []}
-                        onCompleted={() => setReloadToken((value) => value + 1)}
-                      />
-                    )}
                   </article>
                 ))
               )}

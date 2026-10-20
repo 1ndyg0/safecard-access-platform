@@ -10,7 +10,6 @@
     "start_date": "2026-09-12",
     "end_date": "2026-12-31",
     "max_applications": 50,
-    "max_sponsors": 30,
     "membership_fee": 1200,
     "approved_fields": ["first_name", "middle_name", "last_name", "date_of_birth", "sex", "civil_status", "address_line1", "address_line2", "city", "province", "zip_code", "mobile_number", "email"],
     "approved_payment_routes": [

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     const admin = getSupabaseAdminClient();
     const { data: caseRecord } = await admin.from('recipient_cases').select('id,campaign_id,application_state').eq('id', id).single();
     if (!caseRecord) return NextResponse.json({ error: 'Case not found.' }, { status: 404 });
-    const access = await requireAnyRole(auth.userId, ['privacy_admin_owner', 'school_admin', 'prc_liaison'], caseRecord.campaign_id);
+    const access = await requireAnyRole(auth.userId, ['privacy_admin_owner', 'school_admin'], caseRecord.campaign_id);
     if (!access.allowed) return NextResponse.json({ error: access.reason }, { status: 403 });
     validateApplicationTransition(caseRecord.application_state, 'correction_needed');
     const { data: submission } = await admin.from('application_submissions').select('id').eq('case_id', id).eq('is_current', true).maybeSingle();

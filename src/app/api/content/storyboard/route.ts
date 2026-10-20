@@ -7,7 +7,7 @@
  * has safe, version-controlled fallback content, so returning 500 would
  * hide a working page behind an infrastructure problem the visitor can
  * do nothing about. The response says which content it is, and the UI
- * shows that to the ambassador.
+ * shows that to the visitor.
  */
 
 import { NextResponse } from 'next/server';

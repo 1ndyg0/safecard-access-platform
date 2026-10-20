@@ -34,7 +34,7 @@ test.describe('accessibility', () => {
   });
 
   test('case detail has no serious or critical violations', async ({ page }) => {
-    await signIn(page, world.staff.finance);
+    await signIn(page, world.staff.privacyAdmin);
     await page.goto(`/admin/submissions/${world.cases.approvedUnverifiedPayment}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     expect(await scan(page)).toEqual([]);
@@ -50,7 +50,6 @@ test.describe('accessibility', () => {
       'Application',
       'Application review',
       'Payment',
-      'PRC handoff',
       'Membership',
       'Sort',
     ]) {
