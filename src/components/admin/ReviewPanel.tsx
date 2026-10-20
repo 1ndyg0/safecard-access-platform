@@ -27,14 +27,19 @@ const DECISION_LABELS: Record<Decision, string> = {
 
 const REASON_REQUIRED: Decision[] = ["resubmission_requested", "rejected"];
 
+/** A pending payment proof the signed-in reviewer may verify together with the approval. */
+export type PendingPayment = { intentId: string; paymentState: string; evidenceId: string };
+
 export function ReviewPanel({
   caseId,
   reviewState,
   onDecided,
+  pendingPayment,
 }: {
   caseId: string;
   reviewState: string;
   onDecided: () => void;
+  pendingPayment?: PendingPayment;
 }) {
   const baseId = useId();
   const [decision, setDecision] = useState<Decision | null>(null);
@@ -58,27 +63,45 @@ export function ReviewPanel({
     keyRef.current = newIdempotencyKey(caseId);
   }
 
+  // Approving together with the payment proof the reviewer is looking at.
+  const withPayment = decision === "approved" && Boolean(pendingPayment);
+
   async function commit() {
     if (!decision) return;
     setBusy(true);
     setMessage("");
     setFailed(false);
     try {
-      const response = await fetch(`/api/admin/cases/${caseId}/review`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          decision,
-          confirm: true,
-          reason: needsReason ? reason.trim() : undefined,
-          expected_review_state: reviewState,
-          idempotency_key: keyRef.current,
-        }),
-      });
+      const response = withPayment && pendingPayment
+        ? await fetch(`/api/admin/cases/${caseId}/approve-with-payment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              confirm: true,
+              expected_review_state: reviewState,
+              payment_intent_id: pendingPayment.intentId,
+              evidence_id: pendingPayment.evidenceId,
+              expected_payment_state: pendingPayment.paymentState,
+              idempotency_key: keyRef.current,
+            }),
+          })
+        : await fetch(`/api/admin/cases/${caseId}/review`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              decision,
+              confirm: true,
+              reason: needsReason ? reason.trim() : undefined,
+              expected_review_state: reviewState,
+              idempotency_key: keyRef.current,
+            }),
+          });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? "The decision could not be recorded.");
       setMessage(
-        "Decision recorded. Payment, PRC handoff and membership are unchanged — only PRC confirmation can activate membership.",
+        withPayment
+          ? "Application approved and payment verified. The member can now sign in and see their approved SafeCard."
+          : "Decision recorded. Payment, PRC handoff and membership are unchanged — only PRC confirmation can activate membership.",
       );
       setDecision(null);
       setConfirmed(false);
@@ -119,7 +142,7 @@ export function ReviewPanel({
               className={option === "rejected" ? "button-quiet" : "button-primary"}
               onClick={() => start(option)}
             >
-              {DECISION_LABELS[option]}
+              {option === "approved" && pendingPayment ? "Approve application and verify payment" : DECISION_LABELS[option]}
             </button>
           ))}
         </div>
@@ -132,7 +155,7 @@ export function ReviewPanel({
           }}
         >
           <p>
-            <strong>{DECISION_LABELS[decision]}</strong>
+            <strong>{withPayment ? "Approve application and verify payment" : DECISION_LABELS[decision]}</strong>
           </p>
 
           {needsReason && (
@@ -161,8 +184,9 @@ export function ReviewPanel({
               onChange={(event) => setConfirmed(event.target.checked)}
             />
             <label htmlFor={`${baseId}-confirm`}>
-              I confirm this decision. It does not verify payment and does not activate
-              membership.
+              {withPayment
+                ? "I confirm this decision. I reviewed the payment proof below and verify it with this approval. PRC handoff is not required."
+                : "I confirm this decision. It does not verify payment and does not activate membership."}
             </label>
           </div>
 
@@ -172,7 +196,7 @@ export function ReviewPanel({
               className="button-primary"
               disabled={!confirmed || !reasonOk || busy}
             >
-              {busy ? "Recording…" : `Confirm: ${DECISION_LABELS[decision]}`}
+              {busy ? "Recording…" : withPayment ? "Confirm: approve and verify payment" : `Confirm: ${DECISION_LABELS[decision]}`}
             </button>
             <button
               type="button"

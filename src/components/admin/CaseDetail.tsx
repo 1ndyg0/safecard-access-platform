@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { PaymentActions } from "@/components/admin/PaymentActions";
 import { AuditTimeline } from "@/components/admin/AuditTimeline";
-import { ReviewPanel } from "@/components/admin/ReviewPanel";
+import { ReviewPanel, type PendingPayment } from "@/components/admin/ReviewPanel";
 import { readJson, useAsyncLoad } from "@/components/admin/use-async-load";
 
 type Payment = {
@@ -90,6 +90,22 @@ const FIELD_LABELS: Record<string, string> = {
   fields_completed: "Fields completed",
   updated_at: "Profile updated",
 };
+
+/**
+ * The payment proof this reviewer may verify together with the approval: only when they hold both
+ * the review and payment capabilities, and a proof is waiting for verification.
+ */
+function pendingPaymentFor(data: Detail): PendingPayment | undefined {
+  if (!data.capabilities.canReviewApplication || !data.capabilities.canActOnPayments) return undefined;
+  for (const payment of data.payments) {
+    if (payment.payment_state !== "verification_pending") continue;
+    const latest = [...(payment.evidence ?? [])]
+      .filter((item) => !item.is_verified)
+      .sort((a, b) => b.version_number - a.version_number)[0];
+    if (latest) return { intentId: payment.id, paymentState: payment.payment_state, evidenceId: latest.id };
+  }
+  return undefined;
+}
 
 export function CaseDetail({ id }: { id: string }) {
   const router = useRouter();
@@ -182,6 +198,7 @@ export function CaseDetail({ id }: { id: string }) {
               )}
               <ReviewPanel
                 caseId={id}
+                pendingPayment={pendingPaymentFor(data)}
                 reviewState={data.case.application_review_state ?? "pending"}
                 onDecided={() => setReloadToken((value) => value + 1)}
               />
