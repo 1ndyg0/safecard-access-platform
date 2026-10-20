@@ -18,7 +18,7 @@ export async function signIn(page: Page, staff: SeededStaff): Promise<void> {
   await page.waitForURL(/\/admin(\?.*)?$/);
 }
 
-export async function signInAndOpenQueue(
+export async function signInAndOpenApplications(
   page: Page,
   staff: SeededStaff,
   campaignId: string,
@@ -26,12 +26,14 @@ export async function signInAndOpenQueue(
 ): Promise<void> {
   await signIn(page, staff);
   const suffix = query ? `&${query}` : '';
-  await page.goto(`/admin/submissions?campaign_id=${campaignId}${suffix}`);
-  await expect(page.getByRole('heading', { name: 'Submissions' })).toBeVisible();
+  await page.goto(`/admin/applications?campaign_id=${campaignId}${suffix}`);
+  await expect(page.getByRole('heading', { name: 'Applications', level: 1 })).toBeVisible();
 }
 
-/** Read the reference column of the queue, in displayed order. */
-export async function queueReferences(page: Page): Promise<string[]> {
-  await expect(page.locator('table.admin-table tbody tr').first()).toBeVisible();
-  return page.locator('table.admin-table tbody tr td:first-child a').allInnerTexts();
+/** Application references in the list, in displayed order. */
+export async function listedReferences(page: Page): Promise<string[]> {
+  await expect(page.getByTestId('application-row').first()).toBeVisible();
+  return page
+    .getByTestId('application-row')
+    .evaluateAll((rows) => rows.map((row) => row.getAttribute('data-ref') ?? ''));
 }

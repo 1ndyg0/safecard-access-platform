@@ -53,7 +53,7 @@ test('the status screen becomes readable quickly on a phone', async ({ page }) =
   expect(Date.now() - start).toBeLessThan(BUDGET_MS * 2);
 });
 
-test('a review decision stays within budget with a populated audit ledger', async ({ page }) => {
+test('a rejection stays within budget with a populated audit ledger', async ({ page }) => {
   const rows = Array.from({ length: 1_000 }, () => ({
     event_type: 'staff_access', actor_id: world.reviewer.userId, actor_type: 'user',
     action: 'Synthetic performance fixture', case_id: world.cases.pendingReview.id,
@@ -61,11 +61,16 @@ test('a review decision stays within budget with a populated audit ledger', asyn
   }));
   const inserted = await world.admin.from('audit_events').insert(rows);
   expect(inserted.error).toBeNull();
+  // The administrator only sees complete applications, so make this one complete first.
+  const prepared = await world.admin.from('recipient_cases')
+    .update({ application_state: 'submitted', payment_state: 'verification_pending' })
+    .eq('id', world.cases.pendingReview.id);
+  expect(prepared.error).toBeNull();
   await signInStaff(page, world.reviewer);
-  const { result, ms } = await timed(() => page.request.post(`/api/admin/cases/${world.cases.pendingReview.id}/review`, {
-    data: { decision: 'approved', confirm: true, expected_review_state: 'pending', idempotency_key: 'synthetic-ledger-performance' },
+  const { result, ms } = await timed(() => page.request.post(`/api/admin/cases/${world.cases.pendingReview.id}/reject`, {
+    data: { confirm: true, reason: 'Synthetic ledger performance rejection.', idempotency_key: 'synthetic-ledger-performance' },
   }));
   expect(result.status()).toBe(200);
-  expect((await result.json()).reviewState).toBe('approved');
+  expect((await result.json()).status).toBe('rejected');
   expect(ms).toBeLessThan(BUDGET_MS);
 });

@@ -19,7 +19,6 @@ import { BENEFIT_IDS, STORYBOARD_LOCALES } from './schema';
 export const STORYBOARD_EVENT_NAMES = [
   'benefit_opened',
   'benefit_closed',
-  'story_completed',
   'hotline_action_selected',
 ] as const;
 

@@ -16,8 +16,8 @@ export type BenefitStoryboard = {
 };
 
 /**
- * Version-controlled synthetic fallback content. Production copy must be
- * sourced from approved `content_versions` rows before live collection.
+ * Version-controlled benefit content. The published copy is served from approved
+ * `content_versions` rows; this is the source those rows are seeded from.
  */
 export const benefitStoryboards: BenefitStoryboard[] = [
   {
@@ -31,7 +31,7 @@ export const benefitStoryboards: BenefitStoryboard[] = [
         action: 'Tumawag sa 143, ibigay ang lokasyon, at sundin ang instructions ng PRC. Kung ligtas, humingi rin ng tulong sa taong malapit.',
         mayProvide: 'Maaaring tumulong ang PRC sa emergency response ayon sa availability, eligibility, at opisyal na tuntunin.',
         cost: 'Walang ipinapangakong halaga o response time sa halimbawang ito. Ang anumang personal na gastos ay dapat linawin sa PRC.',
-        disclaimer: 'Halimbawa lamang ito. Hindi nito ginagarantiya ang eligibility, response time, assistance amount, o claim outcome.',
+        disclaimer: 'Halimbawang sitwasyon lamang ito. Hindi nito ginagarantiya ang eligibility, response time, assistance amount, o claim outcome.',
       },
       en: {
         persona: 'Maria, 38, a household worker',
@@ -39,7 +39,7 @@ export const benefitStoryboards: BenefitStoryboard[] = [
         action: 'Call 143, share the location, and follow PRC instructions. If it is safe, also ask someone nearby for help.',
         mayProvide: 'PRC may assist with emergency response subject to availability, eligibility, and official rules.',
         cost: 'This example promises no amount or response time. Ask PRC about any personal costs.',
-        disclaimer: 'Illustrative only. It does not guarantee eligibility, response time, assistance amount, or claim outcome.',
+        disclaimer: 'This is a sample scenario. It does not guarantee eligibility, response time, assistance amount, or claim outcome.',
       },
     },
   },
@@ -54,7 +54,7 @@ export const benefitStoryboards: BenefitStoryboard[] = [
         action: 'Makipag-ugnayan sa PRC blood service o Hotline 143 at itanong ang requirements, blood type availability, at proseso.',
         mayProvide: 'Maaaring magbigay ng blood-service assistance ayon sa supply, eligibility, documentation, at opisyal na proseso.',
         cost: 'Hindi nagbibigay ang halimbawang ito ng eksaktong halaga o guarantee ng blood availability.',
-        disclaimer: 'Halimbawa lamang ito. Hindi nito ginagarantiya ang eligibility, availability, amount, o claim outcome.',
+        disclaimer: 'Halimbawang sitwasyon lamang ito. Hindi nito ginagarantiya ang eligibility, availability, amount, o claim outcome.',
       },
       en: {
         persona: 'Joel, 27, a delivery rider',
@@ -62,7 +62,7 @@ export const benefitStoryboards: BenefitStoryboard[] = [
         action: 'Contact PRC blood services or Hotline 143 to ask about requirements, availability, and next steps.',
         mayProvide: 'PRC may provide blood-service assistance subject to supply, eligibility, documentation, and official process.',
         cost: 'This example does not state an exact amount or guarantee blood availability.',
-        disclaimer: 'Illustrative only. It does not guarantee eligibility, availability, amount, or claim outcome.',
+        disclaimer: 'This is a sample scenario. It does not guarantee eligibility, availability, amount, or claim outcome.',
       },
     },
   },
@@ -77,7 +77,7 @@ export const benefitStoryboards: BenefitStoryboard[] = [
         action: 'Itanong sa PRC ang eligibility, documents, deadlines, at kung paano isumite ang claim. Huwag umasa sa platform para magdesisyon ng claim.',
         mayProvide: 'Maaaring may assistance kung kwalipikado ayon sa PRC terms; PRC lamang ang magpapasya.',
         cost: 'Walang ipinapangakong allowance amount sa halimbawang ito.',
-        disclaimer: 'Halimbawa lamang ito. Hindi nito ginagarantiya ang eligibility, approval, benefit amount, o claim outcome.',
+        disclaimer: 'Halimbawang sitwasyon lamang ito. Hindi nito ginagarantiya ang eligibility, approval, benefit amount, o claim outcome.',
       },
       en: {
         persona: 'Liza, 45, a market vendor',
@@ -85,7 +85,7 @@ export const benefitStoryboards: BenefitStoryboard[] = [
         action: 'Ask PRC about eligibility, documents, deadlines, and claim submission. The platform never decides a claim.',
         mayProvide: 'Assistance may be available when the situation qualifies under PRC terms; PRC decides.',
         cost: 'This example promises no allowance amount.',
-        disclaimer: 'Illustrative only. It does not guarantee eligibility, approval, benefit amount, or claim outcome.',
+        disclaimer: 'This is a sample scenario. It does not guarantee eligibility, approval, benefit amount, or claim outcome.',
       },
     },
   },
@@ -99,16 +99,16 @@ export const benefitStoryboards: BenefitStoryboard[] = [
         situation: 'May tanong si Ana kung sakop ang isang kondisyon o event na hindi malinaw sa maikling guide.',
         action: 'Huwag manghula. Basahin ang published PRC terms o tumawag sa 143 bago magbayad o magsumite.',
         mayProvide: 'Ang PRC lamang ang makakapagkumpirma ng exclusions, eligibility, at claim outcome.',
-        cost: 'Hindi naglilista ang provisional example na ito ng unsupported amount o promise.',
-        disclaimer: 'Halimbawa lamang ito. Hindi nito pinapalitan ang approved PRC terms o claims decision.',
+        cost: 'Walang nakalistang halaga o pangako sa halimbawang ito.',
+        disclaimer: 'Halimbawang sitwasyon lamang ito. Hindi nito pinapalitan ang mga tuntunin ng PRC o ang desisyon sa claim.',
       },
       en: {
         persona: 'Ana, a prospective member',
         situation: 'Ana is unsure whether a condition or event is covered by a short guide.',
         action: 'Do not guess. Read the published PRC terms or call 143 before paying or submitting.',
         mayProvide: 'Only PRC can confirm exclusions, eligibility, and claim outcomes.',
-        cost: 'This provisional example does not list an unsupported amount or promise.',
-        disclaimer: 'Illustrative only. It does not replace approved PRC terms or a claims decision.',
+        cost: 'This example does not list an amount or make a promise.',
+        disclaimer: 'This is a sample scenario. It does not replace PRC terms or a claims decision.',
       },
     },
   },

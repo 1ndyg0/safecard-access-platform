@@ -20,35 +20,12 @@ async function useLocale(page: Page, locale: 'fil' | 'en') {
   );
 }
 
-function header(page: Page, id: string) {
-  return page.locator(`#storyboard-header-${id}`);
+function tab(page: Page, id: string) {
+  return page.locator(`#storyboard-tab-${id}`);
 }
 
 function panel(page: Page, id: string) {
   return page.locator(`#storyboard-panel-${id}`);
-}
-
-/**
- * Wait for the open panel's entry transition to finish.
- *
- * The shell animates opacity, so scanning mid-transition reports every
- * line of text as a contrast failure — semi-transparent text genuinely
- * does fail, it just is not the state a reader ever sits in.
- */
-async function settleOpenPanel(page: Page) {
-  await page
-    .locator('.story-panel-shell.open')
-    .first()
-    .evaluate(
-      (node) =>
-        new Promise<void>((resolve) => {
-          const check = () => {
-            if (parseFloat(getComputedStyle(node).opacity) >= 1) resolve();
-            else requestAnimationFrame(check);
-          };
-          check();
-        }),
-    );
 }
 
 async function openBenefits(page: Page) {
@@ -70,128 +47,118 @@ async function openBenefits(page: Page) {
   });
 }
 
-test.describe('benefit storyboard', () => {
-  test('renders all four benefits, collapsed', async ({ page }) => {
+/** The panel fades in; scanning mid-animation reports semi-transparent text as a contrast failure. */
+async function settlePanel(page: Page) {
+  await page.locator('.benefit-panel:not([hidden])').evaluate(
+    (node) =>
+      new Promise<void>((resolve) => {
+        const check = () => {
+          if (node.getAnimations().every((animation) => animation.playState === 'finished')) resolve();
+          else requestAnimationFrame(check);
+        };
+        check();
+      }),
+  );
+}
+
+test.describe('benefit guide', () => {
+  test('lists all four benefits as tabs with the first one selected', async ({ page }) => {
     await openBenefits(page);
     for (const id of BENEFITS) {
-      await expect(header(page, id)).toBeVisible();
-      await expect(header(page, id)).toHaveAttribute('aria-expanded', 'false');
-      await expect(panel(page, id)).toBeHidden();
+      await expect(tab(page, id)).toBeVisible();
+      expect(await tab(page, id).evaluate((node) => node.tagName)).toBe('BUTTON');
+      await expect(tab(page, id)).toHaveAttribute('role', 'tab');
+      await expect(tab(page, id)).toHaveAttribute('aria-controls', `storyboard-panel-${id}`);
     }
+    await expect(tab(page, 'ambulance')).toHaveAttribute('aria-selected', 'true');
+    await expect(panel(page, 'ambulance')).toBeVisible();
   });
 
-  test('every header is a real button', async ({ page }) => {
+  test('shows exactly one benefit at a time', async ({ page }) => {
     await openBenefits(page);
+    await tab(page, 'blood').click();
+    await expect(panel(page, 'blood')).toBeVisible();
+    await expect(panel(page, 'ambulance')).toBeHidden();
+    await expect(tab(page, 'ambulance')).toHaveAttribute('aria-selected', 'false');
+    await expect(page.locator('.benefit-panel:not([hidden])')).toHaveCount(1);
+  });
+
+  test('arrow keys, Home and End move between benefits', async ({ page }) => {
+    await openBenefits(page);
+    await tab(page, 'ambulance').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(tab(page, 'blood')).toBeFocused();
+    await expect(tab(page, 'blood')).toHaveAttribute('aria-selected', 'true');
+    await page.keyboard.press('End');
+    await expect(tab(page, 'exclusions')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(tab(page, 'ambulance')).toBeFocused();
+    await page.keyboard.press('ArrowUp');
+    await expect(tab(page, 'exclusions')).toBeFocused();
+    await page.keyboard.press('Home');
+    await expect(tab(page, 'ambulance')).toBeFocused();
+  });
+
+  test('only the selected tab is in the tab order, and hidden panels hold no focusable control', async ({ page }) => {
+    await openBenefits(page);
+    await tab(page, 'hospital').click();
     for (const id of BENEFITS) {
-      expect(await header(page, id).evaluate((node) => node.tagName)).toBe('BUTTON');
-      await expect(header(page, id)).toHaveAttribute('aria-controls', `storyboard-panel-${id}`);
+      await expect(tab(page, id)).toHaveAttribute('tabindex', id === 'hospital' ? '0' : '-1');
     }
-  });
-
-  test('opens on click, Enter and Space', async ({ page }) => {
-    await openBenefits(page);
-
-    await header(page, 'ambulance').click();
-    await expect(panel(page, 'ambulance')).toBeVisible();
-    await header(page, 'ambulance').click();
-    await expect(panel(page, 'ambulance')).toBeHidden();
-
-    await header(page, 'blood').focus();
-    await page.keyboard.press('Enter');
-    await expect(panel(page, 'blood')).toBeVisible();
-    await page.keyboard.press('Enter');
-    await expect(panel(page, 'blood')).toBeHidden();
-
-    await header(page, 'exclusions').focus();
-    await page.keyboard.press('Space');
-    await expect(panel(page, 'exclusions')).toBeVisible();
-  });
-
-  test('only one scenario is open at a time', async ({ page }) => {
-    await openBenefits(page);
-    await header(page, 'ambulance').click();
-    await expect(panel(page, 'ambulance')).toBeVisible();
-
-    await header(page, 'blood').click();
-    await expect(panel(page, 'blood')).toBeVisible();
-    await expect(panel(page, 'ambulance')).toBeHidden();
-    await expect(header(page, 'ambulance')).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  test('a closed panel holds no keyboard-focusable control', async ({ page }) => {
-    await openBenefits(page);
-    await header(page, 'ambulance').click();
-    await expect(panel(page, 'ambulance')).toBeVisible();
-
-    // Safari's automation environment does not emulate the macOS "Tab to
-    // highlight every control" preference. Assert the platform semantics
-    // directly in every browser, then prove an open control accepts focus.
-    const closedControls = page.locator('.story-panel-shell:not(.open) a, .story-panel-shell:not(.open) button');
-    const count = await closedControls.count();
-    for (let index = 0; index < count; index += 1) {
-      await expect(closedControls.nth(index)).toHaveAttribute('tabindex', '-1');
-    }
+    // `hidden` panels are display:none, so nothing inside them can take focus.
     await expect
-      .poll(() => page.locator('.story-panel-shell:not(.open)').evaluateAll((panels) =>
-        panels.every((item) => getComputedStyle(item).visibility === 'hidden'),
+      .poll(() => page.locator('.benefit-panel[hidden]').evaluateAll((panels) =>
+        panels.every((item) => getComputedStyle(item).display === 'none'),
       ))
       .toBe(true);
-
-    const openAction = panel(page, 'ambulance').getByRole('link', { name: /143/ });
-    await openAction.focus();
-    await expect(openAction).toBeFocused();
   });
 
-  test('each scenario carries persona, situation, action, PRC role and a disclaimer', async ({
-    page,
-  }) => {
+  test('each benefit carries persona, situation, action, PRC role, a disclaimer and an illustration', async ({ page }) => {
     await useLocale(page, 'en');
     await openBenefits(page);
 
     for (const id of BENEFITS) {
-      await header(page, id).click();
+      await tab(page, id).click();
       const open = panel(page, id);
-      // Wait for the accordion transition to settle before asserting visibility.
-      // WebKit is fast enough to register the click and slow enough to still be
-      // running the previous panel's fade-out — expecting toBeVisible() during
-      // that overlap flakes on webkit / mobile-safari.
-      await expect(open).toHaveClass(/open/);
-      await settleOpenPanel(page);
       await expect(open).toBeVisible();
-      await expect(open.locator('.story-persona')).not.toBeEmpty();
+      await expect(open.locator('.benefit-persona strong')).not.toBeEmpty();
       await expect(open).toContainText('Situation');
       await expect(open).toContainText('What to do');
       await expect(open).toContainText('What PRC may provide');
-      await expect(open.locator('.story-disclaimer')).toContainText(/illustrative/i);
-      await expect(open.getByRole('link', { name: /143/ })).toBeVisible();
+      await expect(open.locator('.benefit-disclaimer')).toContainText(/sample scenario/i);
+      const art = open.locator('.benefit-art svg');
+      await expect(art).toHaveAttribute('aria-hidden', 'true');
     }
   });
 
-  test('marks a scenario read and shows completion', async ({ page }) => {
+  test('has no read tracking and no call button inside the benefits', async ({ page }) => {
+    await openBenefits(page);
+    await expect(page.getByRole('button', { name: /mark as read/i })).toHaveCount(0);
+    await expect(page.locator('.storyboard-progress')).toHaveCount(0);
+    await expect(page.locator('.benefit-storyboard').getByRole('link', { name: /call .*143/i })).toHaveCount(0);
+    // The hotline lives in the one help area below the guide.
+    await expect(page.locator('#help').getByRole('link', { name: /143/ }).first()).toHaveAttribute('href', 'tel:143');
+  });
+
+  test('does not clip the first line of a scenario', async ({ page }) => {
     await useLocale(page, 'en');
     await openBenefits(page);
-    await expect(page.locator('.storyboard-progress')).toContainText('0/4');
-
-    await header(page, 'ambulance').click();
-    await settleOpenPanel(page);
-    await panel(page, 'ambulance').getByRole('button', { name: /mark as read/i }).click();
-    await expect(page.locator('.storyboard-progress')).toContainText('1/4');
-    await expect(page.locator('.story-card.read')).toHaveCount(1);
+    const persona = panel(page, 'ambulance').locator('.benefit-persona strong');
+    const clipped = await persona.evaluate((node) => {
+      const box = node.getBoundingClientRect();
+      const parent = node.closest('.benefit-panel')!.getBoundingClientRect();
+      return box.top < parent.top;
+    });
+    expect(clipped).toBe(false);
   });
 
-  test('offers a hotline call action', async ({ page }) => {
+  test('states that examples are not a guarantee', async ({ page }) => {
     await openBenefits(page);
-    await header(page, 'ambulance').click();
-    const link = panel(page, 'ambulance').getByRole('link', { name: /143/ });
-    await expect(link).toHaveAttribute('href', 'tel:143');
-  });
-
-  test('says whether the content is approved or provisional', async ({ page }) => {
-    await openBenefits(page);
-    const provenance = page.locator('.benefit-storyboard .content-footnote');
-    await expect(provenance).toBeVisible();
-    // Without a published registry entry, it must not claim approval.
-    await expect(provenance).toHaveAttribute('data-provenance', 'provisional');
+    const note = page.locator('.benefit-storyboard .content-footnote');
+    await expect(note).toBeVisible();
+    // Without a published registry entry, the content must not claim approval.
+    await expect(note).toHaveAttribute('data-provenance', 'provisional');
+    await expect(note).not.toContainText(/pilot|provisional|validation/i);
   });
 
   for (const locale of ['fil', 'en'] as const) {
@@ -199,26 +166,16 @@ test.describe('benefit storyboard', () => {
       await useLocale(page, locale);
       await openBenefits(page);
       for (const id of BENEFITS) {
-        await header(page, id).click();
-        // See the note above the sibling loop: on webkit a rapid click can
-        // race the previous panel's closing transition; waiting for the .open
-        // class before the visibility assertion removes the flake.
-        await expect(panel(page, id)).toHaveClass(/open/);
-        await settleOpenPanel(page);
+        await tab(page, id).click();
         await expect(panel(page, id)).toBeVisible();
-        // Opening a card moves every header below it for 340 ms. In mobile
-        // WebKit, clicking the next moving header can land on its old position
-        // even though Playwright has already observed this panel as visible.
-        await settleOpenPanel(page);
-        await expect(panel(page, id).locator('.story-disclaimer')).not.toBeEmpty();
+        await expect(panel(page, id).locator('.benefit-disclaimer')).not.toBeEmpty();
       }
     });
 
     test(`has no serious accessibility violations in ${locale}`, async ({ page }) => {
       await useLocale(page, locale);
       await openBenefits(page);
-      await header(page, 'ambulance').click();
-      await settleOpenPanel(page);
+      await settlePanel(page);
 
       const results = await new AxeBuilder({ page })
         .include('.benefit-storyboard')
@@ -233,6 +190,7 @@ test.describe('benefit storyboard', () => {
 
   test('has no serious or critical page-level accessibility violations', async ({ page }) => {
     await openBenefits(page);
+    await settlePanel(page);
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
       .analyze();
@@ -244,27 +202,20 @@ test.describe('benefit storyboard', () => {
   test('respects reduced motion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await openBenefits(page);
-    await header(page, 'ambulance').click();
+    await tab(page, 'blood').click();
 
-    // The shared rule uses the near-zero idiom (.01ms) rather than 0s,
-    // so transitionend still fires for anything that depends on it.
-    // Assert "effectively instant" rather than an exact string.
+    // The shared rule uses the near-zero idiom (.01ms) rather than 0s.
     const seconds = await page
-      .locator('.story-card.open .story-indicator')
-      .evaluate((node) => parseFloat(getComputedStyle(node).transitionDuration));
+      .locator('.benefit-panel:not([hidden])')
+      .evaluate((node) => parseFloat(getComputedStyle(node).animationDuration));
     expect(seconds).toBeLessThan(0.05);
-
-    const panelSeconds = await page
-      .locator('.story-panel-shell.open')
-      .evaluate((node) => parseFloat(getComputedStyle(node).transitionDuration));
-    expect(panelSeconds).toBeLessThan(0.05);
   });
 
   test('keeps 44px touch targets', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 740 });
     await openBenefits(page);
     for (const id of BENEFITS) {
-      const box = await header(page, id).boundingBox();
+      const box = await tab(page, id).boundingBox();
       expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
     }
   });
@@ -273,7 +224,7 @@ test.describe('benefit storyboard', () => {
     await page.setViewportSize({ width: 320, height: 720 });
     await useLocale(page, 'fil');
     await openBenefits(page);
-    await header(page, 'hospital').click();
+    await tab(page, 'hospital').click();
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -281,10 +232,10 @@ test.describe('benefit storyboard', () => {
     expect(overflow).toBeLessThanOrEqual(1);
   });
 
-  test('keyboard focus stays visible across the headers', async ({ page }) => {
+  test('keyboard focus stays visible across the tabs', async ({ page }) => {
     await openBenefits(page);
     for (const id of BENEFITS) {
-      await header(page, id).focus();
+      await tab(page, id).focus();
       const outline = await page.evaluate(() =>
         document.activeElement ? getComputedStyle(document.activeElement).outlineStyle : null,
       );
@@ -333,6 +284,8 @@ test.describe('analytics collection', () => {
   test('rejects an invalid event name, benefit, locale and duration', async ({ page }) => {
     const invalid = [
       { event_name: 'page_view' },
+      // Read tracking was removed with the "mark as read" control.
+      { event_name: 'story_completed' },
       { benefit_id: 'dental' },
       { locale: 'es' },
       { duration_ms: -5 },

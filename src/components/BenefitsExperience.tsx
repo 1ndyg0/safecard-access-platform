@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRightIcon } from "@/components/icons";
 import { BenefitStoryboard } from "@/components/BenefitStoryboard";
+import { HelpBlock } from "@/components/HelpBlock";
 import { useLocale } from "@/components/LocaleProvider";
 import type { BenefitCard } from "@/lib/storyboard/schema";
 
@@ -9,14 +11,46 @@ export function BenefitsExperience({
   cards,
   provenance,
 }: {
-  cards: BenefitCard[];
+  cards: BenefitCard[] | null;
   provenance: "approved" | "provisional";
 }) {
   const { locale } = useLocale();
-  return <>
-    <div className="notice-panel amber"><strong>{locale === "fil" ? "Mahalagang hangganan" : "Important boundary"}</strong><span>{locale === "fil" ? "Ang bayad ay hindi consent, submission, approval, o membership activation. PRC lamang ang nagkukumpirma." : "Payment is not consent, submission, approval, or membership activation. Only PRC confirms membership."}</span></div>
-    <BenefitStoryboard cards={cards} locale={locale === "en" ? "en" : "fil"} provenance={provenance} />
-    <section className="content-section"><p className="eyebrow">{locale === "fil" ? "Working assumptions ng pilot" : "Working pilot assumptions"}</p><h2>{locale === "fil" ? "Kailangan pa ng pinal na validation." : "Fee and eligibility still require formal validation."}</h2><dl className="review-list"><div><dt>{locale === "fil" ? "Taunang working fee" : "Working annual fee"}</dt><dd>₱1,200</dd></div><div><dt>{locale === "fil" ? "Edad sa working guide" : "Working age range"}</dt><dd>{locale === "fil" ? "3–85 taong gulang" : "3–85 years old"}</dd></div><div><dt>{locale === "fil" ? "Emergency at official questions" : "Emergency and official questions"}</dt><dd>PRC Hotline 143</dd></div></dl><p>{locale === "fil" ? "Synthetic information lamang ito para sa controlled testing. Mananatiling naka-off ang live mode hanggang nasa registry ang approved content." : "These assumptions support controlled design and testing only. Live mode stays disabled until approved content is published in the registry."}</p></section>
-    <div className="wizard-actions"><Link href="/apply" className="button-primary">{locale === "fil" ? "Suriin ang pagkaunawa" : "Check my understanding"} →</Link><Link href="/privacy" className="button-quiet">{locale === "fil" ? "Paunawa sa privacy" : "Privacy notice"}</Link></div>
-  </>;
+  const isFil = locale === "fil";
+  return (
+    <>
+      <header className="page-intro">
+        <p className="eyebrow">{isFil ? "Bago ka magpasya" : "Before you decide"}</p>
+        <h1>{isFil ? "Ano ang maaasahan mo sa SafeCard — at ano ang hindi." : "What to expect from SafeCard, and what not to."}</h1>
+        <p className="content-lede">
+          {isFil
+            ? "Isang malinaw na gabay sa mga benepisyo. Hindi ito kumpletong iskedyul ng benepisyo: ang PRC lamang ang nagkukumpirma ng eksaktong saklaw, limitasyon, eligibility, exclusions, at claims."
+            : "A plain-language guide to the benefits. It is not a complete benefits schedule: only PRC confirms exact coverage, limits, eligibility, exclusions, and claims decisions."}
+        </p>
+        <div className="notice-panel amber">
+          <strong>{isFil ? "Mahalagang tandaan" : "Good to know"}</strong>
+          <span>
+            {isFil
+              ? "Ang bayad ay hindi pahintulot, submission, approval, o membership activation. Ang PRC lamang ang nagkukumpirma ng membership."
+              : "Payment is not consent, submission, approval, or membership activation. Only PRC confirms membership."}
+          </span>
+        </div>
+      </header>
+
+      {cards ? (
+        <BenefitStoryboard cards={cards} locale={locale} provenance={provenance} />
+      ) : (
+        <div className="parked-panel" role="alert">
+          <strong>{isFil ? "Pansamantalang hindi available ang benefit guide." : "The benefit guide is temporarily unavailable."}</strong>
+          <p>{isFil ? "Hindi magbubukas ang application hangga't hindi naibabalik ang nilalaman." : "Applications will remain unavailable until the content is restored."}</p>
+        </div>
+      )}
+
+      <div className="page-actions">
+        <Link href="/apply" className="button-primary">{isFil ? "Mag-apply na" : "Apply now"}<ArrowRightIcon size={18} /></Link>
+        <Link href="/privacy" className="button-quiet">{isFil ? "Paunawa sa privacy" : "Privacy notice"}</Link>
+      </div>
+
+      <HelpBlock />
+    </>
+  );
 }
