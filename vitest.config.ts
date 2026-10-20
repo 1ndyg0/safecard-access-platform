@@ -21,6 +21,9 @@ export default defineConfig({
       // fileURLToPath rather than __dirname: this file is ESM, and
       // __dirname made Vite warn on every run.
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // `server-only` is a Next.js compile-time guard. Unit tests execute
+      // server modules directly, so they use a deliberately empty shim.
+      'server-only': fileURLToPath(new URL('./src/test/server-only.ts', import.meta.url)),
     },
   },
 });

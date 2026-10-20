@@ -9,7 +9,7 @@ import { ManualPaymentPanel } from "@/components/application/ManualPaymentPanel"
 
 type Step = "learn" | "check" | "decide" | "consent" | "profile" | "payment" | "review" | "complete" | "declined";
 type PilotConfig = {
-  mode: "synthetic" | "live";
+  mode: "synthetic" | "live" | "unavailable";
   campaign: { id: string; membership_fee: number } | null;
   content?: Array<{ id: string; content_type: string; locale: "tl" | "en"; title: string; body: string }>;
   payment: { available: boolean; reason: string | null };
@@ -54,11 +54,75 @@ export function ApplicationWizard() {
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [localStateReady, setLocalStateReady] = useState(false);
 
   useEffect(() => {
-    fetch("/api/pilot/config", { cache: "no-store" }).then((r) => r.json()).then((next: PilotConfig) => {
+    fetch("/api/pilot/config", { cache: "no-store" }).then(async (response) => {
+      const next = await response.json() as PilotConfig;
+      if (!response.ok) throw new Error(next.configurationError || "Pilot configuration is unavailable.");
       setConfig(next); setProfile(emptyProfile);
-    }).catch(() => setConfig({ mode: "synthetic", campaign: null, payment: { available: false, reason: "Unavailable" }, externalNotifications: { available: false, reason: "Parked" } }));
+    }).catch((caught) => setConfig({ mode: "unavailable", campaign: null, payment: { available: false, reason: "Unavailable" }, externalNotifications: { available: false, reason: "Parked" }, configurationError: caught instanceof Error ? caught.message : "Pilot configuration is unavailable." }));
+  }, []);
+
+  useEffect(() => {
+    if (config?.mode !== "live" || caseId) return;
+    const storedCaseId = window.sessionStorage.getItem("safecard-case-id");
+    if (!storedCaseId) return;
+    void (async () => {
+      try {
+        const statusResponse = await fetch(`/api/intake/status?case_id=${encodeURIComponent(storedCaseId)}`, { cache: "no-store" });
+        const statusBody = await statusResponse.json();
+        if (!statusResponse.ok) throw new Error(statusBody.error || "Unable to restore the application.");
+        setCaseId(storedCaseId);
+        setConsentRecordId(statusBody.consentRecordId ?? undefined);
+        // In this flow submission is the last step, so a submitted application is already complete.
+        if (["submitted", "resubmitted"].includes(statusBody.states.application)) {
+          setReference(statusBody.applicationRef ?? "");
+          window.sessionStorage.removeItem("safecard-case-id");
+          setStep("complete");
+          return;
+        }
+        if (statusBody.states.consent === "agreed") {
+          const profileResponse = await fetch(`/api/intake/profile?case_id=${encodeURIComponent(storedCaseId)}`, { cache: "no-store" });
+          if (profileResponse.ok) {
+            const profileBody = await profileResponse.json();
+            setProfile((current) => ({ ...current, ...profileBody.profile }));
+          }
+          setStep("profile");
+          return;
+        }
+        setStep("consent");
+      } catch (caught) {
+        window.sessionStorage.removeItem("safecard-case-id");
+        setError(caught instanceof Error ? caught.message : "Unable to restore the application.");
+      }
+    })();
+  }, [caseId, config]);
+
+  useEffect(() => {
+    if (!localStateReady || caseId || !["learn", "check", "decide"].includes(step)) return;
+    window.sessionStorage.setItem("safecard-wizard-state", JSON.stringify({ step, answers }));
+  }, [answers, caseId, localStateReady, step]);
+
+  useEffect(() => {
+    if (caseId) return;
+    const restore = () => {
+      try {
+        const saved = JSON.parse(window.sessionStorage.getItem("safecard-wizard-state") ?? "null") as { step?: Step; answers?: typeof answers } | null;
+        if (saved?.step && ["learn", "check", "decide"].includes(saved.step)) setStep(saved.step);
+        if (saved?.answers) setAnswers(saved.answers);
+      } catch {
+        window.sessionStorage.removeItem("safecard-wizard-state");
+      } finally {
+        setLocalStateReady(true);
+      }
+    };
+    // Restore after the first client paint. This avoids a hydration mismatch
+    // while keeping state writes outside the synchronous effect body.
+    const frame = window.requestAnimationFrame(restore);
+    return () => window.cancelAnimationFrame(frame);
+    // Restore once for this tab. PII is never stored here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -163,6 +227,7 @@ export function ApplicationWizard() {
 
   async function decide(decision: "accept" | "ask" | "decline") {
     setError("");
+    if (config?.mode === "unavailable") { setError(config.configurationError || (isFil ? "Hindi available ang pilot." : "The pilot is unavailable.")); return; }
     if (decision === "ask") { setError(isFil ? "Tumawag sa Philippine Red Cross Hotline 143 bago magpasya." : "Call Philippine Red Cross Hotline 143 to ask before deciding."); return; }
     if (decision === "decline") { setStep("declined"); return; }
     if (!isLive) { setStep("consent"); return; }
@@ -224,7 +289,7 @@ export function ApplicationWizard() {
 
   async function clearSharedDevice() {
     if (isLive) await fetch("/api/intake/clear-session", { method: "POST" }).catch(() => undefined);
-    window.sessionStorage.clear(); setProfile(emptyProfile); router.push("/");
+    window.sessionStorage.removeItem("safecard-case-id"); window.sessionStorage.removeItem("safecard-wizard-state"); setProfile(emptyProfile); router.push("/");
   }
 
   const progress = PROGRESS_STEPS.indexOf(step);
@@ -238,8 +303,8 @@ export function ApplicationWizard() {
       </header>
 
       <div className="wizard-banner">
-        <strong>{ui.bannerLive}</strong>
-        <span>{ui.bannerLiveBody}</span>
+        <strong>{config?.mode === "unavailable" ? (isFil ? "Hindi available ang pilot" : "Pilot unavailable") : ui.bannerLive}</strong>
+        <span>{config?.mode === "unavailable" ? config.configurationError : ui.bannerLiveBody}</span>
       </div>
 
       {showProgress && (
@@ -253,6 +318,7 @@ export function ApplicationWizard() {
       )}
 
       <section className="wizard-card">
+        {config?.mode === "unavailable" && <div className="parked-panel" role="alert"><strong>{isFil ? "Hindi maaaring magsimula ng application." : "Applications cannot start."}</strong><p>{config.configurationError}</p></div>}
 
         {/* ── STEP 1: LEARN ── */}
         {step === "learn" && (

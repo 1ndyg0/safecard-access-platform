@@ -20,7 +20,8 @@
     "test:e2e:install": "playwright install --with-deps",
     "test:performance": "playwright test --config playwright.performance.config.ts",
     "test:performance:admin": "playwright test --config playwright.admin.performance.config.ts",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "bootstrap:pilot": "node scripts/bootstrap-controlled-pilot.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

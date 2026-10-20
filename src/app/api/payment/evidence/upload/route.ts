@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const form = await request.formData();
     const parsed = fieldsSchema.parse(Object.fromEntries(form.entries()));
     const file = form.get('file');
-    if (!(file instanceof File)) return NextResponse.json({ error: 'A receipt image is required.' }, { status: 400 });
+    if (!(file instanceof File)) return NextResponse.json({ error: 'A receipt image or PDF is required.' }, { status: 400 });
 
     const auth = await requireAuth();
     const access = await requirePaymentAccess(auth.userId, parsed.payment_intent_id);

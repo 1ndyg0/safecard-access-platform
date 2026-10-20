@@ -186,10 +186,24 @@ test.describe('submission queue', () => {
   });
 
   test('denies staff with no active role', async ({ page }) => {
-    await signIn(page, world.staff.unassigned).catch(() => undefined);
+    await page.goto('/admin/login', { waitUntil: 'domcontentloaded' });
+    await page.getByLabel('Email').fill(world.staff.unassigned.email);
+    await page.getByLabel('Password').fill(world.staff.unassigned.password);
+    const auditResponse = page.waitForResponse(
+      (response) => response.url().includes('/api/admin/session/audit'),
+      { timeout: 15_000 },
+    );
+    await page.getByRole('button', { name: /sign in securely/i }).click();
+    expect((await auditResponse).status()).toBe(403);
+    // The login flow signs an unassigned account straight back out. Waiting
+    // for its visible failure state proves that sign-out has finished before
+    // the direct authorization check below.
+    await expect(page.getByText(/sign-in failed.*account assignment/i)).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/login/);
+
     const response = await page.request.get(
       `/api/admin/cases?campaign_id=${world.campaignId}`,
     );
-    expect([401, 403]).toContain(response.status());
+    expect(response.status()).toBe(401);
   });
 });

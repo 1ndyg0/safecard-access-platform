@@ -20,7 +20,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdminClient } from '@/lib/db/client';
-import { assertCampaignAccess, resolveStaffScope } from '@/lib/admin/access';
+import { assertCampaignAccess, resolveStaffScope, rolesForCampaign } from '@/lib/admin/access';
+import { resolveCaseAccessPolicy } from '@/lib/admin/field-policy';
 import { handleAdminError, PRIVATE_NO_STORE } from '@/lib/admin/respond';
 import { parseQueueQuery, resolveDateRange, reviewBucketStates } from '@/lib/admin/queue';
 
@@ -45,6 +46,73 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       .from('admin_case_queue_view')
       .select(QUEUE_COLUMNS, { count: 'exact' })
       .eq('campaign_id', query.campaign_id);
+
+    if (query.search) {
+      const policy = resolveCaseAccessPolicy(rolesForCampaign(scope, query.campaign_id));
+      const matchingCaseIds = new Set<string>();
+      const addMatches = (
+        data: Array<{ id?: string; case_id?: string }> | null,
+        error: { message: string } | null,
+        source: string,
+      ) => {
+        if (error) throw new Error(`Failed to search ${source}: ${error.message}`);
+        data?.forEach((row) => {
+          const caseId = row.case_id ?? row.id;
+          if (caseId) matchingCaseIds.add(caseId);
+        });
+      };
+      if (/^SC-\d{4}-[A-Z0-9]{8}$/.test(query.search.toUpperCase())) {
+        const { data, error } = await admin
+          .from('recipient_cases')
+          .select('id')
+          .eq('campaign_id', query.campaign_id)
+          .eq('application_ref', query.search.toUpperCase());
+        addMatches(data, error, 'application references');
+      }
+      const fields = new Set(policy?.profileFields ?? []);
+      if (fields.has('email') && query.search.includes('@')) {
+        const { data, error } = await admin
+          .from('recipient_profiles')
+          .select('case_id')
+          .eq('email', query.search.toLowerCase());
+        addMatches(data, error, 'email addresses');
+      }
+      if (fields.has('mobile_number') && /^\+?\d{10,13}$/.test(query.search)) {
+        const { data, error } = await admin
+          .from('recipient_profiles')
+          .select('case_id')
+          .eq('mobile_number', query.search);
+        addMatches(data, error, 'mobile numbers');
+      }
+      // Strip SQL LIKE metacharacters before a contains search. A term such
+      // as "%%%" must never become a full-register query.
+      const nameTerm = query.search.replace(/[%_]/g, '').trim();
+      if (nameTerm.length >= 3) {
+        for (const field of ['first_name', 'last_name'] as const) {
+          if (!fields.has(field)) continue;
+          const { data, error } = await admin
+            .from('recipient_profiles')
+            .select('case_id')
+            .ilike(field, `%${nameTerm}%`);
+          addMatches(data, error, 'recipient names');
+        }
+      }
+      if (policy?.canViewPayments) {
+        const { data, error } = await admin
+          .from('payment_intents')
+          .select('case_id')
+          .eq('campaign_id', query.campaign_id)
+          .eq('payment_reference', query.search);
+        addMatches(data, error, 'payment references');
+      }
+      if (matchingCaseIds.size === 0) {
+        return NextResponse.json(
+          { cases: [], pagination: { page: query.page, limit: query.limit, total: 0, totalPages: 1 }, appliedFilters: { ...query }, dateRangeTimezone: 'UTC' },
+          { headers: PRIVATE_NO_STORE },
+        );
+      }
+      builder = builder.in('id', [...matchingCaseIds]);
+    }
 
     // Exact reference match only. A prefix search over a unique
     // identifier is a way to enumerate the register.
@@ -113,6 +181,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           prc_handoff_state: query.prc_handoff_state ?? null,
           membership_state: query.membership_state ?? null,
           application_ref: query.application_ref ?? null,
+          search: query.search ?? null,
           from: query.from ?? null,
           to: query.to ?? null,
           sort: query.sort,

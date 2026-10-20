@@ -397,6 +397,8 @@ export interface PaymentIntent {
   state: PaymentState;
   handoff_opened_at: string | null;
   payer_marked_paid_at: string | null;
+  payer_reported_paid_on: string | null;
+  payer_reported_amount: number | null;
   verification_started_at: string | null;
   verified_at: string | null;
   failed_at: string | null;

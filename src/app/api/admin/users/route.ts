@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
       parsed.email,
       {
         data: { full_name: parsed.full_name },
-        redirectTo: `${new URL(appUrl).origin}/auth/callback`,
+        redirectTo: `${new URL(appUrl).origin}/auth/callback?next=/admin/setup`,
       },
     );
     if (invitationError || !invitation.user) {
