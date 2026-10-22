@@ -17,6 +17,8 @@ export function PublicFooter() {
       <nav className="footer-links" aria-label={t.footerLinks}>
         <Link href="/#benefits">{t.navBenefits}</Link>
         <Link href="/#process">{t.navProcess}</Link>
+        <Link href="/#faq">{t.navFaq}</Link>
+        <Link href="/#downloads">{t.navDownloads}</Link>
         <Link href="/help">{t.navHelp}</Link>
         <Link href="/privacy">{t.privacy}</Link>
         <Link href="/member">{t.memberLogin}</Link>

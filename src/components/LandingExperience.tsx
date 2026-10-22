@@ -1,67 +1,55 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRightIcon, CheckIcon, LockIcon } from "@/components/icons";
-import { BenefitStoryboard } from "@/components/BenefitStoryboard";
+import { ArrowRightIcon, CheckIcon } from "@/components/icons";
+import { AccidentSection } from "@/components/education/AccidentSection";
+import { CoverageSection } from "@/components/education/CoverageSection";
+import { DownloadsSection } from "@/components/education/DownloadsSection";
+import { FaqSection } from "@/components/education/FaqSection";
+import { SectionIndex } from "@/components/education/SectionIndex";
+import { WhatYouGet } from "@/components/education/WhatYouGet";
 import { HelpBlock } from "@/components/HelpBlock";
 import { useLocale } from "@/components/LocaleProvider";
 import { ProcessTimeline } from "@/components/ProcessTimeline";
 import { PublicFooter } from "@/components/PublicFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { copy, MEMBERSHIP_AGES, MEMBERSHIP_FEE } from "@/lib/public-content";
-import type { BenefitCard } from "@/lib/storyboard/schema";
+import { heroFacts, joinNote } from "@/lib/education/content";
+import { copy } from "@/lib/public-content";
+import "@/components/education/education.css";
 
-export function LandingExperience({ cards, provenance }: { cards: BenefitCard[] | null; provenance: "approved" | "provisional" }) {
+export function LandingExperience() {
   const { locale } = useLocale();
   const t = copy[locale];
-  const isFil = locale === "fil";
 
   return (
     <div className="site-frame">
       <SiteHeader />
       <main id="main-content">
-        <section className="hero-grid">
+        <section className="hero-grid" aria-labelledby="hero-title">
           <div className="hero-copy reveal">
             <p className="hero-eyebrow"><span aria-hidden="true" />{t.eyebrow}</p>
-            <h1>{t.heroTitle}</h1>
+            <h1 id="hero-title" className="hero-title">{t.heroTitle}</h1>
             <p className="hero-lede">{t.heroBody}</p>
+            <p className="hero-qualifier">{t.heroQualifier}</p>
             <div className="hero-actions">
               <Link className="button-primary" href="/apply">{t.primaryCta}<ArrowRightIcon size={18} /></Link>
-              <Link className="button-quiet" href="/benefits">{t.secondaryCta}</Link>
+              <a className="button-quiet" href="#covered">{t.secondaryCta}</a>
             </div>
+            <ul className="hero-facts">{heroFacts.map((fact) => <li key={fact.en}>{fact[locale]}</li>)}</ul>
             <p className="voluntary-line"><CheckIcon size={16} />{t.voluntary}</p>
           </div>
 
-          <div className="hero-card-stack reveal delay-1">
-            <article className="programme-card" aria-label={`${t.cardKicker}: ${MEMBERSHIP_FEE[locale]}`}>
-              <p className="card-kicker">{t.cardKicker}</p>
-              <p className="card-price"><strong>₱1,200</strong><span>{isFil ? "bawat taon" : "per year"}</span></p>
-              <p className="card-ages">{MEMBERSHIP_AGES[locale]}</p>
-              <div className="card-rule" />
-              <p className="card-note">{t.cardNote}</p>
-            </article>
-            <article className="control-card">
-              <span className="control-icon"><LockIcon size={20} /></span>
-              <div><strong>{t.controlTitle}</strong><p>{t.controlBody}</p></div>
-            </article>
+          <div className="hero-visual reveal delay-1" role="img" aria-label={t.heroVisual}>
+            <Image className="card-front" src="/images/education/card-front.webp" width={425} height={266} alt="" priority unoptimized />
+            <Image className="card-back" src="/images/education/card-back.webp" width={425} height={266} alt="" priority unoptimized />
           </div>
         </section>
 
-        <section className="benefit-section" id="benefits" aria-labelledby="benefits-title">
-          <div className="section-heading">
-            <p>{t.benefitsEyebrow}</p>
-            <h2 id="benefits-title">{t.benefitsTitle}</h2>
-            <span>{t.benefitsNote}</span>
-          </div>
-          {cards ? (
-            <BenefitStoryboard cards={cards} locale={locale} provenance={provenance} compact />
-          ) : (
-            <div className="parked-panel" role="alert">
-              <strong>{isFil ? "Pansamantalang hindi available ang benefit guide." : "The benefit guide is temporarily unavailable."}</strong>
-              <p>{isFil ? "Hindi magbubukas ang application hangga't hindi naibabalik ang nilalaman." : "Applications will remain unavailable until the content is restored."}</p>
-            </div>
-          )}
-        </section>
+        <SectionIndex />
+        <WhatYouGet />
+        <CoverageSection />
+        <AccidentSection />
 
         <section className="process-section" id="process" aria-labelledby="process-title">
           <div className="process-inner">
@@ -70,8 +58,12 @@ export function LandingExperience({ cards, provenance }: { cards: BenefitCard[] 
               <h2 id="process-title">{t.processTitle}</h2>
             </div>
             <ProcessTimeline />
+            <p className="process-note">{joinNote[locale]}</p>
           </div>
         </section>
+
+        <FaqSection />
+        <DownloadsSection />
 
         <div className="help-section"><HelpBlock /></div>
       </main>

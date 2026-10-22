@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
+import { MemberNav } from "@/components/member/MemberNav";
 import "./card.css";
 
 type Benefit = { id: string; icon: string; title: { fil: string; en: string }; summary: { fil: string; en: string } };
@@ -20,6 +21,7 @@ export default function MemberCardPage() {
     <main className="portal-page dark">
       <div className="portal-shell">
         <header className="portal-header"><Link href="/" aria-label="SafeCard"><BrandMark /></Link><button className="button-quiet" onClick={logout}>Sign out</button></header>
+        <div className="library-wrap"><MemberNav current="card" /></div>
         {error ? <section className="portal-card"><h1>Card unavailable</h1><p>{error}</p></section>
           : !card ? <section className="portal-card"><p>Loading secure card…</p></section>
           : card.approved ? (

@@ -168,3 +168,35 @@ export const WalletIcon = (props: IconProps) => (
     <circle cx="15.5" cy="14" r="1.1" />
   </Icon>
 );
+
+/* ── Library and learning ─────────────────────────────────────────── */
+
+export const DownloadIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 4.5v11" /><path d="m7.5 11 4.5 4.5 4.5-4.5" />
+    <path d="M5 15.5v2A1.5 1.5 0 0 0 6.5 19h11a1.5 1.5 0 0 0 1.5-1.5v-2" />
+  </Icon>
+);
+
+export const SearchIcon = (props: IconProps) => (
+  <Icon {...props}><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4.2-4.2" /></Icon>
+);
+
+export const HeartIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 20.5C5 15.8 3.5 11.2 5.2 8a4.3 4.3 0 0 1 6.8-.9 4.3 4.3 0 0 1 6.8.9c1.7 3.2.2 7.8-6.8 12.5Z" />
+  </Icon>
+);
+
+export const BedIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3.5 18.5V6" /><path d="M3.5 14.5h17v4" /><path d="M20.5 14.5v-2.2a2.8 2.8 0 0 0-2.8-2.8H11v5" />
+    <circle cx="7.2" cy="11.2" r="1.7" />
+  </Icon>
+);
+
+export const ExternalLinkIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M14 4.5h5.5V10" /><path d="m19.5 4.5-8 8" /><path d="M18 14v3.5a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2H10" />
+  </Icon>
+);
