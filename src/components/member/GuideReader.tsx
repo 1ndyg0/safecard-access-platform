@@ -102,10 +102,19 @@ export function GuideReader() {
     return () => observer.disconnect();
   }, []);
 
-  /** A link such as /member/library/guide#claims should land on its section after the page renders. */
+  /**
+   * A link such as /member/library/guide#claims should land on its section.
+   * The browser's own jump can run before the page has its final layout (fonts,
+   * images, the sticky menu on phones), so jump again once the layout settles.
+   */
   useEffect(() => {
     const id = window.location.hash.slice(1);
-    if (id && document.getElementById(id)) document.getElementById(id)!.scrollIntoView();
+    if (!id) return;
+    const jumpToHash = () => document.getElementById(id)?.scrollIntoView({ behavior: "instant", block: "start" });
+    jumpToHash();
+    const timers = [120, 400, 1000].map((delay) => window.setTimeout(jumpToHash, delay));
+    void document.fonts?.ready.then(jumpToHash);
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
   }, []);
 
   function jump(id: string) {
