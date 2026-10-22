@@ -70,8 +70,11 @@ These were found while transcribing. The site follows the choice in the last col
 ## Tests
 
 ```bash
-npm test                                    # unit: content, translations, amounts, documents, route
-npm run test:e2e -- tests/e2e/education.spec.ts   # browsers and devices (needs MEMBER_SESSION_SECRET for the member tests)
+npm test                                          # unit: content, translations, amounts, documents, route
+npm run test:e2e -- tests/e2e/education.spec.ts   # Chromium, Firefox, Safari, Pixel 5, iPhone 13
+E2E_ALL_DEVICES=1 npm run test:e2e -- tests/e2e/education.spec.ts   # adds 8 more screens (see below)
 ```
 
-The education spec runs on laptops (Chromium, Firefox, Safari), tablets (iPad, iPad Pro, Android tablet), iPhones (SE, 13, 14 Pro Max) and Android phones (Galaxy S9+, Pixel 5, Pixel 7), and a 1920px desktop. It checks for sideways scrolling from 320 to 1920px, touch-target size, image loading, and serious accessibility violations in light and dark, English and Filipino.
+The member tests need `MEMBER_SESSION_SECRET` set for the test server and the test runner (CI sets it).
+
+The education spec checks for sideways scrolling, touch-target size, image loading and serious accessibility violations, in English and Filipino, light and dark. By default it sweeps widths 320, 390, 768, 1024 and 1440px so the CI job stays short. With `E2E_ALL_DEVICES=1` it sweeps 12 widths from 320 to 1920px and also runs on iPad, iPad Pro, an Android tablet, iPhone SE and 14 Pro Max, Galaxy S9+, Pixel 7 and a 1920px desktop. Run that before a release; it takes several minutes more.

@@ -19,6 +19,28 @@ import { defineConfig, devices } from '@playwright/test';
 const PORT = Number(process.env.E2E_PORT ?? 3102);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${PORT}`;
 
+
+/**
+ * Extra screens for the education and member-library specs: iPad and Android
+ * tablet, the smallest iPhone and Android phones, a large iPhone, and a wide
+ * desktop. They add several minutes, so they run on request only:
+ *   E2E_ALL_DEVICES=1 npm run test:e2e -- tests/e2e/education.spec.ts
+ * The five projects below always run and already cover laptop, tablet-width
+ * and phone viewports; the spec also sweeps widths from 320px up.
+ */
+const extraDevices = process.env.E2E_ALL_DEVICES === '1'
+  ? [
+      { name: 'tablet-ipad', testMatch: /education\.spec\.ts/, use: { ...devices['iPad (gen 7)'] } },
+      { name: 'tablet-ipad-pro', testMatch: /education\.spec\.ts/, use: { ...devices['iPad Pro 11'] } },
+      { name: 'tablet-android', testMatch: /education\.spec\.ts/, use: { ...devices['Galaxy Tab S4'] } },
+      { name: 'iphone-se', testMatch: /education\.spec\.ts/, use: { ...devices['iPhone SE'] } },
+      { name: 'iphone-pro-max', testMatch: /education\.spec\.ts/, use: { ...devices['iPhone 14 Pro Max'] } },
+      { name: 'android-small', testMatch: /education\.spec\.ts/, use: { ...devices['Galaxy S9+'] } },
+      { name: 'android-pixel-7', testMatch: /education\.spec\.ts/, use: { ...devices['Pixel 7'] } },
+      { name: 'desktop-wide', testMatch: /education\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } } },
+    ]
+  : [];
+
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 45_000,
@@ -49,16 +71,6 @@ export default defineConfig({
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
     { name: 'mobile-chrome', use: { ...devices['Pixel 5'] } },
     { name: 'mobile-safari', use: { ...devices['iPhone 13'] } },
-    // Extra screens, used only by the education and member-library specs:
-    // iPad and Android tablet, the smallest iPhone and Android phones, a
-    // large iPhone, and a wide desktop.
-    { name: 'tablet-ipad', testMatch: /education\.spec\.ts/, use: { ...devices['iPad (gen 7)'] } },
-    { name: 'tablet-ipad-pro', testMatch: /education\.spec\.ts/, use: { ...devices['iPad Pro 11'] } },
-    { name: 'tablet-android', testMatch: /education\.spec\.ts/, use: { ...devices['Galaxy Tab S4'] } },
-    { name: 'iphone-se', testMatch: /education\.spec\.ts/, use: { ...devices['iPhone SE'] } },
-    { name: 'iphone-pro-max', testMatch: /education\.spec\.ts/, use: { ...devices['iPhone 14 Pro Max'] } },
-    { name: 'android-small', testMatch: /education\.spec\.ts/, use: { ...devices['Galaxy S9+'] } },
-    { name: 'android-pixel-7', testMatch: /education\.spec\.ts/, use: { ...devices['Pixel 7'] } },
-    { name: 'desktop-wide', testMatch: /education\.spec\.ts/, use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } } },
+    ...extraDevices,
   ],
 });

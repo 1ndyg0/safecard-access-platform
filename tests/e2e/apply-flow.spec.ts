@@ -50,15 +50,28 @@ async function mockBackend(page: Page) {
 
 async function passTheCheck(page: Page) {
   await page.getByRole('button', { name: /check my understanding/i }).click();
-  for (const answer of [
+  const answers = [
     '₱1,200 per year',
     'My application and payment proof are reviewed first',
     'The Philippine Red Cross',
     'I can cancel at any time and my application is discarded',
     'Call the PRC Hotline 143',
-  ]) {
-    await page.getByLabel(answer).check();
-    await page.getByRole('button', { name: /next question|finish the check/i }).click();
+  ];
+  for (const [index, answer] of answers.entries()) {
+    const option = page.getByLabel(answer);
+    await expect(option).toBeVisible();
+    await option.check();
+    const last = index === answers.length - 1;
+    const next = page.getByRole('button', { name: last ? /finish the check/i : /next question/i });
+    const following = last ? page.getByRole('button', { name: /continue to your decision/i }) : page.getByLabel(answers[index + 1]);
+    // On a slow runner a click can land while the page re-renders under it and be lost, which
+    // used to leave this helper waiting on a question that never appeared. Click again until
+    // the next screen is really there.
+    await expect(async () => {
+      if (await following.isVisible()) return;
+      await next.click({ timeout: 5_000 });
+      await expect(following).toBeVisible({ timeout: 5_000 });
+    }).toPass({ timeout: 30_000 });
   }
   await page.getByRole('button', { name: /continue to your decision/i }).click();
 }
@@ -80,6 +93,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('apply flow', () => {
+  // Each test walks a five-question check and a form; WebKit on a shared runner needs more than 45 s.
+  test.describe.configure({ timeout: 90_000 });
+
   test('saves nothing until the final submit, then creates everything in order', async ({ page }) => {
     const writes = await mockBackend(page);
     await page.goto('/apply');

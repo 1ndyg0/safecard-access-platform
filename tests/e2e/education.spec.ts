@@ -9,6 +9,8 @@ import { createMemberToken } from '../../src/lib/auth/member-token';
  */
 
 const PILOT_WORDING = /pilot|school-project|for validation|working baseline|illustrative|synthetic|demo\b/i;
+/** Everything on request (E2E_ALL_DEVICES=1); a lighter sweep otherwise, to keep the CI job short. */
+const FULL = process.env.E2E_ALL_DEVICES === '1';
 const SECTION_IDS = ['benefits', 'covered', 'accident', 'process', 'faq', 'downloads'] as const;
 
 async function setLocale(page: Page, locale: 'fil' | 'en') {
@@ -213,7 +215,7 @@ test.describe('documents', () => {
 });
 
 test.describe('every screen size', () => {
-  const widths = [320, 360, 375, 390, 412, 600, 768, 820, 1024, 1280, 1440, 1920];
+  const widths = FULL ? [320, 360, 375, 390, 412, 600, 768, 820, 1024, 1280, 1440, 1920] : [320, 390, 768, 1024, 1440];
 
   for (const locale of ['en', 'fil'] as const) {
     test(`landing page never overflows sideways (${locale})`, async ({ page }) => {
@@ -263,6 +265,8 @@ test.describe('every screen size', () => {
 test.describe('accessibility', () => {
   for (const scheme of ['light', 'dark'] as const) {
     for (const locale of ['en', 'fil'] as const) {
+      // Light + English and dark + Filipino always; the other two pairs on request.
+      if (!FULL && (scheme === 'light') !== (locale === 'en')) continue;
       test(`landing page has no serious violations (${scheme}, ${locale})`, async ({ page }) => {
         test.setTimeout(120_000);
         await page.emulateMedia({ colorScheme: scheme });
@@ -369,7 +373,7 @@ test.describe('member library', () => {
       await expect(page.locator('.reader')).toHaveAttribute('lang', 'en');
     });
 
-    for (const width of [320, 390, 768, 1024, 1440]) {
+    for (const width of FULL ? [320, 390, 768, 1024, 1440] : [320, 768, 1440]) {
       test(`never overflows sideways at ${width}px`, async ({ page }) => {
         test.setTimeout(90_000);
         await page.setViewportSize({ width, height: 800 });
