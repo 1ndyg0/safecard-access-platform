@@ -13,6 +13,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BackLink } from "@/components/BackLink";
 import { BrandMark } from "@/components/BrandMark";
+import { MemberNav } from "@/components/member/MemberNav";
 import { useLocale } from "@/components/LocaleProvider";
 import { reviewStateLabel, t, type Locale } from "@/lib/member/copy";
 
@@ -164,6 +165,7 @@ export function MemberStatus() {
             {lang === "fil" ? "Electronic card" : "Electronic card"}
           </Link>
         </header>
+        <div className="library-wrap"><MemberNav current="status" /></div>
         <div className="portal-toolbar"><BackLink fallbackHref="/member/card" /></div>
 
         <section className="portal-card">
