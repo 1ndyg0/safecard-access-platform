@@ -9,11 +9,6 @@ const p = (en: string, fil: string): Pair => ({ en, fil });
  * them from lib/education/content so there is a single source of truth.
  */
 export const seasonalCopy = {
-  strip: p(
-    "Merry Christmas from SafeCard. Apply by December 10 so you are ready for the holidays.",
-    "Maligayang Pasko mula sa SafeCard. Mag-apply bago mag-Disyembre 10 para handa sa kapaskuhan.",
-  ),
-  stripLink: p("Apply now", "Mag-apply na"),
   footerTag: p("Merry Christmas from SafeCard", "Maligayang Pasko mula sa SafeCard"),
   footerTagApplyBy: p("Apply by December 10 for the holidays", "Mag-apply bago mag-Disyembre 10 para sa kapaskuhan"),
 

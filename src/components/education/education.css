@@ -30,16 +30,8 @@
 .hero-visual .card-back { right: 0; bottom: 2%; transform: rotate(4deg); }
 @media (max-width: 960px) { .hero-visual { max-width: 380px; aspect-ratio: 4 / 3; } }
 
-/* ── Section index ────────────────────────────────────────────── */
-.section-index { position: sticky; top: 0; z-index: 15; background: var(--bg); border-block: 1px solid var(--border); }
-.section-index nav { width: var(--edu-width); margin: auto; display: flex; gap: 2px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-.section-index nav::-webkit-scrollbar { display: none; }
-.section-index a { flex: none; min-height: 52px; display: inline-flex; align-items: center; padding: 0 16px; border-bottom: 3px solid transparent; color: var(--text2); text-decoration: none; white-space: nowrap; font: 700 .86rem/1 var(--font-jakarta); }
-.section-index a:hover { color: var(--ink); }
-.section-index a[aria-current="true"] { color: var(--red-ink); border-bottom-color: var(--red); }
-
 /* ── Shared section frame ─────────────────────────────────────── */
-.edu-section { width: var(--edu-width); margin: auto; padding: 88px 0; border-top: 1px solid var(--border); scroll-margin-top: 56px; }
+.edu-section { width: var(--edu-width); margin: auto; padding: 88px 0; border-top: 1px solid var(--border); scroll-margin-top: 84px; }
 .edu-section.first { border-top: 0; }
 .edu-band { background: var(--surface2); border-block: 1px solid var(--border); }
 .edu-band > .edu-section { border-top: 0; }
@@ -247,7 +239,7 @@
 .reader-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 .reader-actions .button-primary, .reader-actions .button-quiet { min-height: 48px; padding: 12px 18px; gap: 8px; }
 @media print {
-  .section-index, .member-nav, .reader-toc, .reader-toc-mobile, .reader-actions, .portal-header, .site-header, .public-footer { display: none !important; }
+  .member-nav, .reader-toc, .reader-toc-mobile, .reader-actions, .portal-header, .site-header, .public-footer { display: none !important; }
   .reader { display: block; }
   .reader-table-wrap { overflow: visible; }
   .reader-section { break-inside: avoid-page; }

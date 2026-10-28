@@ -23,14 +23,11 @@
 /* ── Wrappers ────────────────────────────────────────────────── */
 .xmas-only.xmas-contents { display: contents; }
 
-/* ── Strip, lights, garland (inside the public header) ───────── */
-.xmas-strip { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 10px; padding: 8px 16px; background: var(--xmas-green); color: #fff; text-align: center; font: 600 .88rem/1.45 var(--font-jakarta); }
-.xmas-strip-art { width: auto; height: 24px; flex: none; transform-origin: 50% 0; animation: xmas-swing 2.8s ease-in-out infinite alternate; }
-.xmas-strip-art:last-child { animation-direction: alternate-reverse; }
+/* ── Lights, garland (the lights lie over the toolbar's top edge so the pinned toolbar keeps its height) ── */
 @keyframes xmas-swing { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }
-.xmas-strip a { color: #fff; font-weight: 800; text-underline-offset: 3px; white-space: nowrap; }
-.xmas-strip a:hover { text-decoration-thickness: 2px; }
 .xmas-lights { height: 34px; background: url("/seasonal/lights.svg") repeat-x center top / 170px 34px; pointer-events: none; animation: xmas-twinkle 3.2s ease-in-out infinite alternate; }
+.site-header .xmas-lights { position: absolute; inset: 0 0 auto 0; height: 22px; background-size: 120px 22px; z-index: 0; }
+.site-header .site-header-bar { position: relative; z-index: 1; }
 .xmas-garland { height: 56px; margin-bottom: -22px; background: url("/seasonal/garland.svg") repeat-x center top / 220px 56px; pointer-events: none; }
 .xmas-garland.light { height: 44px; margin-bottom: -14px; background-size: 176px 44px; }
 @keyframes xmas-twinkle { from { opacity: .78; } to { opacity: 1; } }
@@ -105,14 +102,12 @@
   .xmas-scene-row { --k: .62; gap: 6px; width: calc(100% - 24px); }
   .xmas-scene-row .opt { display: none; }
   .xmas-ornaments { grid-template-columns: minmax(0, 1fr); gap: 0; }
-  .xmas-strip { font-size: .82rem; }
   .xmas-greeting img:last-child { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .xmas-snow { display: none; }
-  .xmas-lights { animation: none; }
-  .xmas-strip-art, .xmas-scene-row img { animation: none !important; }
+  .xmas-lights, .xmas-scene-row img { animation: none !important; }
   .xmas-flyby { animation: none; left: auto; right: 6%; }
 }
 @media print {

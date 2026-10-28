@@ -169,7 +169,7 @@ The **Library** in the member area holds the official Safe Card guides and FAQs.
 
 ## 7. The Christmas look
 
-The site wears a Christmas look. The home page has a **Christmas band** under the main banner, a green strip at the top with the apply-by date, string lights, a garland and a Santa hat on the logo. Between the sections you will meet Santa Claus, his reindeer, a snowman, a gingerbread man, a tree and a sleigh that flies across the page.
+The site wears a Christmas look. The home page has a **Christmas band** under the main banner, string lights, a garland and a Santa hat on the logo. Between the sections you will meet Santa Claus, his reindeer, a snowman, a gingerbread man, a tree and a sleigh that flies across the page.
 
 ![The home page in its Christmas look](images/40-christmas-landing.png)
 

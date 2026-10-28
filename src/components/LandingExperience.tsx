@@ -7,7 +7,6 @@ import { AccidentSection } from "@/components/education/AccidentSection";
 import { CoverageSection } from "@/components/education/CoverageSection";
 import { DownloadsSection } from "@/components/education/DownloadsSection";
 import { FaqSection } from "@/components/education/FaqSection";
-import { SectionIndex } from "@/components/education/SectionIndex";
 import { WhatYouGet } from "@/components/education/WhatYouGet";
 import { HelpBlock } from "@/components/HelpBlock";
 import { SeasonBand, SeasonScene, SeasonSnow } from "@/components/seasonal/Season"; // SEASONAL:christmas-2026
@@ -48,7 +47,6 @@ export function LandingExperience() {
 
         <SeasonBand /> {/* SEASONAL:christmas-2026 */}
 
-        <SectionIndex />
         <WhatYouGet />
         <SeasonScene variant="workshop" /> {/* SEASONAL:christmas-2026 */}
         <CoverageSection />
