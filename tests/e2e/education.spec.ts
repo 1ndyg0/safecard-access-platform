@@ -67,9 +67,9 @@ test.describe('landing page: structure', () => {
     await expect(page.getByText('The Red Cross is not the insurer.', { exact: false }).first()).toBeVisible();
   });
 
-  test('section index links jump to their sections', async ({ page }) => {
+  test('toolbar section links jump to their sections', async ({ page }) => {
     await page.goto('/');
-    const nav = page.getByRole('navigation', { name: 'On this page' });
+    const nav = page.locator('header').getByRole('navigation', { name: 'Primary navigation' });
     for (const [label, id] of [['Is it covered?', 'covered'], ['After an accident', 'accident'], ['Questions', 'faq'], ['Downloads', 'downloads']] as const) {
       await nav.getByRole('link', { name: label }).click();
       await expect.poll(() => page.evaluate((target) => Math.abs(document.getElementById(target)!.getBoundingClientRect().top), id), { timeout: 5000 }).toBeLessThan(160);
@@ -134,7 +134,7 @@ test.describe('landing page: language', () => {
     await expect(page.locator('#accident h2')).toContainText('Tatlong gagawin');
     await expect(page.locator('#faq h2')).toContainText('Mabilis na sagot');
     await expect(page.locator('#downloads h2')).toContainText('Dalhin ito sa iyo');
-    await expect(page.getByRole('navigation', { name: 'Sa pahinang ito' })).toBeVisible();
+    await expect(page.locator('header').getByRole('navigation', { name: 'Pangunahing nabigasyon' })).toBeVisible();
     await (await languageButton(page, 'EN')).click();
     await expect(page.getByRole('heading', { level: 1 })).toContainText('₱1,200 a year');
   });
@@ -235,7 +235,7 @@ test.describe('every screen size', () => {
   test('controls are at least 44px tall', async ({ page }) => {
     await page.goto('/');
     const small = await page
-      .locator('.section-index a, .edu-doc-actions a, .edu-call a, .edu-faq summary, .edu-search input, .edu-text-link')
+      .locator('.site-nav a, .edu-doc-actions a, .edu-call a, .edu-faq summary, .edu-search input, .edu-text-link')
       .evaluateAll((elements) => elements.filter((element) => element.getBoundingClientRect().height > 0 && element.getBoundingClientRect().height < 43.5).map((element) => `${element.tagName}.${element.className} ${Math.round(element.getBoundingClientRect().height)}px`));
     expect(small).toEqual([]);
   });
