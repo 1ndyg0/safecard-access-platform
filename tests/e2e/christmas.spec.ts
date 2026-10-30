@@ -21,7 +21,7 @@ async function seriousViolations(page: Page) {
 test.describe('campaign', () => {
   test('landing page is festive and the original hero is untouched', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByTestId('xmas-top')).toBeVisible();
+    await expect(page.locator('.site-header .xmas-lights')).toBeVisible();
     await expect(page.getByTestId('xmas-band')).toBeVisible();
     await expect(page.locator('.hero-grid #hero-title')).toBeVisible();
     await expect(page.locator('.hero-actions a[href="/apply"]')).toBeVisible();
@@ -31,7 +31,7 @@ test.describe('campaign', () => {
     expect(await page.getByTestId('xmas-band').innerText()).toMatch(/300,000/);
   });
 
-  test('the band and the strip lead to the application', async ({ page }) => {
+  test('the band leads to the application', async ({ page }) => {
     await page.goto('/');
     await page.getByTestId('xmas-band').getByRole('link', { name: /apply now/i }).click();
     await expect(page).toHaveURL(/\/apply$/);
@@ -68,14 +68,14 @@ test.describe('campaign', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     await expect(page.locator('.xmas-snow').first()).toBeHidden();
-    const names = await page.evaluate(() => ['.xmas-lights', '.xmas-flyby', '.xmas-strip-art', '.xmas-art-santa'].map((selector) => getComputedStyle(document.querySelector(selector)!).animationName));
-    expect(names).toEqual(['none', 'none', 'none', 'none']);
+    const names = await page.evaluate(() => ['.xmas-lights', '.xmas-flyby', '.xmas-art-santa'].map((selector) => getComputedStyle(document.querySelector(selector)!).animationName));
+    expect(names).toEqual(['none', 'none', 'none']);
   });
 
   test('the Filipino site is festive too', async ({ page }) => {
     await setLocale(page, 'fil');
     await page.goto('/');
-    await expect(page.getByTestId('xmas-top')).toContainText('Maligayang Pasko');
+    await expect(page.getByTestId('xmas-band')).toContainText('Maligayang Pasko');
     await expect(page.getByTestId('xmas-band')).toContainText('Mag-apply');
   });
 });

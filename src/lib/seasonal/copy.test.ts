@@ -13,9 +13,8 @@ describe("Christmas copy", () => {
     }
   });
 
-  it("states the apply-by date in the strip, the band and the footer", () => {
+  it("states the apply-by date in the band and the footer", () => {
     for (const locale of ["en", "fil"] as const) {
-      expect(seasonalCopy.strip[locale]).toContain(CHRISTMAS.applyBy[locale]);
       expect(seasonalCopy.bandBody[locale]).toContain(CHRISTMAS.applyBy[locale]);
       expect(seasonalCopy.footerTagApplyBy[locale]).toContain(CHRISTMAS.applyBy[locale]);
     }

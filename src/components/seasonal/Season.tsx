@@ -37,15 +37,8 @@ function Art({ name, className = "" }: { name: ArtName; className?: string }) {
 
 /** Green banner with the apply-by date, then the twinkling light string. */
 export function SeasonTop() {
-  const { locale } = useLocale();
   return (
     <div className="xmas-only" data-testid="xmas-top">
-      <p className="xmas-strip">
-        <Art name="bell" className="xmas-strip-art" />
-        <span>{c.strip[locale]}</span>
-        <Link href="/apply">{c.stripLink[locale]}</Link>
-        <Art name="bell" className="xmas-strip-art" />
-      </p>
       <div className="xmas-lights" aria-hidden="true" />
     </div>
   );

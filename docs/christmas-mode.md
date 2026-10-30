@@ -6,7 +6,7 @@ A festive look for the whole public site: **“Merry Christmas from SafeCard.”
 
 | Where | What appears |
 |---|---|
-| Every public page | A green strip with the apply-by date and swinging bells, string lights and a garland under the header, a Santa hat on the SafeCard logo, light snowfall, and at the foot a snowy scene (tree, Santa, reindeer) with a greeting |
+| Every public page | String lights and a garland under the header, a Santa hat on the SafeCard logo, light snowfall, and at the foot a snowy scene (tree, Santa, reindeer) with a greeting |
 | Home page | A **Christmas band** under the main banner: a night scene with Santa’s sleigh and reindeer, plus three benefit amounts hung like ornaments. Between the sections, four snowy scenes with Santa, a reindeer, a snowman, a gingerbread man, candy canes, a stocking, bells and holly, and a sleigh that flies across |
 | Application | A quiet garland and a small scene on every step **except payment**, which is never decorated |
 | Member card | A short seasonal greeting under the card |
@@ -49,9 +49,9 @@ Nothing in the database or storage needs cleaning up, because the campaign never
 
 ## How it was tested
 
-- **Unit tests** (`src/lib/seasonal/copy.test.ts`): every line exists in both languages, the apply-by date is in the strip, band and footer, and no wording mentions gifting.
+- **Unit tests** (`src/lib/seasonal/copy.test.ts`): every line exists in both languages, the apply-by date is in the band and footer, and no wording mentions gifting.
 - **Browser tests** (`tests/e2e/christmas.spec.ts`), on Chrome, Firefox, Safari and two phone sizes:
-  - the page: strip, band, scenes (Santa, reindeer, snowman, tree, gingerbread), flying sleigh and the original banner all present; every picture loads; the payment step never decorated;
+  - the page: band, scenes (Santa, reindeer, snowman, tree, gingerbread), flying sleigh and the original banner all present; every picture loads; the payment step never decorated;
   - decoration is hidden from screen readers and never takes a click;
   - snow, swinging, waving and the flying sleigh stay still for reduced motion;
   - the Filipino site is festive too;
