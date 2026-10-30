@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
 import { MemberNav } from "@/components/member/MemberNav";
+import { MemberGreeting } from "@/components/seasonal/MemberGreeting"; // SEASONAL:christmas-2026
 import "./card.css";
 
 type Benefit = { id: string; icon: string; title: { fil: string; en: string }; summary: { fil: string; en: string } };
@@ -46,6 +47,7 @@ export default function MemberCardPage() {
                 </div>
               </article>
               <p className="safecard-note">Approved by SafeCard administration. Emergency guidance: <strong>Hotline 143</strong></p>
+              <MemberGreeting /> {/* SEASONAL:christmas-2026 */}
               {card.benefits && card.benefits.length > 0 && (
                 <section className="card-benefits" aria-labelledby="card-benefits-heading">
                   <h2 id="card-benefits-heading">Your SafeCard benefits</h2>

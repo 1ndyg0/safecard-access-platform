@@ -8,6 +8,8 @@ import { BrandMark } from "@/components/BrandMark";
 import { ArrowRightIcon, CheckIcon, PhoneIcon } from "@/components/icons";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { useLocale } from "@/components/LocaleProvider";
+import { GiftWelcome } from "@/components/seasonal/GiftWelcome"; // SEASONAL:christmas-2026
+import { SeasonGarland } from "@/components/seasonal/Season"; // SEASONAL:christmas-2026
 import { Field, ManualPaymentPanel } from "@/components/application/ManualPaymentPanel";
 
 type Step = "learn" | "check" | "decide" | "consent" | "profile" | "pay" | "complete" | "declined";
@@ -412,6 +414,7 @@ export function ApplicationWizard() {
         <Link href="/" className="brand-link" aria-label="SafeCard"><BrandMark /></Link>
         <LocaleToggle />
       </header>
+      {step !== "pay" && <SeasonGarland light />} {/* SEASONAL:christmas-2026 — the payment step stays undecorated */}
 
       <main id="main-content" className="wizard-main">
         {step !== "complete" && (
@@ -439,6 +442,8 @@ export function ApplicationWizard() {
             ))}
           </ol>
         )}
+
+        {step === "learn" && <GiftWelcome />} {/* SEASONAL:christmas-2026 */}
 
         <section className="wizard-card" ref={headingRef}>
           {config?.mode === "unavailable" && <div className="parked-panel" role="alert"><strong>{ui.unavailable}</strong><p>{config.configurationError}</p></div>}

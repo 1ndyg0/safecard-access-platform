@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BrandMark } from "@/components/BrandMark";
 import { useLocale } from "@/components/LocaleProvider";
 import { copy } from "@/lib/public-content";
+import { SeasonFooterTag } from "@/components/seasonal/Season"; // SEASONAL:christmas-2026
 
 export function PublicFooter() {
   const { locale } = useLocale();
@@ -24,6 +25,7 @@ export function PublicFooter() {
         <Link href="/member">{t.memberLogin}</Link>
       </nav>
       <a className="footer-emergency" href="tel:143">{t.emergency}</a>
+      <SeasonFooterTag /> {/* SEASONAL:christmas-2026 */}
     </footer>
   );
 }
