@@ -2,7 +2,7 @@
 
 *This is what the public sees. Read it to understand the product, or to help a relative apply.*
 
-**In this manual:** [What SafeCard is](#1-what-safecard-is) · [The home page](#2-the-home-page) · [Applying, step by step](#3-applying-step-by-step) · [After you apply](#4-after-you-apply-the-member-area) · [Your SafeCard](#5-your-safecard) · [Language, phones and privacy](#6-language-phones-and-privacy) · [Christmas gifts](#7-giving-safecard-as-a-christmas-gift) · [When something goes wrong](#8-when-something-goes-wrong)
+**In this manual:** [What SafeCard is](#1-what-safecard-is) · [The home page](#2-the-home-page) · [Applying, step by step](#3-applying-step-by-step) · [After you apply](#4-after-you-apply-the-member-area) · [Your SafeCard](#5-your-safecard) · [Language, phones and privacy](#6-language-phones-and-privacy) · [The Christmas look](#7-the-christmas-look) · [When something goes wrong](#8-when-something-goes-wrong)
 
 ---
 
@@ -167,33 +167,21 @@ The **Library** in the member area holds the official Safe Card guides and FAQs.
 
 ---
 
-## 7. Giving SafeCard as a Christmas gift
+## 7. The Christmas look
 
-The home page carries a Christmas campaign. It gains a **gift band** under the main banner, a small green strip at the top, string lights and a garland.
+The site wears a Christmas look. The home page has a **Christmas band** under the main banner, a green strip at the top with the apply-by date, string lights, a garland and a Santa hat on the logo. Between the sections you will meet Santa Claus, his reindeer, a snowman, a gingerbread man, a tree and a sleigh that flies across the page.
 
-![The home page during Christmas mode](images/40-christmas-landing.png)
+![The home page in its Christmas look](images/40-christmas-landing.png)
 
-![The gift band: “A Christmas gift that looks after them all year”](images/41-christmas-band.png)
+![The Christmas band: Santa’s sleigh over a snowy village](images/41-christmas-band.png)
 
-**How gifting works**
-
-1. Press **Give as a gift** in the gift band (or the **Gift** link in the menu). **How gifting works** explains it in three short steps and answers common questions.
-2. On **Create a gift card**, type your name and the name of the person you are giving it to. You can pick English or Filipino for the card itself.
-3. A card appears on screen as you type. Press **Share card**, **Download image**, or **Copy message**.
-4. Send it on Messenger, Viber or any chat. The message carries a link.
-5. When your loved one opens the link, they see a friendly welcome and apply **themselves**. They decide and they give consent. Paying works as usual: you may pay from your own GCash or bank account and share the reference with them. A gift **never** applies on someone’s behalf, and paying for a gift does **not** give you access to their application or details.
-
-![The card maker](images/42-christmas-card-maker.png)
-
-**What the gift card does *not* do**
-
-- It does **not** save, send or store the names you type. They stay in your browser and disappear when you close the page. (Press Share or Download and the picture goes where *you* send it.)
-- The link in the message **does not contain either name**.
-- It does **not** pay for anyone. The card is just a friendly message with a link; paying still happens in the application.
+- It is **only decoration**. The application, consent, payment and review steps work exactly as described above, and the payment step is never decorated.
+- It does not collect or store anything.
+- If you are sensitive to motion, set your device to “reduce motion” and the snow, swinging and flying stop.
 
 On a phone it looks like this:
 
-![Christmas mode on a phone](images/43-christmas-landing-phone.png)
+![The Christmas look on a phone](images/43-christmas-landing-phone.png)
 
 ---
 

@@ -8,7 +8,7 @@ import { CloseIcon, MenuIcon } from "@/components/icons";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { useLocale } from "@/components/LocaleProvider";
 import { copy } from "@/lib/public-content";
-import { SeasonGarland, SeasonNavLink, SeasonTop } from "@/components/seasonal/Season"; // SEASONAL:christmas-2026
+import { SeasonGarland, SeasonTop } from "@/components/seasonal/Season"; // SEASONAL:christmas-2026
 
 /**
  * Header shared by every public page.
@@ -56,7 +56,6 @@ export function SiteHeader() {
           {link("/#benefits", t.navBenefits)}
           {link("/#process", t.navProcess)}
           {link("/help", t.navHelp)}
-          <SeasonNavLink current={pathname === "/gift" || pathname === "/gift/card"} /> {/* SEASONAL:christmas-2026 */}
         </nav>
 
         <div className="site-account">
@@ -84,7 +83,6 @@ export function SiteHeader() {
           {link("/#benefits", t.navBenefits)}
           {link("/#process", t.navProcess)}
           {link("/help", t.navHelp)}
-          <SeasonNavLink onNavigate={() => setOpen(false)} current={pathname === "/gift" || pathname === "/gift/card"} /> {/* SEASONAL:christmas-2026 */}
         </nav>
         <div className="site-menu-account" role="group" aria-label={t.accountNav}>
           {link("/member", t.memberLogin, "member-login")}

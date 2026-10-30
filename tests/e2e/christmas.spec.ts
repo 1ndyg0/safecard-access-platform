@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
-/** Christmas 2026 campaign (src/lib/seasonal). It is always on: no date window, no switch. */
+/** Christmas 2026 campaign (src/lib/seasonal). Always on: no date window, no switch, no gifting. */
 
 async function setLocale(page: Page, locale: 'fil' | 'en') {
   await page.addInitScript((value) => window.localStorage.setItem('safecard-locale', value), locale);
@@ -19,170 +19,87 @@ async function seriousViolations(page: Page) {
 }
 
 test.describe('campaign', () => {
-  test('landing page gains a gift band and the original hero is untouched', async ({ page }) => {
+  test('landing page is festive and the original hero is untouched', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('xmas-top')).toBeVisible();
     await expect(page.getByTestId('xmas-band')).toBeVisible();
     await expect(page.locator('.hero-grid #hero-title')).toBeVisible();
     await expect(page.locator('.hero-actions a[href="/apply"]')).toBeVisible();
     await expect(page.locator('.xmas-foot-tag')).toBeVisible();
-    // The band shows the same amounts as the benefits section.
-    const band = await page.getByTestId('xmas-band').innerText();
-    expect(band).toMatch(/300,000/);
+    await expect(page.locator('.xmas-garland').first()).toBeVisible();
+    // Same amounts as the benefits section.
+    expect(await page.getByTestId('xmas-band').innerText()).toMatch(/300,000/);
   });
 
-  test('the Gift link and the band lead to the gift pages', async ({ page }) => {
+  test('the band and the strip lead to the application', async ({ page }) => {
     await page.goto('/');
-    await page.getByTestId('xmas-band').getByRole('link').nth(1).click();
-    await expect(page).toHaveURL(/\/gift$/);
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.locator('.xmas-faq details')).toHaveCount(5);
-    await expect(page.locator('.xmas-steps li')).toHaveCount(3);
-    await page.getByRole('link', { name: /create a gift card/i }).first().click();
-    await expect(page).toHaveURL(/\/gift\/card$/);
+    await page.getByTestId('xmas-band').getByRole('link', { name: /apply now/i }).click();
+    await expect(page).toHaveURL(/\/apply$/);
   });
 
-  test('gift link opens the application with a welcome and nothing else changed', async ({ page }) => {
-    await page.goto(`/apply?gift=1`);
-    await expect(page.getByTestId('gift-welcome')).toBeVisible();
-    await expect(page.locator('.wizard-card h1')).toBeVisible();
-    await page.goto(`/apply`);
-    await expect(page.getByTestId('gift-welcome')).toHaveCount(0);
+  test('Santa, the reindeer and friends stand between the sections', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.xmas-scene')).toHaveCount(5);
+    for (const name of ['santa', 'reindeer', 'snowman', 'tree', 'gingerbread']) {
+      await expect(page.locator(`.xmas-scene img.xmas-art-${name}`).first(), name).toBeAttached();
+    }
+    await expect(page.locator('.xmas-flyby')).toHaveCount(1);
+    await expect(page.getByTestId('xmas-band').getByRole('img')).toHaveAttribute('alt', /Santa/);
+    // Every picture loads.
+    const broken = await page.evaluate(() => [...document.images].filter((image) => image.complete && image.naturalWidth === 0).map((image) => image.src));
+    expect(broken).toEqual([]);
   });
 
-  test('application garland is quiet and sits above, not inside, the form', async ({ page }) => {
-    await page.goto(`/apply`);
+  test('decoration is hidden from screen readers and never takes a click', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.xmas-scene img:not([alt=""])')).toHaveCount(0);
+    const pointer = await page.evaluate(() => [...document.querySelectorAll('.xmas-scene, .xmas-snow, .xmas-lights, .xmas-garland')].map((node) => getComputedStyle(node).pointerEvents));
+    expect(pointer.every((value) => value === 'none')).toBe(true);
+    await expect(page.locator('.xmas-scene').first().locator('xpath=..')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  test('the application is decorated except on the payment step', async ({ page }) => {
+    await page.goto('/apply');
     await expect(page.locator('.xmas-garland.light')).toBeVisible();
-    await expect(page.locator('.wizard-card .xmas-garland, .wizard-card .xmas-snow')).toHaveCount(0);
+    await expect(page.locator('.wizard-card .xmas-garland, .wizard-card .xmas-snow, .wizard-card .xmas-scene')).toHaveCount(0);
   });
 
-  test('snow stays still for people who prefer reduced motion', async ({ page }) => {
+  test('snow, swinging bells and the flying sleigh stay still for reduced motion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
-    // The whole snow layer is removed from rendering, so no flake animates.
     await expect(page.locator('.xmas-snow').first()).toBeHidden();
-    await expect(page.locator('.xmas-lights').first()).toBeVisible();
-    const lights = await page.locator('.xmas-lights').first().evaluate((node) => getComputedStyle(node).animationName);
-    expect(lights).toBe('none');
+    const names = await page.evaluate(() => ['.xmas-lights', '.xmas-flyby', '.xmas-strip-art', '.xmas-art-santa'].map((selector) => getComputedStyle(document.querySelector(selector)!).animationName));
+    expect(names).toEqual(['none', 'none', 'none', 'none']);
+  });
+
+  test('the Filipino site is festive too', async ({ page }) => {
+    await setLocale(page, 'fil');
+    await page.goto('/');
+    await expect(page.getByTestId('xmas-top')).toContainText('Maligayang Pasko');
+    await expect(page.getByTestId('xmas-band')).toContainText('Mag-apply');
   });
 });
 
-test.describe('gift card maker', () => {
-  test('the card changes with the names and the message carries them', async ({ page }) => {
-    await page.goto(`/gift/card`);
-    const canvas = page.getByTestId('gift-card-canvas');
-    await expect(canvas).toBeVisible();
-    const snapshot = () => canvas.evaluate((node) => (node as HTMLCanvasElement).toDataURL());
-    await page.waitForTimeout(400);
-    const before = await snapshot();
-    await page.getByLabel(/your name/i).fill('Ana');
-    await page.getByLabel(/their name/i).fill('Lola Nena');
-    await page.waitForTimeout(200);
-    const after = await snapshot();
-    expect(after).not.toBe(before);
-    await expect(page.locator('.xmas-message')).toContainText('Merry Christmas, Lola Nena');
-    await expect(page.locator('.xmas-message')).toContainText('Ana');
-    await expect(canvas).toHaveAttribute('aria-label', /Lola Nena/);
-    await expect(canvas).toHaveAttribute('width', '1080');
+test.describe('gifting is gone', () => {
+  test('the gift pages do not exist', async ({ page }) => {
+    for (const path of ['/gift', '/gift/card']) {
+      const response = await page.goto(path);
+      expect(response?.status(), path).toBe(404);
+    }
   });
 
-  test('angle brackets and control characters never reach the card or message', async ({ page }) => {
-    await page.goto(`/gift/card`);
-    await page.getByLabel(/their name/i).fill('<img src=x onerror=alert(1)>');
-    await expect(page.locator('.xmas-message')).not.toContainText('<');
-    await expect(page.locator('.xmas-form img')).toHaveCount(0);
-    expect(await page.getByLabel(/their name/i).inputValue()).not.toMatch(/[<>]/);
-  });
-
-  test('long names are cut so the card cannot overflow', async ({ page }) => {
-    await page.goto(`/gift/card`);
-    await page.getByLabel(/their name/i).fill('A'.repeat(80));
-    const value = await page.getByLabel(/their name/i).inputValue();
-    expect(value.length).toBeLessThanOrEqual(24);
-  });
-
-  test('download produces a PNG', async ({ page }) => {
-    await page.goto(`/gift/card`);
-    const [download] = await Promise.all([
-      page.waitForEvent('download'),
-      page.getByRole('button', { name: /download image/i }).click(),
-    ]);
-    expect(download.suggestedFilename()).toBe('safecard-gift.png');
-    await expect(page.getByRole('status')).toHaveText(/saved/i);
-  });
-
-  test('copy puts the message on the clipboard', async ({ page }) => {
-    await page.addInitScript(() => {
-      (window as unknown as { __copied: string[] }).__copied = [];
-      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (text: string) => { (window as unknown as { __copied: string[] }).__copied.push(text); } } });
-    });
-    await page.goto(`/gift/card`);
-    await page.getByLabel(/their name/i).fill('Ben');
-    await page.getByRole('button', { name: /copy message/i }).click();
-    await expect(page.getByRole('status')).toHaveText(/copied/i);
-    const copied = await page.evaluate(() => (window as unknown as { __copied: string[] }).__copied);
-    expect(copied[0]).toContain('Merry Christmas, Ben');
-    expect(copied[0]).toContain('/apply?gift=1');
-      });
-
-  test('Share button only appears where the browser can share, and shares text and image', async ({ page }) => {
-    await page.addInitScript(() => { Object.defineProperty(navigator, 'share', { configurable: true, value: undefined }); });
-    await page.goto(`/gift/card`);
-    await expect(page.getByRole('button', { name: /download image/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /^share/i })).toHaveCount(0);
-
-    const sharing = await page.context().newPage();
-    await sharing.addInitScript(() => {
-      localStorage.setItem('safecard-locale', 'en');
-      const calls: unknown[] = [];
-      (window as unknown as { __shared: unknown[] }).__shared = calls;
-      Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true });
-      Object.defineProperty(navigator, 'share', { configurable: true, value: async (data: ShareData) => { calls.push({ text: data.text, files: (data.files ?? []).map((file) => `${file.name}:${file.type}`) }); } });
-    });
-    await sharing.goto(`/gift/card`);
-    await sharing.getByRole('button', { name: /^share/i }).click();
-    await expect(sharing.getByRole('status')).toHaveText(/./);
-    const shared = await sharing.evaluate(() => (window as unknown as { __shared: { text: string; files: string[] }[] }).__shared);
-    expect(shared).toHaveLength(1);
-    expect(shared[0].files).toEqual(['safecard-gift.png:image/png']);
-    expect(shared[0].text).toContain('/apply?gift=1');
-  });
-
-  test('closing the share sheet is not reported as an error', async ({ page }) => {
-    await page.addInitScript(() => {
-      Object.defineProperty(navigator, 'share', { configurable: true, value: async () => { throw new DOMException('closed', 'AbortError'); } });
-    });
-    await page.goto(`/gift/card`);
-    await page.getByRole('button', { name: /^share/i }).click();
-    await expect(page.getByRole('status')).toHaveText('');
-  });
-
-  test('nothing is sent to a server and nothing is stored', async ({ page }) => {
-    const requests: string[] = [];
-    page.on('request', (request) => { if (request.method() !== 'GET') requests.push(`${request.method()} ${request.url()}`); });
-    await page.goto(`/gift/card`);
-    await page.getByLabel(/their name/i).fill('Private Name');
-    await page.getByLabel(/your name/i).fill('Another Name');
-    await page.getByRole('button', { name: /download image/i }).click();
-    expect(requests).toEqual([]);
-    const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }) + document.cookie);
-    expect(stored).not.toMatch(/Private Name|Another Name/);
-  });
-
-  test('Filipino card text can be chosen independently of the site language', async ({ page }) => {
-    await page.goto(`/gift/card`);
-    await page.getByLabel(/their name/i).fill('Lola');
-    await page.locator('.xmas-segment').getByText('Filipino', { exact: true }).click();
-    await expect(page.getByRole('radio', { name: 'Filipino' })).toBeChecked();
-    await expect(page.locator('.xmas-message')).toContainText('Maligayang Pasko, Lola');
-    await page.locator('.xmas-segment').getByText('English', { exact: true }).click();
-    await expect(page.getByRole('radio', { name: 'English' })).toBeChecked();
-    await expect(page.locator('.xmas-message')).toContainText('Merry Christmas, Lola');
+  test('no page offers a gift link, button or welcome', async ({ page }) => {
+    for (const path of ['/', '/benefits', '/help', '/apply', '/apply?gift=1']) {
+      await page.goto(path);
+      const gifts = await page.evaluate(() => [...document.querySelectorAll('a, button')].map((node) => `${node.textContent ?? ''} ${node.getAttribute('href') ?? ''}`).filter((text) => /\bgift|regalo/i.test(text)));
+      expect(gifts, path).toEqual([]);
+      await expect(page.getByTestId('gift-welcome')).toHaveCount(0);
+    }
   });
 });
 
 test.describe('accessibility and layout', () => {
-  const pages = ['/', '/gift', '/gift/card', '/apply?gift=1'];
+  const pages = ['/', '/benefits', '/help', '/apply'];
   for (const locale of ['en', 'fil'] as const) {
     for (const scheme of ['light', 'dark'] as const) {
       test(`no serious axe violations (${locale}, ${scheme})`, async ({ page }) => {
@@ -190,7 +107,6 @@ test.describe('accessibility and layout', () => {
         await page.emulateMedia({ colorScheme: scheme });
         for (const path of pages) {
           await page.goto(path);
-                // Let fonts and the card art settle so colours are final.
           await page.waitForTimeout(500);
           expect(await seriousViolations(page), `${path} ${locale} ${scheme}`).toEqual([]);
         }
@@ -198,7 +114,7 @@ test.describe('accessibility and layout', () => {
     }
   }
 
-  for (const width of [320, 375, 768]) {
+  for (const width of [320, 375, 768, 1440]) {
     test(`no sideways scrolling at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });
       for (const path of pages) {
@@ -208,13 +124,4 @@ test.describe('accessibility and layout', () => {
       }
     });
   }
-
-  test('keyboard can reach and operate the card maker', async ({ page }) => {
-    await page.goto(`/gift/card`);
-    await page.getByLabel(/your name/i).focus();
-    await page.keyboard.type('Ana');
-    await page.keyboard.press('Tab');
-    await page.keyboard.type('Ben');
-    await expect(page.locator('.xmas-message')).toContainText('Merry Christmas, Ben');
-  });
 });

@@ -10,8 +10,7 @@ import { FaqSection } from "@/components/education/FaqSection";
 import { SectionIndex } from "@/components/education/SectionIndex";
 import { WhatYouGet } from "@/components/education/WhatYouGet";
 import { HelpBlock } from "@/components/HelpBlock";
-import { GiftBand } from "@/components/seasonal/GiftBand"; // SEASONAL:christmas-2026
-import { SeasonSnow } from "@/components/seasonal/Season"; // SEASONAL:christmas-2026
+import { SeasonBand, SeasonScene, SeasonSnow } from "@/components/seasonal/Season"; // SEASONAL:christmas-2026
 import { useLocale } from "@/components/LocaleProvider";
 import { ProcessTimeline } from "@/components/ProcessTimeline";
 import { PublicFooter } from "@/components/PublicFooter";
@@ -47,12 +46,15 @@ export function LandingExperience() {
           </div>
         </section>
 
-        <GiftBand /> {/* SEASONAL:christmas-2026 */}
+        <SeasonBand /> {/* SEASONAL:christmas-2026 */}
 
         <SectionIndex />
         <WhatYouGet />
+        <SeasonScene variant="workshop" /> {/* SEASONAL:christmas-2026 */}
         <CoverageSection />
+        <SeasonScene variant="friends" /> {/* SEASONAL:christmas-2026 */}
         <AccidentSection />
+        <SeasonScene variant="village" flyby /> {/* SEASONAL:christmas-2026 */}
 
         <section className="process-section" id="process" aria-labelledby="process-title">
           <div className="process-inner">
@@ -65,6 +67,7 @@ export function LandingExperience() {
         </section>
 
         <FaqSection />
+        <SeasonScene variant="cheer" /> {/* SEASONAL:christmas-2026 */}
         <DownloadsSection />
 
         <div className="help-section"><HelpBlock /></div>

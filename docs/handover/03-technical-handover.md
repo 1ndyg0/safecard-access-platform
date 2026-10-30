@@ -34,7 +34,7 @@ SafeCard is **one website** that has a public side, a member side and an admin s
 - **Member area** (`/member`, `/member/status`, `/member/card`, `/member/library`): sign in with application reference + mobile number.
 - **Admin area** (`/admin/login`, `/admin`, `/admin/applications`): staff sign-in with email and password.
 - **API** (`/api/...`): the hidden server programs the screens talk to.
-- **Christmas mode** (`/gift`, `/gift/card`): a temporary campaign. See [section 12](#12-christmas-mode).
+- **Christmas mode**: a festive look on the public site. See [section 12](#12-christmas-mode).
 
 **What is deliberately *not* here (“parked”):** text messages, emails, push notifications, direct GCash connection, and direct connection to the Philippine Red Cross systems. Do not switch these on without a separate reviewed decision.
 
@@ -395,7 +395,7 @@ Things to do or confirm. None of them need a developer.
 
 ## 12. Christmas mode
 
-A temporary campaign (gift pages, a card maker, decorations) that **switches itself on and off by date** and can be stopped instantly. Everything about it, including how to stop or remove it, is in [`docs/christmas-mode.md`](../christmas-mode.md).
+A festive look (Santa, reindeer, snowman, tree, lights, garland, snow) that is **always on**, with no date window, no switch and no gifting. Everything about it, including what taking it down would involve, is in [`docs/christmas-mode.md`](../christmas-mode.md).
 
 ---
 
