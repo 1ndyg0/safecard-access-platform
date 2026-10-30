@@ -84,8 +84,11 @@ test.describe('applications list API', () => {
 
   test('the date range includes the whole of the closing day', async ({ page }) => {
     await signIn(page, world.staff.privacyAdmin);
-    const today = new Date().toISOString().slice(0, 10);
-    const inclusive = await (await page.request.get(url(`&status=all&from=${today}&to=${today}`))).json();
+    // The day comes from a seeded row, not the clock: seeded rows are hours old, so
+    // "today" in UTC holds none of them when the suite runs in the first hours after midnight UTC.
+    const all = await (await page.request.get(url('&status=all'))).json();
+    const closingDay = String(all.applications[0].received_at).slice(0, 10);
+    const inclusive = await (await page.request.get(url(`&status=all&from=${closingDay}&to=${closingDay}`))).json();
     expect(inclusive.pagination.total).toBeGreaterThan(0);
     const future = await (await page.request.get(url('&status=all&from=2099-01-01&to=2099-01-02'))).json();
     expect(future.pagination.total).toBe(0);
