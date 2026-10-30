@@ -188,10 +188,9 @@ async function newContext(opts = {}) {
     await p.goto(`${BASE}/`);
     await p.evaluate(() => window.scrollTo(0, document.querySelector('[data-testid="xmas-band"]').getBoundingClientRect().top + scrollY - 20));
   });
-  await shot(context, '42-christmas-card-maker', 'tall', async (p) => {
-    await p.goto(`${BASE}/gift/card`);
-    await p.getByLabel(/your name/i).fill('Ana');
-    await p.getByLabel(/their name/i).fill('Lola Nena');
+  await shot(context, '42-christmas-scenes', 'desktop', async (p) => {
+    await p.goto(`${BASE}/`);
+    await p.evaluate(() => window.scrollTo(0, document.querySelectorAll('.xmas-scene')[0].getBoundingClientRect().top + scrollY - 260));
   });
   await shot(context, '43-christmas-landing-phone', 'phone', (p) => p.goto(`${BASE}/`));
   await context.close();

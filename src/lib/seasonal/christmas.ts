@@ -8,6 +8,4 @@
 export const CHRISTMAS = {
   id: "christmas-2026",
   applyBy: { en: "December 10", fil: "Disyembre 10" },
-  /** Where a gift card sends the person who receives it. */
-  giftEntryPath: "/apply?gift=1",
 } as const;

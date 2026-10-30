@@ -22,7 +22,6 @@
 | **Pilot** | A small, careful first run before opening to many people. |
 | **Hypercare** | The extra-close watching right after launch. |
 | **Consent** | The person’s clear “yes, you may use my information for this”. |
-| **Gift card** | A friendly picture and message made in Christmas mode. It carries no payment and no private data. |
 
 ### The people and roles
 
@@ -148,10 +147,10 @@ It is always on. There is no date window and no switch.
 That is a separate request. See [the Christmas guide](../christmas-mode.md).
 
 **Does it change the real application?**
-No. It adds a gift band, a few pages, a card maker and light decoration. The application, consent, payment and review steps are unchanged, and the payment step is never decorated.
+No. It adds Christmas pictures, lights and a band on the home page. The application, consent, payment and review steps are unchanged, and the payment step is never decorated.
 
-**Does it store the names people type on a gift card?**
-No. The card is drawn in the visitor’s own browser. Nothing is sent to our server or saved.
+**Can people give SafeCard as a gift?**
+There is no gifting feature. A person applies for themselves, as usual.
 
 ### If you are worried
 

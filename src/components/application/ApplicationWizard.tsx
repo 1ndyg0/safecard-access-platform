@@ -8,8 +8,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { ArrowRightIcon, CheckIcon, PhoneIcon } from "@/components/icons";
 import { LocaleToggle } from "@/components/LocaleToggle";
 import { useLocale } from "@/components/LocaleProvider";
-import { GiftWelcome } from "@/components/seasonal/GiftWelcome"; // SEASONAL:christmas-2026
-import { SeasonGarland } from "@/components/seasonal/Season"; // SEASONAL:christmas-2026
+import { SeasonGarland, SeasonScene } from "@/components/seasonal/Season"; // SEASONAL:christmas-2026
 import { Field, ManualPaymentPanel } from "@/components/application/ManualPaymentPanel";
 
 type Step = "learn" | "check" | "decide" | "consent" | "profile" | "pay" | "complete" | "declined";
@@ -443,7 +442,6 @@ export function ApplicationWizard() {
           </ol>
         )}
 
-        {step === "learn" && <GiftWelcome />} {/* SEASONAL:christmas-2026 */}
 
         <section className="wizard-card" ref={headingRef}>
           {config?.mode === "unavailable" && <div className="parked-panel" role="alert"><strong>{ui.unavailable}</strong><p>{config.configurationError}</p></div>}
@@ -689,6 +687,7 @@ export function ApplicationWizard() {
           )}
         </section>
       </main>
+      {step !== "pay" && <SeasonScene variant="mini" />} {/* SEASONAL:christmas-2026 — the payment step stays undecorated */}
 
       {confirmingCancel && (
         <CancelDialog title={ui.cancelTitle} body={ui.cancelBody} confirmLabel={busy ? ui.cancelling : ui.cancelConfirm} keepLabel={ui.cancelKeep} busy={busy} onConfirm={discardApplication} onKeep={() => setConfirmingCancel(false)} />
