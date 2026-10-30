@@ -225,6 +225,7 @@ export function MemberStatus() {
                 <div className="notice-panel">
                   <strong>{t("reviewRejected", lang)}</strong>
                   <span>{t("rejectedGuidance", lang)}</span>
+                  <a className="button-quiet" href="tel:143">{t("callHotline", lang)}</a>
                 </div>
               )}
 
