@@ -4,7 +4,8 @@
 .safecard::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.07) 48%, transparent 60%); }
 .safecard-top, .safecard-chip-row, .safecard-bottom { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .safecard-brand { display: inline-flex; align-items: center; gap: 8px; font: 800 1.05rem/1 var(--font-jakarta); }
-.safecard-brand span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--red); font-size: 1.05rem; }
+.safecard-brand span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--red); line-height: 0; }
+.safecard-brand svg { display: block; }
 .safecard-chip { width: 44px; height: 33px; border-radius: 7px; background: linear-gradient(135deg, #f1d58a, #c99a3c 55%, #f1d58a); box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
 .safecard-label { color: rgba(255,255,255,.7); font: 700 .66rem/1 var(--font-jakarta); letter-spacing: .14em; text-transform: uppercase; }
 .safecard-ref { position: relative; z-index: 1; margin: 0; font: 600 clamp(1.15rem, 5.4vw, 1.6rem)/1.1 var(--font-ibm-mono); letter-spacing: .06em; overflow-wrap: anywhere; text-shadow: 0 1px 2px rgba(0,0,0,.4); }

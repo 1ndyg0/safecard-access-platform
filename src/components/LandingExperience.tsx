@@ -10,6 +10,8 @@ import { FaqSection } from "@/components/education/FaqSection";
 import { SectionIndex } from "@/components/education/SectionIndex";
 import { WhatYouGet } from "@/components/education/WhatYouGet";
 import { HelpBlock } from "@/components/HelpBlock";
+import { GiftBand } from "@/components/seasonal/GiftBand"; // SEASONAL:christmas-2026
+import { SeasonSnow } from "@/components/seasonal/Season"; // SEASONAL:christmas-2026
 import { useLocale } from "@/components/LocaleProvider";
 import { ProcessTimeline } from "@/components/ProcessTimeline";
 import { PublicFooter } from "@/components/PublicFooter";
@@ -25,6 +27,7 @@ export function LandingExperience() {
   return (
     <div className="site-frame">
       <SiteHeader />
+      <SeasonSnow /> {/* SEASONAL:christmas-2026 */}
       <main id="main-content">
         <section className="hero-grid" aria-labelledby="hero-title">
           <div className="hero-copy reveal">
@@ -45,6 +48,8 @@ export function LandingExperience() {
             <Image className="card-back" src="/images/education/card-back.webp" width={425} height={266} alt="" priority unoptimized />
           </div>
         </section>
+
+        <GiftBand /> {/* SEASONAL:christmas-2026 */}
 
         <SectionIndex />
         <WhatYouGet />

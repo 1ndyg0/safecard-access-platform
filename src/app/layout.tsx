@@ -3,6 +3,8 @@ import { Plus_Jakarta_Sans, DM_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { LocaleProvider } from "@/components/LocaleProvider";
 import { NavigationTracker } from "@/components/BackLink";
+import "@/components/seasonal/christmas.css"; // SEASONAL:christmas-2026
+import { seasonBootScript, seasonMode } from "@/lib/seasonal/christmas"; // SEASONAL:christmas-2026
 
 const jakartaSans = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -38,7 +40,10 @@ export default function RootLayout({ children }: Props) {
     <html
       lang="fil"
       className={`${jakartaSans.variable} ${dmSans.variable} ${ibmMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
+      {/* SEASONAL:christmas-2026 — sets data-season before first paint; does nothing out of season. */}
+      <head><script dangerouslySetInnerHTML={{ __html: seasonBootScript(seasonMode(process.env.NEXT_PUBLIC_SEASONAL_CAMPAIGN)) }} /></head>
       <body className="min-h-full flex flex-col" style={{ background: "var(--bg)", color: "var(--text)" }}>
         <LocaleProvider><NavigationTracker />{children}</LocaleProvider>
       </body>

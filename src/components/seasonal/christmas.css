@@ -1,0 +1,153 @@
+/*
+ * Christmas 2026 campaign styles. Nothing here shows until the head script
+ * puts data-season="christmas" on <html> (see lib/seasonal/christmas.ts).
+ * Decoration is drawn from files in /public/seasonal and never takes pointer
+ * events, so it cannot block a control.
+ */
+
+:root {
+  --xmas-green: #0F5C46;
+  --xmas-green-deep: #0B4636;
+  --xmas-gold: #E0A526;
+  --xmas-gold-ink: #7A4A06;
+  --xmas-wash: #FFF1D1;
+  --xmas-wash-edge: #EBD49A;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --xmas-gold-ink: #F2B35E;
+    --xmas-wash: rgba(224, 165, 38, 0.12);
+    --xmas-wash-edge: rgba(224, 165, 38, 0.36);
+  }
+}
+
+/* ── Visibility switch ───────────────────────────────────────── */
+.xmas-only { display: none; }
+html[data-season="christmas"] .xmas-only { display: block; }
+html[data-season="christmas"] .xmas-only.xmas-contents { display: contents; }
+html[data-season="christmas"] .xmas-off { display: none; }
+
+/* ── Strip, lights, garland (inside the public header) ───────── */
+.xmas-strip { padding: 10px 16px; background: var(--xmas-green); color: #fff; text-align: center; font: 600 .88rem/1.45 var(--font-jakarta); }
+.xmas-strip a { color: #fff; font-weight: 800; text-underline-offset: 3px; margin-left: 8px; white-space: nowrap; }
+.xmas-strip a:hover { text-decoration-thickness: 2px; }
+.xmas-lights { height: 34px; background: url("/seasonal/lights.svg") repeat-x center top / 170px 34px; pointer-events: none; animation: xmas-twinkle 3.2s ease-in-out infinite alternate; }
+.xmas-garland { height: 56px; margin-bottom: -22px; background: url("/seasonal/garland.svg") repeat-x center top / 220px 56px; pointer-events: none; }
+.xmas-garland.light { height: 44px; margin-bottom: -14px; background-size: 176px 44px; }
+@keyframes xmas-twinkle { from { opacity: .78; } to { opacity: 1; } }
+
+.xmas-nav-link { color: var(--red-ink) !important; font-weight: 800 !important; }
+
+/* ── Snow ────────────────────────────────────────────────────── */
+.xmas-snow { position: fixed; inset: 0; z-index: 4; overflow: hidden; pointer-events: none; }
+.xmas-snow i { position: absolute; top: -12px; left: var(--x); width: var(--s); height: var(--s); border-radius: 50%; background: #fff; box-shadow: 0 0 4px rgba(120, 160, 210, .7); opacity: .85; animation: xmas-fall var(--d) linear var(--delay) infinite; will-change: transform; }
+@keyframes xmas-fall { from { transform: translate3d(0, -4vh, 0); } 50% { transform: translate3d(26px, 52vh, 0); } to { transform: translate3d(-10px, 108vh, 0); } }
+
+/* ── Gift band on the landing page ───────────────────────────── */
+.xmas-band { width: min(1180px, calc(100% - 48px)); margin: 0 auto 72px; border: 1px solid var(--xmas-wash-edge); border-radius: 28px; background: var(--xmas-wash) url("/seasonal/snow.svg") repeat / 320px 280px; overflow: hidden; }
+.xmas-band-inner { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(240px, .9fr); gap: clamp(24px, 5vw, 64px); align-items: center; padding: clamp(28px, 5vw, 56px); }
+.xmas-badge { display: inline-block; margin: 0 0 14px; padding: 6px 14px; border-radius: 999px; background: var(--xmas-gold); color: #412402; font: 800 .78rem/1.2 var(--font-jakarta); }
+.xmas-band h2, .xmas-hero h1 { margin: 0 0 14px; color: var(--ink); font: 800 clamp(1.9rem, 4vw, 2.9rem)/1.1 var(--font-jakarta); letter-spacing: -.03em; text-wrap: balance; }
+.xmas-band p.lede, .xmas-hero p.lede { margin: 0 0 24px; max-width: 54ch; color: var(--text2); font-size: 1.08rem; line-height: 1.6; }
+.xmas-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.xmas-trust { display: flex; align-items: center; gap: 8px; margin: 20px 0 0; color: var(--text2); font-size: .94rem; line-height: 1.5; }
+.xmas-trust svg { flex: none; color: var(--green-ink); }
+.xmas-art { display: grid; place-items: center; }
+.xmas-art img { width: 100%; max-width: 440px; height: auto; }
+.xmas-ornaments { list-style: none; margin: 28px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.xmas-band .xmas-ornaments { margin: 0 clamp(28px, 5vw, 56px) clamp(28px, 5vw, 48px); }
+.xmas-ornaments li { position: relative; margin-top: 26px; padding: 34px 14px 16px; border: 1.5px solid var(--xmas-wash-edge); border-radius: 16px; background: var(--surface); text-align: center; }
+.xmas-ornaments li::before { content: ""; position: absolute; left: 50%; top: -26px; width: 2px; height: 22px; background: #8A7A5A; }
+.xmas-ornaments li::after { content: ""; position: absolute; left: 50%; top: -14px; width: 34px; height: 34px; margin-left: -17px; border-radius: 50%; background: var(--red); box-shadow: inset -5px -5px 0 rgba(0, 0, 0, .12), inset 5px 5px 0 rgba(255, 255, 255, .25); }
+.xmas-ornaments li:nth-child(2)::after { background: var(--xmas-green); }
+.xmas-ornaments li:nth-child(3)::after { background: var(--xmas-gold); }
+.xmas-ornaments strong { display: block; color: var(--ink); font: 800 1.15rem/1.2 var(--font-jakarta); }
+.xmas-ornaments span { display: block; margin-top: 6px; color: var(--text2); font-size: .88rem; line-height: 1.45; }
+
+/* ── Gift pages ──────────────────────────────────────────────── */
+.xmas-page { width: min(1080px, calc(100% - 48px)); margin: 0 auto; padding: 28px 0 72px; }
+.xmas-hero { margin: 0 0 56px; padding: clamp(32px, 6vw, 64px) clamp(20px, 5vw, 56px); border: 1px solid var(--xmas-wash-edge); border-radius: 28px; background: var(--xmas-wash) url("/seasonal/snow.svg") repeat / 320px 280px; text-align: center; }
+.xmas-hero p.lede { margin-inline: auto; }
+.xmas-hero .xmas-actions { justify-content: center; }
+.xmas-section-title { margin: 0 0 28px; color: var(--ink); font: 800 clamp(1.5rem, 3vw, 2.1rem)/1.15 var(--font-jakarta); letter-spacing: -.02em; text-align: center; }
+.xmas-steps { list-style: none; margin: 0 0 48px; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; counter-reset: xmas; }
+.xmas-steps li { position: relative; margin-top: 30px; padding: 44px 20px 24px; border: 1.5px solid var(--xmas-wash-edge); border-radius: 18px; background: var(--surface); text-align: center; }
+.xmas-steps li::before { content: counter(xmas); counter-increment: xmas; position: absolute; left: 50%; top: -30px; width: 56px; height: 56px; margin-left: -28px; display: grid; place-items: center; border-radius: 50%; background: var(--red); color: #fff; font: 800 1.5rem/1 var(--font-jakarta); }
+.xmas-steps li:nth-child(2)::before { background: var(--xmas-green); }
+.xmas-steps li:nth-child(3)::before { background: var(--xmas-gold); color: #412402; }
+.xmas-steps h3 { margin: 0 0 8px; color: var(--ink); font: 800 1.15rem/1.25 var(--font-jakarta); }
+.xmas-steps p { margin: 0; color: var(--text2); line-height: 1.55; }
+.xmas-notice { display: flex; gap: 16px; align-items: flex-start; margin: 0 0 48px; padding: 22px 24px; border: 1.5px solid var(--xmas-wash-edge); border-radius: 16px; background: var(--xmas-wash); }
+.xmas-notice svg { flex: none; margin-top: 2px; color: var(--xmas-gold-ink); }
+.xmas-notice h2 { margin: 0 0 4px; color: var(--ink); font: 800 1.15rem/1.25 var(--font-jakarta); }
+.xmas-notice p { margin: 0; color: var(--text2); line-height: 1.55; }
+.xmas-faq { margin: 0 0 48px; border-top: 1px solid var(--border); }
+.xmas-faq details { border-bottom: 1px solid var(--border); }
+.xmas-faq summary { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 56px; padding: 14px 4px; color: var(--ink); font: 700 1.02rem/1.4 var(--font-jakarta); cursor: pointer; list-style: none; }
+.xmas-faq summary::-webkit-details-marker { display: none; }
+.xmas-faq summary::after { content: "+"; flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--surface2); font-size: 1.2rem; line-height: 1; }
+.xmas-faq details[open] summary::after { content: "–"; }
+.xmas-faq details p { margin: 0 0 16px; padding: 0 4px; max-width: 66ch; color: var(--text2); line-height: 1.6; }
+.xmas-final { padding: 40px 24px; border-radius: 24px; background: var(--xmas-green); color: #fff; text-align: center; }
+.xmas-final h2 { margin: 0 0 8px; color: #fff; font: 800 clamp(1.5rem, 3vw, 2rem)/1.2 var(--font-jakarta); }
+.xmas-final p { margin: 0 0 20px; color: #D8EBDD; }
+.xmas-final .xmas-actions { justify-content: center; }
+.xmas-ended { width: min(640px, calc(100% - 48px)); margin: 56px auto; padding: 32px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); text-align: center; }
+.xmas-ended h1 { margin: 0 0 8px; color: var(--ink); font: 800 1.6rem/1.2 var(--font-jakarta); }
+.xmas-ended p { margin: 0 0 20px; color: var(--text2); line-height: 1.6; }
+
+/* ── Card maker ──────────────────────────────────────────────── */
+.xmas-maker { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 48px); align-items: start; }
+.xmas-form { display: grid; gap: 18px; }
+.xmas-form label, .xmas-form legend { display: block; margin: 0 0 6px; color: var(--ink); font: 700 .92rem/1.3 var(--font-jakarta); }
+.xmas-form input[type="text"] { width: 100%; min-height: 48px; padding: 0 14px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 1rem; }
+.xmas-form input[type="text"]:focus-visible { border-color: var(--ink); }
+.xmas-form fieldset { margin: 0; padding: 0; border: 0; }
+.xmas-segment { display: flex; border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+.xmas-segment label { flex: 1; margin: 0; }
+.xmas-segment input { position: absolute; opacity: 0; pointer-events: none; }
+.xmas-segment span { display: grid; place-items: center; min-height: 46px; color: var(--text2); font: 700 .92rem/1 var(--font-jakarta); cursor: pointer; }
+.xmas-segment input:checked + span { background: var(--ink); color: var(--bg); }
+.xmas-segment input:focus-visible + span { outline: 3px solid #f6bd35; outline-offset: -3px; }
+.xmas-hint { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--text2); font-size: .9rem; line-height: 1.45; }
+.xmas-hint svg { flex: none; color: var(--green-ink); }
+.xmas-preview canvas { display: block; width: 100%; height: auto; border: 1px solid var(--xmas-wash-edge); border-radius: 16px; background: var(--xmas-wash); }
+.xmas-buttons { display: grid; gap: 10px; margin-top: 16px; }
+.xmas-buttons .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.xmas-status { min-height: 1.5em; margin: 10px 0 0; color: var(--green-ink); font-weight: 700; font-size: .92rem; }
+.xmas-message { margin: 16px 0 0; padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text2); font-size: .9rem; line-height: 1.55; white-space: pre-line; overflow-wrap: anywhere; }
+.xmas-message strong { display: block; margin-bottom: 4px; color: var(--ink); font: 700 .82rem/1.2 var(--font-jakarta); }
+
+/* ── Welcome for someone who opens a gift link ───────────────── */
+.xmas-welcome { display: flex; gap: 14px; align-items: flex-start; margin: 0 0 18px; padding: 18px 20px; border: 1.5px solid var(--xmas-wash-edge); border-radius: 16px; background: var(--xmas-wash); }
+.xmas-welcome .orb { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; background: var(--red); color: #fff; }
+.xmas-welcome h2 { margin: 0 0 4px; color: var(--ink); font: 800 1.1rem/1.25 var(--font-jakarta); }
+.xmas-welcome p { margin: 0; color: var(--text2); line-height: 1.55; }
+
+/* ── Member card greeting and footer tag ─────────────────────── */
+.xmas-greeting { display: flex; gap: 12px; align-items: flex-start; margin-top: 16px; padding: 16px 18px; border: 1.5px solid var(--xmas-wash-edge); border-radius: 14px; background: var(--xmas-wash); color: var(--ink); }
+.xmas-greeting svg { flex: none; color: var(--xmas-gold-ink); }
+.xmas-greeting strong { display: block; margin-bottom: 2px; font: 800 1rem/1.3 var(--font-jakarta); }
+.xmas-greeting p { margin: 0; color: var(--text2); font-size: .94rem; line-height: 1.5; }
+.xmas-foot-tag { width: min(1180px, calc(100% - 48px)); margin: 0 auto; padding: 16px 20px; border-radius: 14px; background: var(--xmas-green); color: #fff; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 20px; font: 700 .95rem/1.4 var(--font-jakarta); }
+.xmas-foot-tag span:last-child { color: #D8EBDD; font-weight: 600; }
+
+@media (max-width: 860px) {
+  .xmas-band-inner, .xmas-maker { grid-template-columns: minmax(0, 1fr); }
+  .xmas-art { order: -1; }
+  .xmas-art img { max-width: 320px; }
+  .xmas-steps { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+}
+@media (max-width: 600px) {
+  .xmas-band, .xmas-page, .xmas-foot-tag { width: calc(100% - 32px); }
+  .xmas-ornaments { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .xmas-strip { font-size: .82rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xmas-snow { display: none; }
+  .xmas-lights { animation: none; }
+}
+@media print {
+  .xmas-only { display: none !important; }
+}

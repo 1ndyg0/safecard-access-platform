@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BrandMark } from "@/components/BrandMark";
 import { MemberNav } from "@/components/member/MemberNav";
+import { MemberGreeting } from "@/components/seasonal/MemberGreeting"; // SEASONAL:christmas-2026
 import "./card.css";
 
 type Benefit = { id: string; icon: string; title: { fil: string; en: string }; summary: { fil: string; en: string } };
@@ -28,7 +29,7 @@ export default function MemberCardPage() {
             <div className="member-card-view">
               <article className="safecard" aria-label="Electronic SafeCard">
                 <div className="safecard-top">
-                  <span className="safecard-brand"><span aria-hidden="true">+</span> SafeCard</span>
+                  <span className="safecard-brand"><span aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" focusable="false"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round" /></svg></span> SafeCard</span>
                   <span className="status-pill active">Approved</span>
                 </div>
                 <div className="safecard-chip-row">
@@ -46,6 +47,7 @@ export default function MemberCardPage() {
                 </div>
               </article>
               <p className="safecard-note">Approved by SafeCard administration. Emergency guidance: <strong>Hotline 143</strong></p>
+              <MemberGreeting /> {/* SEASONAL:christmas-2026 */}
               {card.benefits && card.benefits.length > 0 && (
                 <section className="card-benefits" aria-labelledby="card-benefits-heading">
                   <h2 id="card-benefits-heading">Your SafeCard benefits</h2>

@@ -63,7 +63,6 @@ export const whatYouGet = {
       { id: "burial", visual: { kind: "icon", name: "heart" }, amount: { en: "₱5,000", fil: "₱5,000" }, text: { en: "Helps your family pay for the burial after an accident", fil: "Tulong sa pamilya mo para sa libing pagkatapos ng aksidente" } },
       { id: "hospital", visual: { kind: "icon", name: "bed" }, amount: { en: "₱200 a day", fil: "₱200 kada araw" }, text: { en: "For each day you stay in the hospital, up to 60 days", fil: "Para sa bawat araw mo sa ospital, hanggang 60 araw" }, note: { en: "You must stay at least 24 hours.", fil: "Kailangang hindi bababa sa 24 oras ang pananatili mo." } },
     ] as readonly BenefitTile[],
-    footnote: { en: "The insurance company checks every claim and decides whether it is paid. The Red Cross helps you send it in.", fil: "Sinusuri ng insurance company ang bawat claim at sila ang nagpapasya kung babayaran ito. Tutulungan ka ng Red Cross na maipasa ito." },
   },
   services: {
     title: { en: "Help on the spot from the Red Cross", fil: "Agarang tulong mula sa Red Cross" },
@@ -72,7 +71,6 @@ export const whatYouGet = {
       { id: "ambulance", visual: { kind: "image", src: "/images/education/ambulance.webp", width: 321, height: 222 }, amount: { en: "1 ambulance ride", fil: "1 sakay sa ambulansya" }, text: { en: "To the nearest hospital after an accident", fil: "Papunta sa pinakamalapit na ospital pagkatapos ng aksidente" } },
       { id: "blood", visual: { kind: "image", src: "/images/education/blood-bag.webp", width: 255, height: 222 }, amount: { en: "1 unit of blood", fil: "1 unit ng dugo" }, text: { en: "For needs caused by an accident. Apheresis products are not included.", fil: "Para sa pangangailangang dulot ng aksidente. Hindi kasama ang apheresis products." } },
     ] as readonly BenefitTile[],
-    footnote: { en: "This is a Red Cross service, not insurance. It depends on what is available near you, so we cannot promise how fast help will arrive.", fil: "Serbisyo ito ng Red Cross, hindi insurance. Depende ito sa availability malapit sa iyo, kaya hindi namin maipapangako kung gaano kabilis darating ang tulong." },
   },
 } as const;
 
@@ -99,7 +97,6 @@ export const coverage = {
     { title: { en: "Taking part in a crime", fil: "Pakikilahok sa krimen" }, text: { en: "Willingly taking part in a crime.", fil: "Kusang pakikilahok sa krimen." } },
     { title: { en: "Dangerous jobs", fil: "Mapanganib na trabaho" }, text: { en: "Not covered if the accident is work-related, for jobs such as mining, firefighting, or police work.", fil: "Hindi sakop kung kaugnay ng trabaho ang aksidente, sa mga trabahong tulad ng pagmimina, pagbubumbero, o pagpupulis." } },
   ] as readonly CoverageItem[] },
-  note: { en: "This is a summary and does not list every case. The insurance policy wording decides.", fil: "Buod ito at hindi nito nalilista ang lahat ng kaso. Ang nakasulat sa polisiya ang masusunod." },
   wait: {
     title: { en: "When can you claim?", fil: "Kailan ka maaaring mag-claim?" },
     intro: { en: "Some claims open only after you have been a member for a while. Your start date is on your membership ID.", fil: "Ang ilang claim ay mabubuksan lamang pagkaraan ng ilang panahon bilang member. Nasa membership ID mo ang start date mo." },

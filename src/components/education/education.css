@@ -76,8 +76,6 @@
 .edu-tiles.two .edu-amount { color: var(--red-ink); }
 .edu-tile p { margin: 0; color: var(--ink); font-size: 1rem; line-height: 1.5; }
 .edu-tile small { color: var(--text2); font-size: .86rem; line-height: 1.5; }
-.edu-footnote { display: flex; gap: 10px; align-items: flex-start; margin: 0 18px 18px; padding: 14px 16px; border-radius: 12px; background: var(--surface2); color: var(--text2); font-size: .94rem; line-height: 1.55; }
-.edu-footnote svg { flex: none; margin-top: 3px; color: var(--text2); }
 @media (max-width: 960px) {
   .edu-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .edu-tile, .edu-tile.big, .edu-tiles.two .edu-tile { grid-column: span 1; }
@@ -87,7 +85,6 @@
   .edu-tiles { grid-template-columns: minmax(0, 1fr); padding: 14px; }
   .edu-tile, .edu-tile.big, .edu-tiles.two .edu-tile, .edu-tiles .edu-tile:last-child:nth-child(odd) { grid-column: span 1; }
   .edu-band-head { padding: 16px; }
-  .edu-footnote { margin: 0 14px 14px; }
 }
 
 /* ── Covered and not covered ──────────────────────────────────── */
@@ -103,7 +100,6 @@
 .edu-rows li:first-child { border-top: 0; }
 .edu-rows strong { color: var(--ink); font: 800 1rem/1.35 var(--font-jakarta); }
 .edu-rows span { color: var(--text2); font-size: .98rem; line-height: 1.55; }
-.edu-note { margin: 18px 0 0; color: var(--text2); font-size: .92rem; line-height: 1.6; }
 .edu-wait-title { margin: 52px 0 0; color: var(--ink); font: 800 1.45rem/1.2 var(--font-jakarta); }
 .edu-wait-intro { margin: 8px 0 20px; max-width: 62ch; color: var(--text2); line-height: 1.6; }
 .edu-wait { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }

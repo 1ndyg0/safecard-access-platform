@@ -99,8 +99,7 @@ test.describe('landing page: content', () => {
     for (const text of ['₱300,000', '₱10,000', '₱5,000', '₱200 a day', 'up to 60 days', 'at least 24 hours', 'Per accident']) {
       await expect(benefits).toContainText(text);
     }
-    await expect(benefits).toContainText('not insurance');
-    await expect(benefits).toContainText('cannot promise');
+    await expect(page.locator('.edu-footnote, .edu-note')).toHaveCount(0);
     const covered = page.locator('#covered');
     for (const text of ['Day 1', '30 days', '6 months', 'Racing and risky sports', 'Typhoon, flood']) await expect(covered).toContainText(text);
     const accident = page.locator('#accident');
