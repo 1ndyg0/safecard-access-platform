@@ -20,7 +20,7 @@
 | **Member** | Someone whose application was approved (or who signs in to check theirs). |
 | **Campaign** | A named group of applications with its own limit and rules, such as “Safe Card Pilot 2026”. |
 | **Pilot** | A small, careful first run before opening to many people. |
-| **Hypercare** | The extra-close watching in the first weeks after launch. |
+| **Hypercare** | The extra-close watching right after launch. |
 | **Consent** | The person’s clear “yes, you may use my information for this”. |
 | **Gift card** | A friendly picture and message made in Christmas mode. It carries no payment and no private data. |
 

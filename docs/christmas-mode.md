@@ -93,5 +93,3 @@ Nothing in the database or storage needs cleaning up, because the campaign never
 - **No QR code.** The earlier design showed one; the project removed its QR dependency, and a link is simpler and just as shareable.
 - **No giver name in the link or the member card.** Carrying a name would mean storing or transmitting personal data. The member greeting is generic.
 - **The gift band is added under the hero, not instead of it,** so the real hero, its tests and its wording are untouched.
-- **Apply-by date (10 December)** is a placeholder that needs the owner’s and the Philippine Red Cross’s confirmation of real processing times before launch.
-- **Filipino wording** for the campaign is a draft, like the rest of the Filipino text, until the Red Cross approves it.

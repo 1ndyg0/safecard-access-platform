@@ -2,7 +2,7 @@
 
 *For the people who review applications. No technical knowledge needed.*
 
-**In this manual:** [Your job in one sentence](#1-your-job-in-one-sentence) · [Signing in](#2-signing-in) · [The overview](#3-the-overview-screen) · [The applications list](#4-the-applications-list) · [Reviewing one application](#5-reviewing-one-application) · [Approving](#6-approving) · [Rejecting](#7-rejecting) · [Rules for handling private data](#8-rules-for-handling-private-data) · [Roles](#9-roles-who-can-do-what) · [Tricky situations](#10-tricky-situations) · [Daily checklist](#11-your-daily-checklist)
+**In this manual:** [Your job in one sentence](#1-your-job-in-one-sentence) · [Signing in](#2-signing-in) · [The overview](#3-the-overview-screen) · [The applications list](#4-the-applications-list) · [Reviewing one application](#5-reviewing-one-application) · [Approving](#6-approving) · [Rejecting](#7-rejecting) · [Rules for handling private data](#8-rules-for-handling-private-data) · [Roles](#9-roles-who-can-do-what) · [Tricky situations](#10-tricky-situations) · [Your checklist](#11-your-checklist)
 
 > **Practice first.** The pictures in this manual use **sample people** (Ana Sample, Ben Example, Carla Demo) and a **fake receipt**. Learn the screens on practice data before you touch a real applicant.
 
@@ -192,9 +192,9 @@ There is **no screen to add or remove staff** in this release. Accounts and role
 
 ---
 
-## 11. Your daily checklist
+## 11. Your checklist
 
-Print this or keep it handy.
+Print this or keep it handy, and use it every time you work.
 
 - [ ] Sign in. Check you are on the right **campaign**.
 - [ ] Open **Awaiting review** and set **Oldest first**.

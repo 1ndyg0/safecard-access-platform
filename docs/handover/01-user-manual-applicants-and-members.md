@@ -128,7 +128,7 @@ There is **no text-message code**. After a successful sign-in you stay signed in
 
 The status page shows your progress in plain words and tells you **what to do next**.
 
-**While you wait** (the usual first few days):
+**While you wait:**
 
 ![Member status while waiting for review](images/20-member-status-waiting.png)
 
@@ -138,7 +138,7 @@ The status page shows your progress in plain words and tells you **what to do ne
 
 | You see | It means | You should |
 |---|---|---|
-| *Pending / waiting for review* | An administrator has not looked yet. | Wait. Check again tomorrow. |
+| *Pending / waiting for review* | An administrator has not looked yet. | Wait. Check your status page again later. |
 | *Approved* | Application and payment proof accepted. | Open your card. |
 | *Rejected* (with a reason) | Something was wrong, such as a mismatched amount. | Read the reason; contact the Help number if unsure. |
 | *Correction needed* | A detail needs fixing. | Use the correction page the site offers. |

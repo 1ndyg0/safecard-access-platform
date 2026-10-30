@@ -1,25 +1,21 @@
 # Hypercare plan and runbooks
 
-*What to do in the first weeks after real applicants arrive, and exactly what to do when something goes wrong.*
+*What to do while the pilot is closely watched after real applicants arrive, and exactly what to do when something goes wrong.*
 
 > **Read this first.** If something looks wrong and you are not sure what it is: **do not guess, do not delete anything.** Go to [the Stop button](#2-the-stop-button), then tell the owner. Stopping is safe and can be undone.
 
 **In this document:** [1. What hypercare is](#1-what-hypercare-is) · [2. The Stop button](#2-the-stop-button) · [3. Who does what](#3-who-does-what) · [4. The hypercare log](#4-the-hypercare-log) · [5. Checklists](#5-checklists) · [6. How serious is it?](#6-how-serious-is-it) · [7. Runbooks](#7-runbooks) · [8. Ending hypercare](#8-ending-hypercare) · [9. Handover sign-off](#9-handover-sign-off)
 
-> **Proposed, not agreed.** The checking rhythm, review speeds and severity timings below are **suggested starting points** written for this handover. They are not agreed service levels. The owner should confirm or change them before launch. The *safety rules* (the Stop button, never deleting evidence, owner-only deploys) are **not** suggestions; they come from the project’s release gates.
-
 ---
 
 ## 1. What hypercare is
 
-When a new restaurant opens, the owner stays in the kitchen for the first weeks, tastes every dish, and fixes small things the same day. **Hypercare is that.** For a short time after real people start using SafeCard, we watch it much more closely than usual, answer questions fast, and write down everything we learn.
-
-![The four hypercare weeks](images/diagram-hypercare.png)
+When a new restaurant opens, the owner stays in the kitchen, tastes every dish, and fixes small things right away. **Hypercare is that.** Right after real people start using SafeCard, we watch it much more closely than usual, answer questions fast, and write down everything we learn.
 
 **Goals**
 
 1. No real applicant is harmed, embarrassed, or left waiting without an answer.
-2. Every application is reviewed fairly and on time.
+2. Every application is reviewed fairly.
 3. Small problems are found while they are still small.
 4. We learn what to fix before opening to more people.
 
@@ -102,7 +98,7 @@ Keep **one running log**. A shared document or spreadsheet is fine. It is the me
 
 | When | Who | What happened / what I saw | Severity | What I did | Follow-up needed? |
 |---|---|---|---|---|---|
-| 2026-__-__ 09:10 | | | | | |
+| | | | | | |
 
 **Rules for the log**
 
@@ -114,17 +110,17 @@ Keep **one running log**. A shared document or spreadsheet is fine. It is the me
 
 ## 5. Checklists
 
-### Each check (morning; plus evening in week 1)
+### Each check
 
 - [ ] Open the **public site** on your phone. Does the home page load? Does **Apply** open?
 - [ ] Switch language FIL ⇄ EN. Does it still read correctly?
 - [ ] Sign in to **admin**. Does the overview load with sensible numbers?
-- [ ] **Awaiting review**: is anything waiting longer than the target? (Proposed: same day in week 1, within 1 day in week 2, within 2 days in week 3.)
+- [ ] **Awaiting review**: is any application still waiting that should already have a decision?
 - [ ] Look in **Vercel → Logs** for red errors and in **Supabase → Logs** for repeated failures. You are looking for *unusual*, not *perfect*.
 - [ ] Any messages or calls from applicants? Log them.
 - [ ] Anything odd? Write it in the log.
 
-### Once a week
+### Regular review
 
 - [ ] Count: applications received, approved, rejected, still waiting.
 - [ ] Read the **rejection reasons**: are they clear and kind? Are the same ones repeating (meaning the form needs clearer instructions)?
@@ -132,18 +128,18 @@ Keep **one running log**. A shared document or spreadsheet is fine. It is the me
 - [ ] Confirm **only the right people** have staff accounts.
 - [ ] Confirm the three **safety switches** are still what you expect.
 - [ ] Confirm the **campaign cap** (default 50) has not been reached silently.
-- [ ] Review the log with the owner (15 minutes).
+- [ ] Review the log with the owner.
 
 ---
 
 ## 6. How serious is it?
 
-| Level | What it looks like | Do this | Proposed time to react |
-|---|---|---|---|
-| **1: Critical** | Private data exposed, secret leaked, money shown wrongly, unexplained decisions | **[Stop button](#2-the-stop-button)** → tell owner now → log | Immediately |
-| **2: Major** | Applicants cannot apply or upload; admins cannot sign in; reviewers cannot open applications | Tell owner now. Stop if it involves data or money. | Same hour |
-| **3: Minor** | Wrong wording, a layout glitch, one slow page, one confusing message | Screenshot (no private data) → log → fix through a normal pull request | Same week |
-| **4: Idea** | “It would be nicer if…” | Log it for the owner | Whenever |
+| Level | What it looks like | Do this |
+|---|---|---|
+| **1: Critical** | Private data exposed, secret leaked, money shown wrongly, unexplained decisions | **[Stop button](#2-the-stop-button)** → tell owner now → log |
+| **2: Major** | Applicants cannot apply or upload; admins cannot sign in; reviewers cannot open applications | Tell owner now. Stop if it involves data or money. |
+| **3: Minor** | Wrong wording, a layout glitch, one slow page, one confusing message | Screenshot (no private data) → log → fix through a normal pull request |
+| **4: Idea** | “It would be nicer if…” | Log it for the owner |
 
 ---
 
@@ -231,17 +227,17 @@ Each runbook says **what you see**, **what to do**, and **who to tell**. They ar
 
 ## 8. Ending hypercare
 
-At the end of week 4, hold a short **exit review** (the owner and Indy, 30 minutes). Hypercare ends when **all** of these are true:
+When you think hypercare can end, hold a short **exit review** (the owner and Indy). Hypercare ends when **all** of these are true:
 
 - [ ] No Level 1 or Level 2 issue is open.
-- [ ] Applications are being reviewed within the agreed time, with no backlog.
+- [ ] No application is waiting without a decision, and nobody is waiting on an answer.
 - [ ] The log has been read through and every follow-up is done, scheduled, or deliberately dropped.
 - [ ] The Help page answers the most common questions people asked.
-- [ ] Staff accounts match the people who should have them, and the shared temporary password has been retired (see [housekeeping](03-technical-handover.md#11-security-housekeeping)).
+- [ ] Staff accounts match the people who should have them.
 - [ ] A backup plan exists, or the owner has written down why not yet.
 - [ ] The owner has signed off in writing.
 
-If not all are true, **extend hypercare for one more week** and review again. There is no shame in extending.
+If not all are true, **keep hypercare going** and review again. There is no shame in extending.
 
 ---
 
@@ -249,7 +245,7 @@ If not all are true, **extend hypercare for one more week** and review again. Th
 
 Use this page to record that the handover happened.
 
-| Check | Done (date) | Initials |
+| Check | Done | Initials |
 |---|---|---|
 | I have read the [README](README.md) and know who owns what | | |
 | I can explain, in my own words, what SafeCard does | | |
@@ -257,7 +253,7 @@ Use this page to record that the handover happened.
 | I know where the **Stop button** is and what each step does | | |
 | I have the contact table filled in | | |
 | I know the **two rules that never bend** (code only to the project repo; live changes only from the owner’s Vercel, after a clear yes) | | |
-| I know which Supabase project is live (and wrote it down) | | |
+| I know which Supabase project belongs to our deployment, and which one is not ours | | |
 | I have asked every question I had | | |
 
-**Handed over by:** ______________ **Received by:** ______________ **Date:** ____________
+**Handed over by:** ______________ **Received by:** ______________

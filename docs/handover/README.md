@@ -9,19 +9,19 @@
 
 ## What is in the pack
 
-| # | Document | Read it if you… | Time |
-|---|---|---|---|
-| 1 | [User manual: applicants and members](01-user-manual-applicants-and-members.md) | want to understand what the public sees, or need to help someone apply | 20 min |
-| 2 | [User manual: administrators](02-user-manual-administrators.md) | will review applications and approve or reject them | 25 min |
-| 3 | [Technical handover](03-technical-handover.md) | will look after the code, the database or the website hosting | 45 min |
-| 4 | [Hypercare plan and runbooks](04-hypercare-and-runbooks.md) | are on watch after launch, or something just went wrong | 30 min |
-| 5 | [Glossary and FAQ](05-glossary-and-faq.md) | meet a word you do not know | as needed |
-| + | [Christmas mode guide](../christmas-mode.md) | need to preview, stop or remove the Christmas campaign | 10 min |
+| # | Document | Read it if you… |
+|---|---|---|
+| 1 | [User manual: applicants and members](01-user-manual-applicants-and-members.md) | want to understand what the public sees, or need to help someone apply |
+| 2 | [User manual: administrators](02-user-manual-administrators.md) | will review applications and approve or reject them |
+| 3 | [Technical handover](03-technical-handover.md) | will look after the code, the database or the website hosting |
+| 4 | [Hypercare plan and runbooks](04-hypercare-and-runbooks.md) | are on watch after launch, or something just went wrong |
+| 5 | [Glossary and FAQ](05-glossary-and-faq.md) | meet a word you do not know |
+| + | [Christmas mode guide](../christmas-mode.md) | need to preview, stop or remove the Christmas campaign |
 
 ## Where to start
 
 ```
- Never seen the app?  ──►  Read 1, then look at the live site for 10 minutes
+ Never seen the app?  ──►  Read 1, then look at the live site
  Reviewing people?    ──►  Read 2, then practise with the sample data
  Looking after it?    ──►  Read 3, then 4
  Something is on fire ──►  Jump straight to the Stop button in 4
@@ -48,13 +48,10 @@
 - **Diagrams** are drawn for this pack. Their source files (`.svg`) sit next to the pictures in [`images/`](images/).
 - To retake every screenshot after the app changes, see [Retaking the pictures](03-technical-handover.md#13-retaking-the-pictures).
 
-## Things this pack could not settle (read before you rely on it)
+## Things worth knowing before you rely on this pack
 
-These are open questions for the owner. They are repeated where they matter.
-
-1. **Two different Supabase project IDs appear in our notes.** The repository documents name `ajyhlkzbocjeepglkhrl`; the owner’s working notes name `ubkbrgxgpxycoqsqiwga`. Confirm which one is the live database in the Supabase dashboard before any production step.
-2. **An old setup guide contains a shared temporary password** ([`docs/indy-migration-guide.md`](../indy-migration-guide.md)). Treat it as burned. See [Security housekeeping](03-technical-handover.md#11-security-housekeeping).
+1. **There are two SafeCard deployments, each with its own database.** Ours (the owner’s own Vercel account, `safecard-access-platform-phi.vercel.app`) uses Supabase project `ubkbrgxgpxycoqsqiwga`. The repository owner’s separate deployment (`safecard-access-platform.vercel.app`) uses `ajyhlkzbocjeepglkhrl`. The repository’s older docs (`release-gates.md`, `controlled-production-pilot.md`) describe that second one. See [the technical handover](03-technical-handover.md#6-the-database-supabase).
+2. **The old shared-password guide has been retired.** The files `docs/indy-migration-guide.md` and `docs/indy-pilot-accounts-setup.sql` were removed from the repository. The accounts they created must still have their passwords changed in Supabase. See [Security housekeeping](03-technical-handover.md#11-security-housekeeping).
 3. **Some documents describe a controlled-pilot branch** that adds a first-administrator setup page (`/admin/setup`) and a bootstrap script. Check whether that branch has been merged before following those steps.
-4. **Hypercare numbers** (how often to check, how fast to review) in document 4 are **proposed starting points**, not agreed targets. Confirm or change them with the owner.
 
-*Written for the Christmas 2026 release (October 2026). If you change the app, update the matching page here in the same pull request.*
+*If you change the app, update the matching page here in the same pull request.*

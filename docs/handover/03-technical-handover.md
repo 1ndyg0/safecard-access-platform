@@ -48,7 +48,7 @@ SafeCard is **one website** that has a public side, a member side and an admin s
 - **Git**, to download the code.
 - For the *full* setup only: the **Supabase CLI** and a **Docker-compatible app** (Docker Desktop or similar).
 
-### Option A: “Quick look” (practice mode, no database, 10 minutes)
+### Option A: “Quick look” (practice mode, no database)
 
 This is enough to see every public page and the apply screens.
 
@@ -202,7 +202,14 @@ In live production the app is **fail-closed**: if any required value is missing 
 
 ## 6. The database (Supabase)
 
-> ⚠️ **Confirm the project first.** The repository documents refer to Supabase project `ajyhlkzbocjeepglkhrl`. The owner’s working notes refer to `ubkbrgxgpxycoqsqiwga`. Open the Supabase dashboard, check which project the live site’s `NEXT_PUBLIC_SUPABASE_URL` points to, and write the answer here before doing anything to a live database.
+> **Which Supabase project is which.** SafeCard has two live deployments, each with its own database. This was confirmed from the security headers each live site sends.
+>
+> | Deployment | Address | Supabase project |
+> |---|---|---|
+> | **Ours** (the owner’s own Vercel account) | `safecard-access-platform-phi.vercel.app` | `ubkbrgxgpxycoqsqiwga` |
+> | The repository owner’s separate deployment | `safecard-access-platform.vercel.app` | `ajyhlkzbocjeepglkhrl` |
+>
+> The older repository documents (`release-gates.md`, `controlled-production-pilot.md`) describe the **second** one. Never run database commands against, or deploy to, a project that is not yours. The project’s own test setup refuses to seed `ajyhlkzbocjeepglkhrl`. Your local database link (`supabase/.temp/project-ref`) should read `ubkbrgxgpxycoqsqiwga`.
 
 ### What lives in it
 
@@ -297,16 +304,16 @@ Fee: **₱1,200 a year**. The official payment routes and account details are ke
 
 Think of tests as a team of tireless inspectors.
 
-| Command | What it checks | Time |
-|---|---|---|
-| `npm run lint` | Code style problems and common mistakes | seconds |
-| `npm run typecheck` | The labels (types) all line up | seconds |
-| `npm test` | Hundreds of small logic checks (Vitest) | seconds |
-| `npm run build` | The whole site can be built for real | ~1 minute |
-| `npm run test:e2e` | Robot browsers click through the public site in Chrome, Firefox, Safari, and two phone sizes | ~15–30 minutes |
-| `npm run test:performance` | Speed budgets (loading time) | few minutes |
-| `npm run test:e2e:admin` / `test:performance:admin` | Admin screens, against a disposable practice database | needs Docker |
-| `npm run verify` | **All of the main ones, in order** | long |
+| Command | What it checks |
+|---|---|
+| `npm run lint` | Code style problems and common mistakes |
+| `npm run typecheck` | The labels (types) all line up |
+| `npm test` | Hundreds of small logic checks (Vitest) |
+| `npm run build` | The whole site can be built for real |
+| `npm run test:e2e` | Robot browsers click through the public site in Chrome, Firefox, Safari, and two phone sizes |
+| `npm run test:performance` | Speed budgets (loading time) |
+| `npm run test:e2e:admin` / `test:performance:admin` | Admin screens, against a disposable practice database |
+| `npm run verify` | **All of the main ones, in order** |
 
 To run the browser tests against a site you already started (as in option C above):
 
@@ -378,7 +385,7 @@ Things to do or confirm. None of them need a developer.
 
 | # | Item | Why |
 |---|---|---|
-| 1 | **Retire the shared temporary password.** [`docs/indy-migration-guide.md`](../indy-migration-guide.md) and `docs/indy-pilot-accounts-setup.sql` contain a shared temporary password and fixed account details for pilot accounts. Anyone who ever saw those files can try that password. **Change the passwords on those accounts** and ask the owner whether to delete or rewrite those two files (the git history will still contain them). | A password in a repository is a published password. |
+| 1 | **Change the passwords on the pilot accounts that the retired setup guide created.** The old guide (`docs/indy-migration-guide.md`) and its SQL file were removed from the repository, but they still exist in the project’s git history, so the shared temporary password they contained must be treated as public. Change it in **Supabase → Authentication → Users** for each account. | A password in a repository is a published password. |
 | 2 | Confirm every staff account uses a **private** password nobody else knows. | Accountability. |
 | 3 | Confirm Production, Preview and Development use **different** secrets and data. | One leak must not open everything. |
 | 4 | Confirm the `SUPABASE_SERVICE_ROLE_KEY` is only in Vercel’s **server** settings. | It bypasses database rules. |
@@ -389,9 +396,7 @@ Things to do or confirm. None of them need a developer.
 
 ## 12. Christmas mode
 
-A temporary campaign (gift pages, a card maker, decorations) that **switches itself on and off by date** and can be stopped instantly. Everything about it is in [`docs/christmas-mode.md`](../christmas-mode.md). In one picture:
-
-![Christmas mode dates](images/diagram-christmas-timeline.png)
+A temporary campaign (gift pages, a card maker, decorations) that **switches itself on and off by date** and can be stopped instantly. Everything about it, including how to stop or remove it, is in [`docs/christmas-mode.md`](../christmas-mode.md).
 
 ---
 
@@ -413,15 +418,11 @@ The script answers every request with **fake sample data**, so it cannot touch a
 
 | # | Item | Suggested next step |
 |---|---|---|
-| 1 | Which Supabase project is live ([section 6](#6-the-database-supabase)). | Owner confirms; write it down. |
-| 2 | Shared temporary password in an old guide ([section 11](#11-security-housekeeping)). | Rotate, then retire the files. |
-| 3 | A controlled-pilot branch adds a first-administrator setup page and bootstrap script. Docs mention `/admin/setup`. | Confirm whether that branch is merged; if not, those steps do not apply yet. |
-| 4 | No screen to manage staff or roles. | Roles are provisioned by script or SQL; keep a written list of who holds which role. |
-| 5 | No text-message or email notifications. | By design; members check the portal. |
-| 6 | Filipino text is a **translation draft** until the Red Cross approves it. | Ask PRC to review before final launch. |
-| 7 | Backups are waived for the MVP. | Decide the backup plan before R2. |
-| 8 | Hypercare numbers are proposals. | Confirm with the owner ([document 4](04-hypercare-and-runbooks.md)). |
-| 9 | Node version differs between README (24+) and CI (22). | Pick one and align them. |
+| 1 | A controlled-pilot branch adds a first-administrator setup page and bootstrap script. Docs mention `/admin/setup`. | Confirm whether that branch is merged; if not, those steps do not apply yet. |
+| 2 | No screen to manage staff or roles. | Roles are provisioned by script or SQL; keep a written list of who holds which role. |
+| 3 | No text-message or email notifications. | By design; members check the portal. |
+| 4 | Backups are waived for the MVP. | Decide the backup plan before R2. |
+| 5 | Node version differs between README (24+) and CI (22). | Pick one and align them. |
 
 ---
 
