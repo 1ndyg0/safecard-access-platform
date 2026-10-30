@@ -62,11 +62,6 @@ describe('member copy is complete in both languages', () => {
     expect(t('approvedMessage', 'fil')).toMatch(/Handa na ang iyong SafeCard/i);
   });
 
-  it('explains that an administrator verifies the payment when approving', () => {
-    expect(t('approvalExplainer', 'en')).toMatch(/administrator/i);
-    expect(t('approvalExplainer', 'fil')).toMatch(/administrator/i);
-  });
-
   it('offers Hotline 143 in both languages', () => {
     expect(t('callHotline', 'fil')).toContain('143');
     expect(t('callHotline', 'en')).toContain('143');

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRightIcon, CheckIcon } from "@/components/icons";
+import { ArrowRightIcon } from "@/components/icons";
 import { AccidentSection } from "@/components/education/AccidentSection";
 import { CoverageSection } from "@/components/education/CoverageSection";
 import { DownloadsSection } from "@/components/education/DownloadsSection";
@@ -16,7 +16,7 @@ import { useLocale } from "@/components/LocaleProvider";
 import { ProcessTimeline } from "@/components/ProcessTimeline";
 import { PublicFooter } from "@/components/PublicFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { heroFacts, joinNote } from "@/lib/education/content";
+import { heroFacts } from "@/lib/education/content";
 import { copy } from "@/lib/public-content";
 import "@/components/education/education.css";
 
@@ -34,13 +34,11 @@ export function LandingExperience() {
             <p className="hero-eyebrow"><span aria-hidden="true" />{t.eyebrow}</p>
             <h1 id="hero-title" className="hero-title">{t.heroTitle}</h1>
             <p className="hero-lede">{t.heroBody}</p>
-            <p className="hero-qualifier">{t.heroQualifier}</p>
             <div className="hero-actions">
               <Link className="button-primary" href="/apply">{t.primaryCta}<ArrowRightIcon size={18} /></Link>
               <a className="button-quiet" href="#covered">{t.secondaryCta}</a>
             </div>
             <ul className="hero-facts">{heroFacts.map((fact) => <li key={fact.en}>{fact[locale]}</li>)}</ul>
-            <p className="voluntary-line"><CheckIcon size={16} />{t.voluntary}</p>
           </div>
 
           <div className="hero-visual reveal delay-1" role="img" aria-label={t.heroVisual}>
@@ -63,7 +61,6 @@ export function LandingExperience() {
               <h2 id="process-title">{t.processTitle}</h2>
             </div>
             <ProcessTimeline />
-            <p className="process-note">{joinNote[locale]}</p>
           </div>
         </section>
 

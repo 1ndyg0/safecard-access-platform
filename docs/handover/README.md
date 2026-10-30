@@ -16,7 +16,7 @@
 | 3 | [Technical handover](03-technical-handover.md) | will look after the code, the database or the website hosting |
 | 4 | [Hypercare plan and runbooks](04-hypercare-and-runbooks.md) | are on watch after launch, or something just went wrong |
 | 5 | [Glossary and FAQ](05-glossary-and-faq.md) | meet a word you do not know |
-| + | [Christmas mode guide](../christmas-mode.md) | need to preview, stop or remove the Christmas campaign |
+| + | [Christmas mode guide](../christmas-mode.md) | want to know what the Christmas campaign adds and how it would be removed |
 
 ## Where to start
 

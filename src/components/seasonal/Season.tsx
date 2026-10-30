@@ -1,17 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import { useLocale } from "@/components/LocaleProvider";
 import { seasonalCopy as c } from "@/lib/seasonal/copy";
 import "./christmas.css";
 
-/**
- * Pieces of Christmas decoration shared by the public pages. Each one renders
- * markup that stays hidden (`.xmas-only`) until the head script switches the
- * season on, so the same HTML is correct before, during and after the season.
- */
+/** Pieces of Christmas decoration shared by the public pages. */
 
 /** Green banner with the apply-by date, then the twinkling light string. */
 export function SeasonTop() {
@@ -75,23 +70,3 @@ export function SeasonFooterTag() {
   );
 }
 
-/**
- * Shown on the gift pages once the season is over. If the page is opened out of
- * season it sends the visitor home; without JavaScript the notice stays.
- */
-export function SeasonEnded() {
-  const { locale } = useLocale();
-  const router = useRouter();
-  useEffect(() => {
-    if (document.documentElement.getAttribute("data-season") !== "christmas") router.replace("/");
-  }, [router]);
-  return (
-    <div className="xmas-off">
-      <div className="xmas-ended">
-        <h1>{c.endedTitle[locale]}</h1>
-        <p>{c.endedBody[locale]}</p>
-        <Link className="button-primary" href="/">{c.endedCta[locale]}</Link>
-      </div>
-    </div>
-  );
-}

@@ -22,7 +22,6 @@
 
 /* ── Hero additions ───────────────────────────────────────────── */
 .hero-copy h1.hero-title { max-width: 17ch; font-size: clamp(2.2rem, 5.4vw, 4.1rem); line-height: 1.04; letter-spacing: -.035em; overflow-wrap: break-word; }
-.hero-qualifier { max-width: 60ch; margin: 18px 0 0; color: var(--text2); font-size: .84rem; line-height: 1.6; }
 .hero-facts { display: flex; flex-wrap: wrap; gap: 10px; margin: 28px 0 0; padding: 0; list-style: none; }
 .hero-facts li { padding: 9px 16px; border: 1px solid var(--border); border-radius: 999px; color: var(--ink); background: var(--surface); font: 700 .86rem/1.25 var(--font-jakarta); }
 .hero-visual { position: relative; width: 100%; max-width: 460px; justify-self: center; aspect-ratio: 5 / 4; }
@@ -136,7 +135,6 @@
 @media (max-width: 560px) { .edu-steps { grid-template-columns: minmax(0, 1fr); } .edu-call { padding: 22px 20px; } .edu-call a { width: 100%; justify-content: center; } }
 
 /* ── Join note, inside the existing dark process section ─────── */
-.process-note { max-width: 70ch; margin: 40px 0 0; padding: 16px 18px; border-left: 4px solid #F2B35E; border-radius: 0 12px 12px 0; background: rgba(255, 255, 255, .07); color: #fff; line-height: 1.6; }
 
 /* ── FAQ ──────────────────────────────────────────────────────── */
 .edu-faq { max-width: 860px; }

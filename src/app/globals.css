@@ -360,8 +360,6 @@ button.button-primary, button.button-quiet { border: 0; cursor: pointer; }
 .portal-brand { display: table; margin: 0 auto 28px; color: inherit; text-decoration: none; }
 .portal-card > p { color: var(--text2); line-height: 1.65; }
 .portal-form { display: grid; gap: 17px; margin-top: 28px; }
-.portal-footnote { margin-top: 22px; color: var(--text3) !important; font-size: .74rem; }
-.portal-footnote a { color: var(--red-ink); font-weight: 800; }
 .portal-header > div { display: flex; gap: 8px; }
 .digital-card { width: min(760px, calc(100% - 40px)); margin: 50px auto; overflow: hidden; border-radius: 24px; color: white; background: linear-gradient(145deg, #162941, #08111f); box-shadow: 0 40px 90px rgba(0,0,0,.3); }
 .digital-card-top, .digital-card-body, .digital-card-footer { display: flex; justify-content: space-between; gap: 24px; padding: 28px; }
@@ -692,8 +690,6 @@ h1[tabindex="-1"]:focus { outline: none; }
 .hero-copy h1 { max-width: 12ch; margin: 0; color: var(--ink); font: 800 clamp(2.9rem, 6.6vw, 5.8rem)/1 var(--font-jakarta); letter-spacing: -.045em; word-spacing: .08em; text-wrap: balance; }
 .hero-lede { max-width: 560px; margin: 28px 0 0; color: var(--text2); font-size: clamp(1.02rem, 1.4vw, 1.18rem); line-height: 1.7; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
-.voluntary-line { display: flex; gap: 9px; align-items: flex-start; margin: 22px 0 0; max-width: 560px; color: var(--green-ink); font-size: .86rem; line-height: 1.55; }
-.voluntary-line svg { flex: none; margin-top: 2px; }
 
 .button-primary, .button-quiet { min-height: 52px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border-radius: 10px; padding: 13px 22px; text-decoration: none; font: 750 .9rem/1.2 var(--font-jakarta); }
 .button-primary { color: #fff; background: var(--red); box-shadow: 0 14px 28px rgba(200,16,46,.2); transition: background-color .15s, transform .15s; }
@@ -756,7 +752,6 @@ h1[tabindex="-1"]:focus { outline: none; }
 .benefit-facts > div { display: grid; gap: 4px; padding: 14px 0; border-top: 1px solid var(--border); }
 .benefit-facts dt { color: var(--text3); text-transform: uppercase; letter-spacing: .08em; font: 750 .7rem/1.2 var(--font-jakarta); }
 .benefit-facts dd { margin: 0; color: var(--text); font-size: .95rem; line-height: 1.65; max-width: 62ch; }
-.benefit-tip { margin: 0; color: var(--text2); font-size: .86rem; line-height: 1.6; }
 
 @media (max-width: 1060px) {
   .benefit-layout { grid-template-columns: 1fr; }
@@ -799,7 +794,6 @@ h1[tabindex="-1"]:focus { outline: none; }
 .help-block-lead h1, .help-block-lead h2 { margin: 8px 0 16px; color: var(--ink); font: 800 clamp(1.9rem, 3.6vw, 2.8rem)/1.08 var(--font-jakarta); letter-spacing: -.035em; word-spacing: .05em; }
 .help-block-lead > p { color: var(--text2); line-height: 1.7; }
 .help-call { margin-top: 12px; padding-inline: 26px; }
-.help-block-lead .help-hint { margin: 12px 0 0; color: var(--text2); font-size: .82rem; }
 .help-cards { display: grid; gap: 14px; align-content: start; }
 .help-cards article { display: grid; grid-template-columns: 44px minmax(0, 1fr); column-gap: 16px; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--bg); }
 .help-icon { grid-row: 1 / span 3; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; color: var(--red-ink); background: var(--red-dim); }

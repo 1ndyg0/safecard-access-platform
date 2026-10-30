@@ -187,7 +187,6 @@ In live production the app is **fail-closed**: if any required value is missing 
 | `ENABLE_OFFICIAL_PAYMENT_HANDOFF` | no | Show real payment details (above). |
 | `APPROVED_CAMPAIGN_ID` | no | The one reviewed campaign allowed to take applications. |
 | `APPROVED_CONTENT_VERSION` | no | The one reviewed wording version in use. |
-| `NEXT_PUBLIC_SEASONAL_CAMPAIGN` | no | Christmas mode: empty = automatic by date; `off` = emergency stop; `always` = testing only. |
 | `UPSTASH_REDIS_REST_URL` / `TOKEN`, `WEBHOOK_SIGNING_SECRET` | **YES** | Optional extras. Not needed for R1. |
 | `BOOTSTRAP_*`, `CONFIRM_CONTROLLED_PILOT_BOOTSTRAP`, `CONTROLLED_PILOT_CONFIG_PATH` | partly | Used only by the one-time pilot setup script (if present). |
 
@@ -434,8 +433,7 @@ The script answers every request with **fake sample data**, so it cannot touch a
 | Check my change is OK | `npm run lint && npm run typecheck && npm test && npm run build` |
 | Run the robot browsers | `npm run build`, `npm run start -- --port 3102`, then `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3102 npx playwright test` |
 | Make the site safe right now | The [Stop button](04-hypercare-and-runbooks.md#2-the-stop-button) |
-| Stop Christmas mode right now | Set `NEXT_PUBLIC_SEASONAL_CAMPAIGN=off` in Vercel and redeploy |
-| Preview Christmas mode | Add `?season=christmas` to any address |
+| Take Christmas mode down | A separate request; see the [Christmas guide](../christmas-mode.md) |
 | Add a database change | New numbered file in `supabase/migrations`; try on a copy first |
 | Retake screenshots | `node scripts/capture-handover-images.mjs` |
 | Find where something is said on screen | Search the project for a few words of the text (it is in `src/lib` or `src/components`) |

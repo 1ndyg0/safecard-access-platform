@@ -34,11 +34,6 @@ export const memberCopy = {
     fil: 'Wala pang aplikasyon na nakatali sa reference na ito.',
     en: 'There is no application linked to this reference yet.',
   },
-  lastUpdated: { fil: 'Huling na-update', en: 'Last updated' },
-  hotlineHelp: {
-    fil: 'Para sa opisyal na tanong, tumawag sa Hotline 143.',
-    en: 'For official questions, call Hotline 143.',
-  },
   callHotline: { fil: 'Tumawag sa Hotline 143', en: 'Call Hotline 143' },
 
   // Independent state labels.
@@ -46,10 +41,6 @@ export const memberCopy = {
   labelReview: { fil: 'Pagsusuri ng aplikasyon', en: 'Application review' },
   labelPayment: { fil: 'Bayad', en: 'Payment' },
 
-  approvalExplainer: {
-    fil: 'Naaprubahan ang aplikasyon kapag sinuri ng administrator ang iyong bayad at inaprubahan ang aplikasyon.',
-    en: 'Your application is approved when an administrator reviews your payment proof and approves the application.',
-  },
 
   // Review outcomes.
   reviewPending: { fil: 'Naghihintay ng pagsusuri', en: 'Awaiting review' },

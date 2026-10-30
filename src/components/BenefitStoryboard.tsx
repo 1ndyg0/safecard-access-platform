@@ -177,7 +177,6 @@ export function BenefitStoryboard({
                     {story.cost && <div><dt>{say("cost", locale)}</dt><dd>{story.cost}</dd></div>}
                   </dl>
 
-                  {story.hotlineGuidance && <p className="benefit-tip">{story.hotlineGuidance}</p>}
                 </div>
               </div>
             );
