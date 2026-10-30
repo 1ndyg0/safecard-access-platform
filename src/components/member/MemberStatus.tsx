@@ -200,8 +200,6 @@ export function MemberStatus() {
                 </table>
               </div>
 
-              <p className="portal-footnote">{t("approvalExplainer", lang)}</p>
-
               {status.states.application_review_state === "approved" && (
                 <div className="notice-panel">
                   <strong>{t("reviewApproved", lang)}</strong>
@@ -306,11 +304,6 @@ export function MemberStatus() {
 
               {paymentMessage && <p className="form-message" role="status">{paymentMessage}</p>}
 
-              <p className="portal-footnote">
-                {t("lastUpdated", lang)}{" "}
-                {new Date(status.states.updated_at).toISOString().slice(0, 16).replace("T", " ")}.{" "}
-                {t("hotlineHelp", lang)} <a href="tel:143">{t("callHotline", lang)}</a>
-              </p>
             </>
           )}
         </section>

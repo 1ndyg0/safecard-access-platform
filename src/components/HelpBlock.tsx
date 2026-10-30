@@ -17,7 +17,6 @@ export function HelpBlock({ showMoreLink = true, headingLevel = 2 }: { showMoreL
         <Heading id="help-title">{t.helpTitle}</Heading>
         <p>{t.helpLead}</p>
         <a className="button-primary help-call" href="tel:143"><PhoneIcon size={20} /><span>{t.helpCall}</span></a>
-        <p className="help-hint">{t.helpCallHint}</p>
       </div>
       <div className="help-cards">
         <article>

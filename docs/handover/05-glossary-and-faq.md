@@ -142,10 +142,10 @@ Not settled in the documents (two IDs appear). The owner confirms; see [the tech
 ### About Christmas mode
 
 **When does it appear?**
-Automatically from 15 November 2026 to the end of 31 December 2026 (Philippine time). Preview any time with `?season=christmas`.
+It is always on. There is no date window and no switch.
 
-**How do I stop it right now?**
-Set `NEXT_PUBLIC_SEASONAL_CAMPAIGN` to `off` in Vercel and redeploy. See [the Christmas guide](../christmas-mode.md).
+**How do I take it down?**
+That is a separate request. See [the Christmas guide](../christmas-mode.md).
 
 **Does it change the real application?**
 No. It adds a gift band, a few pages, a card maker and light decoration. The application, consent, payment and review steps are unchanged, and the payment step is never decorated.

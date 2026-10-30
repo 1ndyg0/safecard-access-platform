@@ -284,10 +284,6 @@ export function CorrectionForm() {
       <button className="button-primary" type="submit" disabled={!confirmed || busy}>
         {busy ? t("submitting", lang) : t("submitCorrection", lang)}
       </button>
-
-      <p className="portal-footnote">
-        {t("hotlineHelp", lang)} <a href="tel:143">{t("callHotline", lang)}</a>
-      </p>
     </form>
   );
 }

@@ -7,7 +7,7 @@ import { PublicFooter } from "@/components/PublicFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { seasonalCopy as c } from "@/lib/seasonal/copy";
 import { NAME_MAX, cardAltText, cardSubtitle, cardTitle, cleanName, giftMessage, giftUrl, type GiftLocale } from "@/lib/seasonal/gift";
-import { SeasonEnded, SeasonSnow } from "./Season";
+import { SeasonSnow } from "./Season";
 import "./christmas.css";
 
 const W = 1080;
@@ -187,7 +187,6 @@ export function GiftCardMaker() {
       <SiteHeader />
       <SeasonSnow />
       <main id="main-content">
-        <SeasonEnded />
         <div className="xmas-only">
           <div className="xmas-page">
             <header style={{ margin: "8px 0 28px" }}>

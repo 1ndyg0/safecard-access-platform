@@ -6,7 +6,7 @@ import { useLocale } from "@/components/LocaleProvider";
 import { PublicFooter } from "@/components/PublicFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { seasonalCopy as c } from "@/lib/seasonal/copy";
-import { SeasonEnded, SeasonSnow } from "./Season";
+import { SeasonSnow } from "./Season";
 import { ClockIcon } from "./GiftIcon";
 import "./christmas.css";
 
@@ -18,7 +18,6 @@ export function GiftPage() {
       <SiteHeader />
       <SeasonSnow />
       <main id="main-content">
-        <SeasonEnded />
         <div className="xmas-only">
           <div className="xmas-page">
             <section className="xmas-hero" aria-labelledby="gift-title">

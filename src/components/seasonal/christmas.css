@@ -1,6 +1,5 @@
 /*
- * Christmas 2026 campaign styles. Nothing here shows until the head script
- * puts data-season="christmas" on <html> (see lib/seasonal/christmas.ts).
+ * Christmas 2026 campaign styles. The campaign is always on.
  * Decoration is drawn from files in /public/seasonal and never takes pointer
  * events, so it cannot block a control.
  */
@@ -21,11 +20,8 @@
   }
 }
 
-/* ── Visibility switch ───────────────────────────────────────── */
-.xmas-only { display: none; }
-html[data-season="christmas"] .xmas-only { display: block; }
-html[data-season="christmas"] .xmas-only.xmas-contents { display: contents; }
-html[data-season="christmas"] .xmas-off { display: none; }
+/* ── Wrappers ────────────────────────────────────────────────── */
+.xmas-only.xmas-contents { display: contents; }
 
 /* ── Strip, lights, garland (inside the public header) ───────── */
 .xmas-strip { padding: 10px 16px; background: var(--xmas-green); color: #fff; text-align: center; font: 600 .88rem/1.45 var(--font-jakarta); }
@@ -92,9 +88,6 @@ html[data-season="christmas"] .xmas-off { display: none; }
 .xmas-final h2 { margin: 0 0 8px; color: #fff; font: 800 clamp(1.5rem, 3vw, 2rem)/1.2 var(--font-jakarta); }
 .xmas-final p { margin: 0 0 20px; color: #D8EBDD; }
 .xmas-final .xmas-actions { justify-content: center; }
-.xmas-ended { width: min(640px, calc(100% - 48px)); margin: 56px auto; padding: 32px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); text-align: center; }
-.xmas-ended h1 { margin: 0 0 8px; color: var(--ink); font: 800 1.6rem/1.2 var(--font-jakarta); }
-.xmas-ended p { margin: 0 0 20px; color: var(--text2); line-height: 1.6; }
 
 /* ── Card maker ──────────────────────────────────────────────── */
 .xmas-maker { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(24px, 4vw, 48px); align-items: start; }

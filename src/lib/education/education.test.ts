@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accident, coverage, downloads, faq, heroFacts, joinNote, library, sectionIndex, whatYouGet } from "./content";
+import { accident, coverage, downloads, faq, heroFacts, library, sectionIndex, whatYouGet } from "./content";
 import { GUIDE_SECTION_IDS, guideSections, type GuideBlock } from "./guide";
 import { DOCUMENTS } from "@/lib/documents/registry";
 
@@ -29,7 +29,7 @@ function localizedPairs(value: unknown, path = ""): { path: string; en: string; 
   return [];
 }
 
-const education = { sectionIndex, heroFacts, whatYouGet, coverage, accident, joinNote, faq, downloads, library };
+const education = { sectionIndex, heroFacts, whatYouGet, coverage, accident, faq, downloads, library };
 
 describe("education content", () => {
   it("has a non-empty English and Filipino text for every entry", () => {

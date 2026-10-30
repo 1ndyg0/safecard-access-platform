@@ -128,12 +128,6 @@ export const accident = {
 } as const;
 
 // ------------------------------------------------------------------- How to join
-/** Added under the existing process timeline. */
-export const joinNote: Localized = {
-  en: "Paying does not start your membership. It starts only when the Red Cross confirms it.",
-  fil: "Hindi nagsisimula ang membership mo dahil lang nagbayad ka. Magsisimula ito kapag kinumpirma ng Red Cross.",
-};
-
 // --------------------------------------------------------------------------- FAQ
 export interface FaqItem {
   id: string;

@@ -64,7 +64,8 @@ test.describe('landing page: structure', () => {
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     await expect(page.getByRole('heading', { level: 1 })).toContainText('₱1,200 a year');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('₱300,000');
-    await expect(page.getByText('The Red Cross is not the insurer.', { exact: false }).first()).toBeVisible();
+    await expect(page.locator('.hero-copy')).not.toContainText('underwritten');
+    await expect(page.locator('#benefits, main').first()).toContainText('Prudential Guarantee');
   });
 
   test('section index links jump to their sections', async ({ page }) => {
@@ -104,7 +105,7 @@ test.describe('landing page: content', () => {
     for (const text of ['Day 1', '30 days', '6 months', 'Racing and risky sports', 'Typhoon, flood']) await expect(covered).toContainText(text);
     const accident = page.locator('#accident');
     for (const text of ['Call 143 right away', 'By day 30', 'By day 60', 'maabclaims@redcross.org.ph', 'Death certificate']) await expect(accident).toContainText(text);
-    await expect(page.locator('#process')).toContainText('Paying does not start your membership');
+    await expect(page.locator('.process-note, .voluntary-line, .help-hint, .benefit-tip, .portal-footnote')).toHaveCount(0);
   });
 
   test('has no pilot wording and never says free or guaranteed', async ({ page }) => {

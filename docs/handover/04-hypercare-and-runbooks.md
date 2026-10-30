@@ -200,11 +200,11 @@ Each runbook says **what you see**, **what to do**, and **who to tell**. They ar
 2. Log it as Level 3.
 3. The fix is a normal pull request (see [the lifecycle](03-technical-handover.md#10-changing-and-releasing-code-the-lifecycle)). Most public wording is in `src/lib/education/content.ts`. **Filipino wording is a draft until the Red Cross approves it**; do not change benefit amounts or promises without the owner.
 
-### R9. Christmas mode looks wrong, or must stop right now
+### R9. Christmas mode looks wrong
 
-1. Add `?season=off` to the page address to see the normal site.
-2. To stop it for everyone: in Vercel set `NEXT_PUBLIC_SEASONAL_CAMPAIGN` to `off` and redeploy. All gift pages disappear and the site is exactly as before.
-3. Full instructions: [Christmas mode guide](../christmas-mode.md). It also ends **by itself** on **1 January 2027**.
+1. Note the page, the language (FIL or EN) and the device, and take a screenshot with no private data.
+2. Tell the owner. Christmas mode is always on and has no switch, so going back to the original look is a **separate request** that becomes a normal pull request.
+3. Details of what it touches: [Christmas mode guide](../christmas-mode.md).
 
 ### R10. The campaign has reached its application limit
 

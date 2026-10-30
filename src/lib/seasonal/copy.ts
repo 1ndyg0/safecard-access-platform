@@ -86,10 +86,6 @@ export const seasonalCopy = {
   cardFooter: p("Open the link to decide for yourself", "Buksan ang link para magpasya ka"),
   cardBrand: p("SafeCard · Philippine Red Cross", "SafeCard · Philippine Red Cross"),
 
-  // Season ended
-  endedTitle: p("The Christmas gift campaign has ended", "Tapos na ang Pamaskong regalo"),
-  endedBody: p("SafeCard is still open all year. You can apply any time.", "Bukas pa rin ang SafeCard buong taon. Maaari kang mag-apply anumang oras."),
-  endedCta: p("Go to the home page", "Pumunta sa home page"),
 
   // Welcome shown to the person who opens a gift link
   welcomeTitle: p("Someone is thinking of you this Christmas", "May nag-iisip sa iyo ngayong Pasko"),

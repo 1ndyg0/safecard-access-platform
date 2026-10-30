@@ -169,9 +169,7 @@ The **Library** in the member area holds the official Safe Card guides and FAQs.
 
 ## 7. Giving SafeCard as a Christmas gift
 
-*Only during the Christmas campaign (planned 15 November 2026 to 31 December 2026). Outside those dates none of this appears and the site is exactly as described above.*
-
-During the campaign the home page gains a **gift band** under the main banner, a small green strip at the top, string lights and a garland.
+The home page carries a Christmas campaign. It gains a **gift band** under the main banner, a small green strip at the top, string lights and a garland.
 
 ![The home page during Christmas mode](images/40-christmas-landing.png)
 

@@ -38,17 +38,15 @@ async function newContext(opts = {}) {
   return context;
 }
 
-const OFF = '?season=off';
-
-// ── Public pages (season off, so these show the everyday app) ─────────────
+// ── Public pages ──────────────────────────────────────────────────────────
 {
   const context = await newContext();
-  await shot(context, '01-landing-desktop', 'desktop', (p) => p.goto(`${BASE}/${OFF}`));
-  await shot(context, '02-landing-phone', 'phone', (p) => p.goto(`${BASE}/${OFF}`));
-  await shot(context, '03-benefits-desktop', 'desktop', (p) => p.goto(`${BASE}/benefits${OFF}`));
-  await shot(context, '04-help-desktop', 'desktop', (p) => p.goto(`${BASE}/help${OFF}`));
-  await shot(context, '05-member-login', 'desktop', (p) => p.goto(`${BASE}/member${OFF}`));
-  await shot(context, '06-admin-login', 'desktop', (p) => p.goto(`${BASE}/admin/login${OFF}`));
+  await shot(context, '01-landing-desktop', 'desktop', (p) => p.goto(`${BASE}/`));
+  await shot(context, '02-landing-phone', 'phone', (p) => p.goto(`${BASE}/`));
+  await shot(context, '03-benefits-desktop', 'desktop', (p) => p.goto(`${BASE}/benefits`));
+  await shot(context, '04-help-desktop', 'desktop', (p) => p.goto(`${BASE}/help`));
+  await shot(context, '05-member-login', 'desktop', (p) => p.goto(`${BASE}/member`));
+  await shot(context, '06-admin-login', 'desktop', (p) => p.goto(`${BASE}/admin/login`));
   await context.close();
 }
 
@@ -74,7 +72,7 @@ const OFF = '?season=off';
   }));
   const snap = async (name) => { await page.waitForTimeout(500); await page.screenshot({ path: `${OUT}${name}.png` }); console.log('saved', name); };
 
-  await page.goto(`${BASE}/apply${OFF}`);
+  await page.goto(`${BASE}/apply`);
   await page.getByRole('heading', { name: /know what matters/i }).waitFor();
   await snap('10-apply-1-learn');
   await page.getByRole('button', { name: /check my understanding/i }).click();
@@ -125,15 +123,15 @@ const OFF = '?season=off';
   });
   await shot(context, '20-member-status-waiting', 'desktop', async (p) => {
     await p.route('**/api/member/status', (r) => r.fulfill({ json: status('pending', 'verification_pending', 'Wait for review') }));
-    await p.goto(`${BASE}/member/status${OFF}`);
+    await p.goto(`${BASE}/member/status`);
   });
   await shot(context, '21-member-status-approved', 'desktop', async (p) => {
     await p.route('**/api/member/status', (r) => r.fulfill({ json: status('approved', 'verified', 'View your card') }));
-    await p.goto(`${BASE}/member/status${OFF}`);
+    await p.goto(`${BASE}/member/status`);
   });
   await shot(context, '22-member-card', 'desktop', async (p) => {
     await p.route('**/api/member/card', (r) => r.fulfill({ json: { approved: true, reference: 'SC-2026-SAMPLE01', name: 'ANA SAMPLE', mobileMasked: '0917•••0000', location: 'MANILA, NCR', approvedAt: '2026-11-22T03:00:00Z', benefits: [] } }));
-    await p.goto(`${BASE}/member/card${OFF}`);
+    await p.goto(`${BASE}/member/card`);
   });
   await context.close();
 }
@@ -157,24 +155,24 @@ const OFF = '?season=off';
     } }));
     await p.route('**/api/payment/evidence/e1', (r) => r.fulfill({ json: { signedUrl: RECEIPT } }));
   };
-  await shot(context, '30-admin-dashboard', 'desktop', async (p) => { await mockAdmin(p); await p.goto(`${BASE}/admin${OFF}`); });
-  await shot(context, '31-admin-applications', 'desktop', async (p) => { await mockAdmin(p); await p.goto(`${BASE}/admin/applications${OFF}`); await p.getByRole('button', { name: /review ana sample/i }).waitFor(); });
+  await shot(context, '30-admin-dashboard', 'desktop', async (p) => { await mockAdmin(p); await p.goto(`${BASE}/admin`); });
+  await shot(context, '31-admin-applications', 'desktop', async (p) => { await mockAdmin(p); await p.goto(`${BASE}/admin/applications`); await p.getByRole('button', { name: /review ana sample/i }).waitFor(); });
   await shot(context, '32-admin-review', 'tall', async (p) => {
     await mockAdmin(p);
-    await p.goto(`${BASE}/admin/applications${OFF}`);
+    await p.goto(`${BASE}/admin/applications`);
     await p.getByRole('button', { name: /review ana sample/i }).click();
     await p.getByRole('dialog').getByAltText('Uploaded proof of payment').waitFor();
   });
   await shot(context, '33-admin-approve-confirm', 'desktop', async (p) => {
     await mockAdmin(p);
-    await p.goto(`${BASE}/admin/applications${OFF}`);
+    await p.goto(`${BASE}/admin/applications`);
     await p.getByRole('button', { name: /review ana sample/i }).click();
     await p.getByRole('dialog').getByAltText('Uploaded proof of payment').waitFor();
     await p.getByRole('dialog').getByRole('button', { name: 'Approve' }).click();
   });
   await shot(context, '34-admin-reject-reason', 'desktop', async (p) => {
     await mockAdmin(p);
-    await p.goto(`${BASE}/admin/applications${OFF}`);
+    await p.goto(`${BASE}/admin/applications`);
     await p.getByRole('button', { name: /review ana sample/i }).click();
     await p.getByRole('dialog').getByAltText('Uploaded proof of payment').waitFor();
     await p.getByRole('dialog').getByRole('button', { name: 'Reject' }).click();
@@ -182,20 +180,20 @@ const OFF = '?season=off';
   await context.close();
 }
 
-// ── Christmas mode (season forced on for the picture only) ────────────────
+// ── Christmas mode (always on) ────────────────────────────────────────────
 {
   const context = await newContext();
-  await shot(context, '40-christmas-landing', 'desktop', (p) => p.goto(`${BASE}/?season=christmas`));
+  await shot(context, '40-christmas-landing', 'desktop', (p) => p.goto(`${BASE}/`));
   await shot(context, '41-christmas-band', 'desktop', async (p) => {
-    await p.goto(`${BASE}/?season=christmas`);
+    await p.goto(`${BASE}/`);
     await p.evaluate(() => window.scrollTo(0, document.querySelector('[data-testid="xmas-band"]').getBoundingClientRect().top + scrollY - 20));
   });
   await shot(context, '42-christmas-card-maker', 'tall', async (p) => {
-    await p.goto(`${BASE}/gift/card?season=christmas`);
+    await p.goto(`${BASE}/gift/card`);
     await p.getByLabel(/your name/i).fill('Ana');
     await p.getByLabel(/their name/i).fill('Lola Nena');
   });
-  await shot(context, '43-christmas-landing-phone', 'phone', (p) => p.goto(`${BASE}/?season=christmas`));
+  await shot(context, '43-christmas-landing-phone', 'phone', (p) => p.goto(`${BASE}/`));
   await context.close();
 }
 
