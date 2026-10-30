@@ -33,7 +33,6 @@ export function CoverageSection() {
           <Group tone="yes" title={c.covered.title[locale]} items={c.covered.items} locale={locale} />
           <Group tone="no" title={c.notCovered.title[locale]} items={c.notCovered.items} locale={locale} />
         </div>
-        <p className="edu-note">{c.note[locale]}</p>
 
         <h3 className="edu-wait-title">{c.wait.title[locale]}</h3>
         <p className="edu-wait-intro">{c.wait.intro[locale]}</p>

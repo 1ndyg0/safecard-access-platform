@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { AmbulanceIcon, ArrowRightIcon, BadgeCheckIcon, BedIcon, FileTextIcon, HeartIcon, InfoIcon, ShieldAlertIcon } from "@/components/icons";
+import { AmbulanceIcon, ArrowRightIcon, BadgeCheckIcon, BedIcon, FileTextIcon, HeartIcon, ShieldAlertIcon } from "@/components/icons";
 import { useLocale } from "@/components/LocaleProvider";
 import { type BenefitTile, whatYouGet } from "@/lib/education/content";
 import "./education.css";
@@ -48,7 +48,6 @@ export function WhatYouGet() {
           <div><h3>{c.insurance.title[locale]}</h3><p>{c.insurance.subtitle[locale]}</p></div>
         </div>
         <Tiles tiles={c.insurance.tiles} locale={locale} />
-        <p className="edu-footnote"><InfoIcon size={18} /><span>{c.insurance.footnote[locale]}</span></p>
       </div>
 
       <div className="edu-band-card">
@@ -57,7 +56,6 @@ export function WhatYouGet() {
           <div><h3>{c.services.title[locale]}</h3><p>{c.services.subtitle[locale]}</p></div>
         </div>
         <Tiles tiles={c.services.tiles} locale={locale} className="two" />
-        <p className="edu-footnote"><InfoIcon size={18} /><span>{c.services.footnote[locale]}</span></p>
       </div>
 
       <Link className="edu-text-link" href="/benefits">{c.examples[locale]}<ArrowRightIcon size={16} /></Link>

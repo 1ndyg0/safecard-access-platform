@@ -29,10 +29,6 @@ const COPY = {
   mayProvide: { fil: "Maaaring gawin ng PRC", en: "What PRC may provide" },
   cost: { fil: "Tungkol sa gastos", en: "About costs" },
   listLabel: { fil: "Mga benepisyo", en: "Benefits" },
-  footnote: {
-    fil: "Ang mga halimbawa ay para sa pag-unawa lamang. Ang mga benepisyo ay ayon sa mga tuntunin ng PRC; ang PRC lamang ang nagpapasya sa eligibility at claims.",
-    en: "Examples are for understanding only. Benefits are subject to PRC terms; only PRC decides eligibility and claims.",
-  },
 } as const;
 
 function say(key: keyof typeof COPY, locale: StoryboardLocale): string {
@@ -118,7 +114,7 @@ export function BenefitStoryboard({
   }
 
   return (
-    <div ref={root} className={`benefit-storyboard ${compact ? "compact" : ""}`} data-hydrated="false">
+    <div ref={root} className={`benefit-storyboard ${compact ? "compact" : ""}`} data-hydrated="false" data-provenance={provenance}>
       <div className="benefit-layout">
         <div className="benefit-tabs" role="tablist" aria-label={say("listLabel", locale)} aria-orientation="vertical">
           {cards.map((card, index) => {
@@ -182,15 +178,12 @@ export function BenefitStoryboard({
                   </dl>
 
                   {story.hotlineGuidance && <p className="benefit-tip">{story.hotlineGuidance}</p>}
-                  <p className="benefit-disclaimer">{story.disclaimer}</p>
                 </div>
               </div>
             );
           })}
         </div>
       </div>
-
-      <p className="content-footnote" data-provenance={provenance}>{say("footnote", locale)}</p>
     </div>
   );
 }

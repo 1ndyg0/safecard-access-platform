@@ -76,12 +76,16 @@ describe("education content", () => {
     expect(heroFacts.map((fact) => fact.en)).toEqual(["₱1,200 a year", "Ages 3 to 85", "Valid for 1 year", "Cannot be transferred"]);
   });
 
-  it("keeps ambulance and blood as services that depend on availability, not insurance", () => {
-    expect(whatYouGet.services.footnote.en).toMatch(/not insurance/i);
-    expect(whatYouGet.services.footnote.en).toMatch(/available/i);
-    expect(whatYouGet.services.footnote.en).toMatch(/cannot promise/i);
+  it("keeps the blood tile precise about what is included", () => {
     expect(whatYouGet.services.tiles[1].text.en).toMatch(/apheresis/i);
-    expect(whatYouGet.insurance.footnote.en).toMatch(/insurance company/i);
+  });
+
+  it("carries no footnotes under the benefits or the coverage lists", () => {
+    // Removed on purpose after review: the notes read as negative. The legal
+    // wording stays in the member guide and the notice, which are tested below.
+    expect(whatYouGet.insurance).not.toHaveProperty("footnote");
+    expect(whatYouGet.services).not.toHaveProperty("footnote");
+    expect(coverage).not.toHaveProperty("note");
   });
 
   it("never promises that anything is free or guaranteed", () => {

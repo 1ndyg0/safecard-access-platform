@@ -28,7 +28,7 @@ export default function MemberCardPage() {
             <div className="member-card-view">
               <article className="safecard" aria-label="Electronic SafeCard">
                 <div className="safecard-top">
-                  <span className="safecard-brand"><span aria-hidden="true">+</span> SafeCard</span>
+                  <span className="safecard-brand"><span aria-hidden="true"><svg viewBox="0 0 24 24" width="17" height="17" focusable="false"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="3.6" strokeLinecap="round" /></svg></span> SafeCard</span>
                   <span className="status-pill active">Approved</span>
                 </div>
                 <div className="safecard-chip-row">

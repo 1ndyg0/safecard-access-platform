@@ -113,7 +113,7 @@ test.describe('benefit guide', () => {
       .toBe(true);
   });
 
-  test('each benefit carries persona, situation, action, PRC role, a disclaimer and an illustration', async ({ page }) => {
+  test('each benefit carries persona, situation, action, PRC role and an illustration', async ({ page }) => {
     await useLocale(page, 'en');
     await openBenefits(page);
 
@@ -125,7 +125,8 @@ test.describe('benefit guide', () => {
       await expect(open).toContainText('Situation');
       await expect(open).toContainText('What to do');
       await expect(open).toContainText('What PRC may provide');
-      await expect(open.locator('.benefit-disclaimer')).toContainText(/sample scenario/i);
+      await expect(open.locator('.benefit-persona span')).toContainText(/sample scenario/i);
+      await expect(open.locator('.benefit-disclaimer')).toHaveCount(0);
       const art = open.locator('.benefit-art svg');
       await expect(art).toHaveAttribute('aria-hidden', 'true');
     }
@@ -152,13 +153,12 @@ test.describe('benefit guide', () => {
     expect(clipped).toBe(false);
   });
 
-  test('states that examples are not a guarantee', async ({ page }) => {
+  test('shows no footnote and still records where the content came from', async ({ page }) => {
     await openBenefits(page);
-    const note = page.locator('.benefit-storyboard .content-footnote');
-    await expect(note).toBeVisible();
+    await expect(page.locator('.benefit-storyboard .content-footnote')).toHaveCount(0);
     // Without a published registry entry, the content must not claim approval.
-    await expect(note).toHaveAttribute('data-provenance', 'provisional');
-    await expect(note).not.toContainText(/pilot|provisional|validation/i);
+    await expect(page.locator('.benefit-storyboard')).toHaveAttribute('data-provenance', 'provisional');
+    await expect(page.locator('.benefit-storyboard')).not.toContainText(/pilot|provisional|validation/i);
   });
 
   for (const locale of ['fil', 'en'] as const) {
@@ -168,7 +168,7 @@ test.describe('benefit guide', () => {
       for (const id of BENEFITS) {
         await tab(page, id).click();
         await expect(panel(page, id)).toBeVisible();
-        await expect(panel(page, id).locator('.benefit-disclaimer')).not.toBeEmpty();
+        await expect(panel(page, id).locator('.benefit-persona strong')).not.toBeEmpty();
       }
     });
 
