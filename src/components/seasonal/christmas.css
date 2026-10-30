@@ -65,7 +65,7 @@ html[data-season="christmas"] .xmas-off { display: none; }
 .xmas-ornaments span { display: block; margin-top: 6px; color: var(--text2); font-size: .88rem; line-height: 1.45; }
 
 /* ── Gift pages ──────────────────────────────────────────────── */
-.xmas-page { width: min(1080px, calc(100% - 48px)); margin: 0 auto; padding-bottom: 72px; }
+.xmas-page { width: min(1080px, calc(100% - 48px)); margin: 0 auto; padding: 28px 0 72px; }
 .xmas-hero { margin: 0 0 56px; padding: clamp(32px, 6vw, 64px) clamp(20px, 5vw, 56px); border: 1px solid var(--xmas-wash-edge); border-radius: 28px; background: var(--xmas-wash) url("/seasonal/snow.svg") repeat / 320px 280px; text-align: center; }
 .xmas-hero p.lede { margin-inline: auto; }
 .xmas-hero .xmas-actions { justify-content: center; }
