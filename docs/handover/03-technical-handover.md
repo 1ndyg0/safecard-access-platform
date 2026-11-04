@@ -417,7 +417,7 @@ The script answers every request with **fake sample data**, so it cannot touch a
 
 | # | Item | Suggested next step |
 |---|---|---|
-| 1 | A controlled-pilot branch adds a first-administrator setup page and bootstrap script. Docs mention `/admin/setup`. | Confirm whether that branch is merged; if not, those steps do not apply yet. |
+| 1 | ~~A controlled-pilot branch adds a first-administrator setup page and bootstrap script.~~ **Resolved:** `/admin/setup` and `npm run bootstrap:pilot` are on `main`. | None. The steps that use them apply; see the [Vercel and Supabase handover](06-vercel-and-supabase-handover.md). |
 | 2 | No screen to manage staff or roles. | Roles are provisioned by script or SQL; keep a written list of who holds which role. |
 | 3 | No text-message or email notifications. | By design; members check the portal. |
 | 4 | Backups are waived for the MVP. | Decide the backup plan before R2. |
