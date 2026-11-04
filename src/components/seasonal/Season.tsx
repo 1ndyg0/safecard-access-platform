@@ -35,7 +35,7 @@ function Art({ name, className = "" }: { name: ArtName; className?: string }) {
   return <Image className={`xmas-art-${name} ${className}`} src={art.src} width={art.width} height={art.height} alt="" unoptimized />;
 }
 
-/** Green banner with the apply-by date, then the twinkling light string. */
+/** The twinkling light string. (The green apply-by banner was removed; the date lives in the band and footer.) */
 export function SeasonTop() {
   return (
     <div className="xmas-only" data-testid="xmas-top">

@@ -1,6 +1,6 @@
 # Christmas mode (campaign `christmas-2026`)
 
-A festive look for the whole public site: **“Merry Christmas from SafeCard.”** It adds Santa Claus, his reindeer, a snowman, a tree and other Christmas characters, string lights, a garland, snowfall and a green banner with the apply-by date. **It is always on.** It has no date window and no switch. There is no gifting feature. The rest of the app is unchanged.
+A festive look for the whole public site: **“Merry Christmas from SafeCard.”** It adds Santa Claus, his reindeer, a snowman, a tree and other Christmas characters, string lights, a garland and snowfall. The apply-by date (December 10) appears in the Christmas band and in the page footer. There is no separate banner strip. **It is always on.** It has no date window and no switch. There is no gifting feature. The rest of the app is unchanged.
 
 ## What it adds (and nothing else)
 
@@ -51,7 +51,7 @@ Nothing in the database or storage needs cleaning up, because the campaign never
 
 - **Unit tests** (`src/lib/seasonal/copy.test.ts`): every line exists in both languages, the apply-by date is in the band and footer, and no wording mentions gifting.
 - **Browser tests** (`tests/e2e/christmas.spec.ts`), on Chrome, Firefox, Safari and two phone sizes:
-  - the page: band, scenes (Santa, reindeer, snowman, tree, gingerbread), flying sleigh and the original banner all present; every picture loads; the payment step never decorated;
+  - the page: band, scenes (Santa, reindeer, snowman, tree, gingerbread), flying sleigh and the original hero all present; no green banner strip; every picture loads; the payment step never decorated;
   - decoration is hidden from screen readers and never takes a click;
   - snow, swinging, waving and the flying sleigh stay still for reduced motion;
   - the Filipino site is festive too;

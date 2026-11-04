@@ -36,7 +36,7 @@ Open the website. The first screen tells you the three things people ask first: 
 
 ![The SafeCard home page on a laptop](images/01-landing-desktop.png)
 
-**On a phone** the same page rearranges into one column. The menu hides behind the three-line button at the top right.
+The top of every page is one toolbar that stays pinned as you scroll. On wide screens it shows the section links, Help, Member login, Admin and the language switch. **On a phone** (or any window narrower than 1300 pixels) the page rearranges into one column and the toolbar hides behind the three-line button at the top right.
 
 ![The SafeCard home page on a phone](images/02-landing-phone.png)
 
