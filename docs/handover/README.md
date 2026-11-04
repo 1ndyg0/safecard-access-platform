@@ -16,6 +16,7 @@
 | 3 | [Technical handover](03-technical-handover.md) | will look after the code, the database or the website hosting |
 | 4 | [Hypercare plan and runbooks](04-hypercare-and-runbooks.md) | are on watch after launch, or something just went wrong |
 | 5 | [Glossary and FAQ](05-glossary-and-faq.md) | meet a word you do not know |
+| 6 | [Vercel and Supabase handover](06-vercel-and-supabase-handover.md) | are taking over the Vercel hosting and the Supabase database from Ian |
 | + | [Christmas mode guide](../christmas-mode.md) | want to know what the Christmas campaign adds and how it would be removed |
 
 ## Where to start
@@ -52,6 +53,6 @@
 
 1. **There are two SafeCard deployments, each with its own database.** Ours (the owner’s own Vercel account, `safecard-access-platform-phi.vercel.app`) uses Supabase project `ubkbrgxgpxycoqsqiwga`. The repository owner’s separate deployment (`safecard-access-platform.vercel.app`) uses `ajyhlkzbocjeepglkhrl`. The repository’s older docs (`release-gates.md`, `controlled-production-pilot.md`) describe that second one. See [the technical handover](03-technical-handover.md#6-the-database-supabase).
 2. **The old shared-password guide has been retired.** The files `docs/indy-migration-guide.md` and `docs/indy-pilot-accounts-setup.sql` were removed from the repository. The accounts they created must still have their passwords changed in Supabase. See [Security housekeeping](03-technical-handover.md#11-security-housekeeping).
-3. **Some documents describe a controlled-pilot branch** that adds a first-administrator setup page (`/admin/setup`) and a bootstrap script. Check whether that branch has been merged before following those steps.
+3. **The first-administrator setup page and bootstrap script are on `main`.** `/admin/setup` and `npm run bootstrap:pilot` exist; the steps that use them apply. See the [Vercel and Supabase handover](06-vercel-and-supabase-handover.md#appendix-rebuilding-from-scratch).
 
 *If you change the app, update the matching page here in the same pull request.*
