@@ -1,4 +1,4 @@
-.section { margin-top: 48px; padding-top: 40px; border-top: 1px solid var(--border); scroll-margin-top: 84px; }
+.section { width: var(--edu-width); margin: 0 auto; padding: 0 0 72px; scroll-margin-top: 84px; }
 .notice { padding: 14px 18px; margin: 0 0 24px; border: 1px solid var(--amber-ink); border-radius: 12px; color: var(--amber-ink); background: var(--amber-dim); font-size: .94rem; line-height: 1.6; }
 .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .card { min-width: 0; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); overflow: hidden; }

@@ -22,7 +22,7 @@ Recorded 23 November 2026, before changing production.
 
 ## Scope and publication gate
 
-One presentation-only component after the existing benefits, a scoped CSS module, its import/render, and this record. English and Filipino copy. No dependencies, database migrations, queries, Supabase settings, environment variables, application handling, or authentication changes.
+One presentation-only component after the existing benefits, a scoped CSS module, its landing-page import/render, and this record. English and Filipino copy. No dependencies, database migrations, queries, Supabase settings, environment variables, application handling, or authentication changes.
 
 Keep this work on the review branch. Do not merge or promote until the owner reviews the actual preview and PRC/PGAI confirms combined benefits and annual limits. The arithmetic illustrations are labelled unconfirmed: PHP332,000 survival and PHP337,000 fatal outcome. They are alternatives, not cumulative benefits. Service references are separately labelled: PHP20,000 (upper end of other ambulance providers’ prices cited by PRC, not a SafeCard maximum) and PHP1,800 (PRC Palawan blood processing fee reported by PIA, not a nationwide maximum). Combined illustrative totals are PHP353,800 and PHP358,800, not cash payouts or confirmed maximum benefit values.
 

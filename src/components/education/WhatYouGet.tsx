@@ -6,7 +6,6 @@ import { AmbulanceIcon, ArrowRightIcon, BadgeCheckIcon, BedIcon, FileTextIcon, H
 import { useLocale } from "@/components/LocaleProvider";
 import { type BenefitTile, whatYouGet } from "@/lib/education/content";
 import "./education.css";
-import { BenefitValueScenarios } from "./BenefitValueScenarios";
 
 function TileVisual({ visual }: { visual: BenefitTile["visual"] }) {
   if (visual.kind === "image") {
@@ -60,7 +59,6 @@ export function WhatYouGet() {
       </div>
 
       <Link className="edu-text-link" href="/benefits">{c.examples[locale]}<ArrowRightIcon size={16} /></Link>
-      <BenefitValueScenarios />
     </section>
   );
 }
