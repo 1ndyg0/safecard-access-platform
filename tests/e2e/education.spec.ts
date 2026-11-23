@@ -8,7 +8,8 @@ import { createMemberToken } from '../../src/lib/auth/member-token';
  * cover laptops, tablets and iOS and Android phones.
  */
 
-const PILOT_WORDING = /pilot|school-project|for validation|working baseline|illustrative|synthetic|demo\b/i;
+// The benefit-value section intentionally labels its calculations as illustrations.
+const PILOT_WORDING = /pilot|school-project|for validation|working baseline|synthetic|demo\b/i;
 /** Everything on request (E2E_ALL_DEVICES=1); a lighter sweep otherwise, to keep the CI job short. */
 const FULL = process.env.E2E_ALL_DEVICES === '1';
 const SECTION_IDS = ['benefits', 'covered', 'accident', 'process', 'faq', 'downloads'] as const;
