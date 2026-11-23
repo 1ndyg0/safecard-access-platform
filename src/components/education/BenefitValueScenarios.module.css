@@ -30,3 +30,10 @@
 .assumptions li + li { margin-top: 8px; }
 @media (max-width: 700px) { .grid, .services ul { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 400px) { .breakdown > div { flex-wrap: wrap; gap: 6px; } .head, .total { padding: 18px; } .breakdown { padding-inline: 18px; } }
+
+.combined { margin: 0 22px 22px; padding: 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--edu-blue-dim); }
+.combined p { margin: 0 0 8px; color: var(--ink); font-size: .94rem; line-height: 1.5; }
+.combined strong { display: block; color: var(--edu-blue); font: 800 clamp(1.8rem, 3vw, 2.4rem)/1.1 var(--font-jakarta); letter-spacing: -.03em; overflow-wrap: anywhere; }
+.combined small { display: block; margin-top: 10px; color: var(--text2); font-size: .875rem; line-height: 1.6; }
+.serviceValue { color: var(--red-ink); font: 800 1.6rem/1.2 var(--font-jakarta); margin-top: 6px; }
+.services a { display: inline-flex; align-items: center; min-height: 44px; color: var(--red-ink); font-size: .875rem; text-underline-offset: 3px; }
